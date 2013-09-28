@@ -1,0 +1,317 @@
+class Fire with
+    interface Object;
+    var int dir;
+do
+    this.rect.w = 3;
+    this.rect.h = 3;
+
+    par/or do
+        var int dt;
+        var int sx = this.rect.x * 1000;
+        every dt=SDL_DT do
+            sx = sx + 200*dt * this.dir;
+            this.rect.x = sx / 1000;
+            if this.rect.x < 0
+            or this.rect.x > _REN_W then
+                break;
+            end
+
+            // collisions
+            _OBJS[_OBJS_N] = &this;     // TODO: bug (finalize)
+            _OBJS_N = _OBJS_N + 1;
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(_REN, rect.x,rect.y, rect.w,
+                                    0x77,0x77,0x77,0xFF);
+        end
+    with
+        var Object* obj;
+        every obj = this.collided do
+            if obj:id != this.id-1 then
+                break;
+            end
+        end
+    end
+end
+
+class Ship with
+    interface Object;
+    var _SDL_Texture* tex = null;
+
+    var int lim_x1, lim_x2, lim_y1, lim_y2;
+
+    var int dir;
+    var int k_up, k_down, k_left, k_right;
+    var int k_fire;
+
+    event void ok_killed;
+do
+    _assert(this.tex != null);
+    this.rect.w = 30;
+    this.rect.h = 30;
+
+    var _SDL_Rect clip;
+        clip.x =  0;
+        clip.w = 30;
+        clip.h = 30;
+
+    this.lim_x1 = this.lim_x1 * 1000;
+    this.lim_x2 = this.lim_x2 * 1000;
+    this.lim_y1 = this.lim_y1 * 1000;
+    this.lim_y2 = this.lim_y2 * 1000;
+
+    var int sx=this.rect.x*1000, vx=0, ax=0;
+    var int sy=this.rect.y*1000, vy=0, ay=0;
+
+    par/or do
+        var _SDL_KeyboardEvent* key;
+        every key = SDL_KEYDOWN do
+            if key:keysym.sym == this.k_up then
+                ay = -500;
+            else/if key:keysym.sym == this.k_down then
+                ay =  500;
+            else/if key:keysym.sym == this.k_left then
+                ax = -500;
+            else/if key:keysym.sym == this.k_right then
+                ax =  500;
+            end
+        end
+    with
+        var _SDL_KeyboardEvent* key;
+        every key = SDL_KEYUP do
+            if key:keysym.sym == this.k_up
+            or key:keysym.sym == this.k_down then
+                ay = 0;
+            else/if key:keysym.sym == this.k_left
+                 or key:keysym.sym == this.k_right then
+                ax = 0;
+            end
+        end
+    with
+        var int dt;
+        every dt=SDL_DT do
+            vx = vx + ax*dt/1000;
+            vy = vy + ay*dt/1000;
+            if vx> 3000 then vx= 3000; end
+            if vx<-3000 then vx=-3000; end
+            if vy> 3000 then vy= 3000; end
+            if vy<-3000 then vy=-3000; end
+
+            sx = sx + vx;
+            sy = sy + vy;
+            if sx < this.lim_x1 then
+                sx = this.lim_x1;
+                vx = 0;
+            else/if sx > this.lim_x2 then
+                sx = this.lim_x2;
+                vx = 0;
+            end
+            if sy < this.lim_y1 then
+                sy = this.lim_y1;
+                vy = 0;
+            else/if sy > this.lim_y2 then
+                sy = this.lim_y2;
+                vy = 0;
+            end
+
+            this.rect.x = sx/1000;
+            this.rect.y = sy/1000;
+
+            // collisions
+            _OBJS[_OBJS_N] = &this;
+            _OBJS_N = _OBJS_N + 1;
+        end
+    with
+        every SDL_REDRAW do
+            if ay > 0 then
+                clip.y = this.rect.w*3;
+            else/if ay < 0 then
+                clip.y = this.rect.w*2;
+            else/if ax*this.dir < 0 then
+                clip.y = 0;
+            else
+                clip.y = this.rect.w*1;
+            end
+            var _SDL_Rect r;
+                r.x = this.rect.x - this.rect.w/2;
+                r.y = this.rect.y - this.rect.h/2;
+                r.w = this.rect.w;
+                r.h = this.rect.h;
+            _SDL_RenderCopy(_REN, this.tex, &clip, &r);
+        end
+    with
+        do
+            var _SDL_KeyboardEvent* key;
+            every key = SDL_KEYDOWN do
+                if key:keysym.sym == this.k_fire then
+                    spawn[3] Fire with
+                        this.id   = id + 1;
+                        this.dir  = dir;
+                        this.rect = rect;
+                    end;
+                end
+            end
+        end
+    with
+        var Object* obj;
+        every obj = this.collided do
+            if  obj:id != this.id
+            and obj:id != this.id+1 then
+                break;
+            end
+        end
+    end
+
+    emit ok_killed;
+end
+
+class RockBig with
+    interface Object;
+    var int id = _OBJ_ROCK;
+do
+    this.rect.w = 30;
+    this.rect.h = 30;
+
+    var _SDL_Rect clip;
+        clip.x =  0;
+        clip.y =  0;
+        clip.w = this.rect.w;
+        clip.h = this.rect.h;
+
+    var int vx = _rand()%150 + 1;
+    var int vy = _rand()%150 + 1;
+
+    this.rect.x = _REN_W/3 + _rand()%_REN_W/3;
+    if _rand() % 2 then
+        vx = -vx;
+    end
+    if _rand() % 2 then
+        this.rect.y = 0;
+    else
+        this.rect.y = _REN_H;
+        vy = -vy;
+    end
+
+    par/or do
+        await 1s;
+
+        var int sx = this.rect.x * 1000;
+        var int sy = this.rect.y * 1000;
+        var int dt;
+        every dt=SDL_DT do
+            sx = sx + vx*dt;
+            sy = sy + vy*dt;
+            this.rect.x = sx / 1000;
+            this.rect.y = sy / 1000;
+
+            if this.rect.x < 0
+            or this.rect.x > _REN_W
+            or this.rect.y < 0
+            or this.rect.y > _REN_H then
+                break;
+            end
+
+            // collisions
+            _OBJS[_OBJS_N] = &this;
+            _OBJS_N = _OBJS_N + 1;
+        end
+    with
+        var int v = vx * vy;
+        if v < 0 then
+            v = -v;
+        end
+        var int dt = 500000 / v;
+        every (dt)ms do
+            clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
+        end
+    with
+        every SDL_REDRAW do
+            var _SDL_Rect r;
+                r.x = this.rect.x - this.rect.w/2;
+                r.y = this.rect.y - this.rect.h/2;
+                r.w = this.rect.w;
+                r.h = this.rect.h;
+            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip, &r);
+        end
+    with
+        var Object* obj;
+        every obj = this.collided do
+            if obj:id < _OBJ_ROCK then
+                break;
+            end
+        end
+    end
+end
+
+class RockSmall with
+    interface Object;
+    var int id = _OBJ_rock;
+do
+    this.rect.w = 18;
+    this.rect.h = 18;
+
+    var _SDL_Rect clip;
+        clip.x =  0;
+        clip.y =  0;
+        clip.w = this.rect.w;
+        clip.h = this.rect.h;
+
+    var int vx = _rand()%75 + 1;
+    var int vy = _rand()%75 + 1;
+
+    if _rand() % 2 then
+        vx = -vx;
+    end
+    if _rand() % 2 then
+        vy = -vy;
+    end
+
+    par/or do
+        var int sx = this.rect.x * 1000;
+        var int sy = this.rect.y * 1000;
+        var int dt;
+        every dt=SDL_DT do
+            sx = sx + vx*dt;
+            sy = sy + vy*dt;
+            this.rect.x = sx / 1000;
+            this.rect.y = sy / 1000;
+
+            if this.rect.x < 0
+            or this.rect.x > _REN_W
+            or this.rect.y < 0
+            or this.rect.y > _REN_H then
+                break;
+            end
+
+            // collisions
+            _OBJS[_OBJS_N] = &this;
+            _OBJS_N = _OBJS_N + 1;
+        end
+    with
+        var int v = vx * vy;
+        if v < 0 then
+            v = -v;
+        end
+        var int dt = 500000 / v;
+        every (dt)ms do
+            clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
+        end
+    with
+        every SDL_REDRAW do
+            var _SDL_Rect r;
+                r.x = this.rect.x - this.rect.w/2;
+                r.y = this.rect.y - this.rect.h/2;
+                r.w = this.rect.w;
+                r.h = this.rect.h;
+            _SDL_RenderCopy(_REN, _TEX_rock, &clip, &r);
+        end
+    with
+        var Object* obj;
+        every obj = this.collided do
+            if obj:id < _OBJ_ROCK then
+                break;
+            end
+        end
+    end
+end

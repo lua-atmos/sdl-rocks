@@ -1,0 +1,266 @@
+#include "sdl.ceu"
+#include "sdl-gfx.ceu"
+#include "colors.ceu"
+#include "ui-texture.ceu"
+
+input void SDL_REDRAW;
+input int  SDL_DT;
+input void SDL_QUIT;
+input _SDL_KeyboardEvent* SDL_KEYDOWN;
+input _SDL_KeyboardEvent* SDL_KEYUP;
+
+native do
+    SDL_Renderer* REN = NULL;
+    int REN_W, REN_H;
+
+    enum {
+        OBJ_SHIP1 = 1,
+        OBJ_FIRE1,
+        OBJ_SHIP2,
+        OBJ_FIRE2,
+        OBJ_ROCK,
+        OBJ_rock
+    };
+    void* OBJS[30];
+    int OBJS_N = 0;
+
+end
+
+interface Object with
+    var int id;
+    var _SDL_Rect rect;
+    event Object* collided;
+end
+
+#include "objs.ceu"
+
+// SCREEN
+    var _SDL_Window* win;
+        finalize
+            win = _SDL_CreateWindow("Rocks!", 500, 400, 640, 480,
+                                    _SDL_WINDOW_SHOWN);
+        with
+            _SDL_DestroyWindow(win);
+        end
+    _SDL_GetWindowSize(win, &_REN_W, &_REN_H);
+
+    _REN = _SDL_CreateRenderer(win, -1, 0);
+    finalize with
+        _SDL_DestroyRenderer(_REN);
+    end
+
+// FONT
+    native do
+        TTF_Font* FONT;
+    end
+    _TTF_Init();
+        finalize with
+            _TTF_Quit();
+        end
+    _FONT = _TTF_OpenFont("fnts/vera.ttf", 20);
+        finalize with
+            _TTF_CloseFont(_FONT);
+        end
+    _assert(_FONT != null);
+
+// TEXS
+    native do
+        SDL_Texture* TEX_BG    = NULL;
+        SDL_Texture* TEX_SHIP1 = NULL;
+        SDL_Texture* TEX_SHIP2 = NULL;
+        SDL_Texture* TEX_ROCK  = NULL;
+        SDL_Texture* TEX_rock  = NULL;
+    end
+    _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
+    finalize with
+        _SDL_DestroyTexture(_TEX_BG);
+    end
+    _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
+    finalize with
+        _SDL_DestroyTexture(_TEX_SHIP1);
+    end
+    _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
+    finalize with
+        _SDL_DestroyTexture(_TEX_SHIP2);
+    end
+    _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
+    finalize with
+        _SDL_DestroyTexture(_TEX_ROCK);
+    end
+    _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
+    finalize with
+        _SDL_DestroyTexture(_TEX_rock);
+    end
+    _assert(_TEX_BG    != null);
+    _assert(_TEX_SHIP1 != null);
+    _assert(_TEX_SHIP2 != null);
+    _assert(_TEX_ROCK  != null);
+    _assert(_TEX_rock  != null);
+
+class Points with
+    var int v = 0;
+    var _SDL_Rect rect;
+do
+    var _SDL_Texture* tex;
+    var _char[10] str;
+    _sprintf(str, "%d", this.v);
+    finalize
+        tex = _SDL_text2texture(_REN, _FONT, str,
+                                    &_colors.white, null);
+    with
+        _SDL_DestroyTexture(tex);
+    end
+    var UITexture ui with
+        this.ren = _REN;
+        this.tex = tex;
+    end;
+    ui._go(&this.rect);
+    await FOREVER;
+end
+
+par/or do
+    await SDL_QUIT;
+with
+    every SDL_REDRAW do
+        _boxRGBA(_REN, 0,0, _REN_W,_REN_H, 0,0,0, 0xFF);
+    end
+with
+    var UITexture bg with
+        this.ren = _REN;
+        this.tex = _TEX_BG;
+    end;
+    var _SDL_Rect r;
+        r.x = _REN_W / 2;
+        r.y = _REN_H / 2;
+    bg._go(&r);
+
+    var int points1 = 0;
+    var int points2 = 0;
+
+    var _SDL_Rect r1;
+        r1.x = 50;
+        r1.y = _REN_H - 50;
+    var _SDL_Rect r2;
+        r2.x = _REN_W - 50;
+        r2.y = _REN_H - 50;
+
+    loop do
+    do
+        var Points pt1 with
+            this.v = points1;
+            this.rect = r1;
+        end;
+        var Points pt2 with
+            this.v = points2;
+            this.rect = r2;
+        end;
+
+        var Ship ship1 with
+            this.id = _OBJ_SHIP1;
+            this.tex = _TEX_SHIP1;
+            this.rect.x = 30;
+            this.rect.y = _REN_H/2;
+
+            this.lim_x1 = this.rect.w/2;
+            this.lim_x2 = _REN_W/2 - this.rect.w/2;
+            this.lim_y1 = this.rect.h/2;
+            this.lim_y2 = _REN_H - this.rect.h/2;
+
+            this.dir     = 1;
+            this.k_up    = _SDLK_w;
+            this.k_down  = _SDLK_s;
+            this.k_left  = _SDLK_a;
+            this.k_right = _SDLK_d;
+            this.k_fire  = _SDLK_z;
+        end;
+
+        var Ship ship2 with
+            this.id = _OBJ_SHIP2;
+            this.tex = _TEX_SHIP2;
+            this.rect.x = _REN_W - 30;
+            this.rect.y = _REN_H/2;
+
+            this.lim_x1 = _REN_W/2 + this.rect.w/2;
+            this.lim_x2 = _REN_W - this.rect.w/2;
+            this.lim_y1 = this.rect.h/2;
+            this.lim_y2 = _REN_H - this.rect.h/2;
+
+            this.dir     = -1;
+            this.k_up    = _SDLK_UP;
+            this.k_down  = _SDLK_DOWN;
+            this.k_left  = _SDLK_LEFT;
+            this.k_right = _SDLK_RIGHT;
+            this.k_fire  = _SDLK_SEMICOLON;
+        end;
+
+        par/or do
+            await ship1.ok_killed;
+            points2 = points2 + 1;
+        with
+            await ship2.ok_killed;
+            points1 = points1 + 1;
+        with
+            loop do
+                var int dt = 500 + _rand()%3000 ;
+                await (dt)ms;
+                spawn [10] RockBig;
+            end
+        with
+            every SDL_DT do
+                finalize with
+                    _OBJS_N = 0;
+                end
+                loop i, _OBJS_N do
+                    var Object* o1 = (Object*) _OBJS[i];
+                    _assert(o1 != null);
+
+                    loop j, _OBJS_N-i-1 do
+                        var Object* o2 = (Object*) _OBJS[i+1+j];
+                        _assert(o2 != null);
+
+                        var _SDL_Rect r1 = o1:rect;
+                            r1.x = r1.x - r1.w/2;
+                            r1.y = r1.y - r1.h/2;
+
+                        var _SDL_Rect r2 = o2:rect;
+                            r2.x = r2.x - r2.w/2;
+                            r2.y = r2.y - r2.h/2;
+
+                        if _SDL_HasIntersection(&r1, &r2) then
+
+                            // spawn 2 small rocks
+                            var _SDL_Rect* r = null;
+                            if o1:id == _OBJ_ROCK and
+                               o2:id <  _OBJ_ROCK then
+                                r = &r1;
+                            else/if o2:id == _OBJ_ROCK and
+                                    o1:id <  _OBJ_ROCK then
+                                r = &r2;
+                            end
+                            if r != null then
+                                spawn [10] RockSmall with
+                                    this.rect.x = r:x;
+                                    this.rect.y = r:y;
+                                end;
+                                spawn [10] RockSmall with
+                                    this.rect.x = r:x;
+                                    this.rect.y = r:y;
+                                end;
+                            end
+
+                            emit o1:collided => o2;
+                            emit o2:collided => o1;
+                        end
+                    end
+                end
+            end
+        end
+    end
+    end
+with
+    every SDL_REDRAW do
+        _SDL_RenderPresent(_REN);
+    end
+end
+
+return 0;
