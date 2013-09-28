@@ -250,7 +250,10 @@ end
 class RockSmall with
     interface Object;
     var int id = _OBJ_rock;
+    var int dir = 0;
 do
+    _assert(this.dir != 0);
+
     this.rect.w = 18;
     this.rect.h = 18;
 
@@ -260,12 +263,8 @@ do
         clip.w = this.rect.w;
         clip.h = this.rect.h;
 
-    var int vx = _rand()%75 + 1;
-    var int vy = _rand()%75 + 1;
-
-    if _rand() % 2 then
-        vx = -vx;
-    end
+    var int vx = (_rand()%75 + 1) * this.dir;
+    var int vy = (_rand()%75 + 1);
     if _rand() % 2 then
         vy = -vy;
     end

@@ -122,8 +122,8 @@ _srand(_time(null));
 
 par/or do
     await SDL_QUIT;
-with
-    #include "simul.ceu"
+//with
+    //#include "simul.ceu"
 with
     every SDL_REDRAW do
         _boxRGBA(_REN, 0,0, _REN_W,_REN_H, 0,0,0, 0xFF);
@@ -234,21 +234,30 @@ with
 
                             // spawn 2 small rocks
                             var _SDL_Rect* r = null;
+                            var int dir;
                             if o1:id == _OBJ_ROCK and
                                o2:id <  _OBJ_ROCK then
                                 r = &r1;
+                                if o2:id == _OBJ_FIRE1 then
+                                    dir = 1;
+                                end
                             else/if o2:id == _OBJ_ROCK and
                                     o1:id <  _OBJ_ROCK then
                                 r = &r2;
+                                if o1:id == _OBJ_FIRE2 then
+                                    dir = -1;
+                                end
                             end
                             if r != null then
                                 spawn [10] RockSmall with
                                     this.rect.x = r:x;
                                     this.rect.y = r:y;
+                                    this.dir    = dir;
                                 end;
                                 spawn [10] RockSmall with
                                     this.rect.x = r:x;
                                     this.rect.y = r:y;
+                                    this.dir    = dir;
                                 end;
                             end
 
