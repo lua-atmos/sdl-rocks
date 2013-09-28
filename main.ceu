@@ -118,8 +118,12 @@ do
     await FOREVER;
 end
 
+_srand(_time(null));
+
 par/or do
     await SDL_QUIT;
+with
+    #include "simul.ceu"
 with
     every SDL_REDRAW do
         _boxRGBA(_REN, 0,0, _REN_W,_REN_H, 0,0,0, 0xFF);

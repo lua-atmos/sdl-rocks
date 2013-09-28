@@ -7,7 +7,7 @@ native _char  = 1,
 native constant _stderr;
 native _assert();
 native nohold _sprintf(), _fprintf(), _printf();
-native nohold _free();
+native nohold _free(), _srand();
 native _malloc();
 
 native pure
