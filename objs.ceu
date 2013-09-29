@@ -42,8 +42,7 @@ class Ship with
     var int lim_x1, lim_x2, lim_y1, lim_y2;
 
     var int dir;
-    var int k_up, k_down, k_left, k_right;
-    var int k_fire;
+    var Controller* controller;
 
     event void ok_killed;
 do
@@ -61,38 +60,14 @@ do
     this.lim_y1 = this.lim_y1 * 1000;
     this.lim_y2 = this.lim_y2 * 1000;
 
-    var int sx=this.rect.x*1000, vx=0, ax=0;
-    var int sy=this.rect.y*1000, vy=0, ay=0;
+    var int sx=this.rect.x*1000, vx=0;
+    var int sy=this.rect.y*1000, vy=0;
 
     par/or do
-        var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYDOWN do
-            if key:keysym.sym == this.k_up then
-                ay = -500;
-            else/if key:keysym.sym == this.k_down then
-                ay =  500;
-            else/if key:keysym.sym == this.k_left then
-                ax = -500;
-            else/if key:keysym.sym == this.k_right then
-                ax =  500;
-            end
-        end
-    with
-        var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYUP do
-            if key:keysym.sym == this.k_up
-            or key:keysym.sym == this.k_down then
-                ay = 0;
-            else/if key:keysym.sym == this.k_left
-                 or key:keysym.sym == this.k_right then
-                ax = 0;
-            end
-        end
-    with
         var int dt;
         every dt=SDL_DT do
-            vx = vx + ax*dt/1000;
-            vy = vy + ay*dt/1000;
+            vx = vx + (this.controller:ax * dt / 1000);
+            vy = vy + (this.controller:ay * dt / 1000);
             if vx> 3000 then vx= 3000; end
             if vx<-3000 then vx=-3000; end
             if vy> 3000 then vy= 3000; end
@@ -124,11 +99,11 @@ do
         end
     with
         every SDL_REDRAW do
-            if ay > 0 then
+            if this.controller:ay > 0 then
                 clip.y = this.rect.w*3;
-            else/if ay < 0 then
+            else/if this.controller:ay < 0 then
                 clip.y = this.rect.w*2;
-            else/if ax*this.dir < 0 then
+            else/if this.controller:ax * this.dir < 0 then
                 clip.y = 0;
             else
                 clip.y = this.rect.w*1;
@@ -142,15 +117,12 @@ do
         end
     with
         do
-            var _SDL_KeyboardEvent* key;
-            every key = SDL_KEYDOWN do
-                if key:keysym.sym == this.k_fire then
-                    spawn[3] Fire with
-                        this.id   = id + 1;
-                        this.dir  = dir;
-                        this.rect = rect;
-                    end;
-                end
+            every this.controller:ok_fired do
+                spawn[3] Fire with
+                    this.id   = id + 1;
+                    this.dir  = dir;
+                    this.rect = rect;
+                end;
             end
         end
     with
