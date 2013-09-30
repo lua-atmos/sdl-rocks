@@ -1,5 +1,13 @@
+62/
+
 *.swp
 _ceu_*
+
+assets/
+bin/
+obj/
+gen/
+jni/
 
 # Object files
 *.o

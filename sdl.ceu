@@ -97,17 +97,24 @@ native nohold _SDL_GL_BindTexture(),
               _TTF_SizeText(),
               _Mix_LoadWAV(),
               _Mix_FreeChunk(),
+              _Mix_FreeMusic(),
               _Mix_PlayChannel(),
+              _Mix_PlayMusic(),
               _Mix_Playing(),
               _Mix_CloseAudio(),
               _Mix_OpenAudio();
 
-native nohold _SDL_Rect_vs_Mouse();
+native nohold _SDL_Rect_vs_Mouse(),
+              _SDL_Rect_vs_Touch();
 
 native do
     int SDL_Rect_vs_Mouse (SDL_Rect* r, SDL_MouseButtonEvent* but) {
         return (but->x >= r->x) && (but->x <= r->x+r->w)
             && (but->y >= r->y) && (but->y <= r->y+r->h);
+    }
+    int SDL_Rect_vs_Touch (SDL_Rect* r, SDL_TouchFingerEvent* tch) {
+        return (tch->x >= r->x) && (tch->x <= r->x+r->w)
+            && (tch->y >= r->y) && (tch->y <= r->y+r->h);
     }
 end
 

@@ -1,0 +1,88 @@
+class KeyController with
+    interface Controller;
+    var int k_up, k_down, k_left, k_right;
+    var int k_fire;
+do
+    par/or do
+        var _SDL_KeyboardEvent* key;
+        every key = SDL_KEYDOWN do
+            if key:keysym.sym == this.k_up then
+                this.ay = -500;
+            else/if key:keysym.sym == this.k_down then
+                this.ay =  500;
+            else/if key:keysym.sym == this.k_left then
+                this.ax = -500;
+            else/if key:keysym.sym == this.k_right then
+                this.ax =  500;
+            else/if key:keysym.sym == this.k_fire then
+                emit this.ok_fired;
+            end
+        end
+    with
+        var _SDL_KeyboardEvent* key;
+        every key = SDL_KEYUP do
+            if key:keysym.sym == this.k_up
+            or key:keysym.sym == this.k_down then
+                this.ay = 0;
+            else/if key:keysym.sym == this.k_left
+                 or key:keysym.sym == this.k_right then
+                this.ax = 0;
+            end
+        end
+    end
+end
+
+input _SDL_TouchFingerEvent* SDL_FINGERMOTION;
+input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
+
+class TouchController with
+    interface Controller;
+    var int move_x, move_y, move_d;
+    var int fire_x, fire_y, fire_d;
+do
+    var _SDL_Rect move_r;
+        move_r.x = move_x - move_d/2;
+        move_r.y = move_y - move_d/2;
+        move_r.w = move_d;
+        move_r.h = move_d;
+
+    var _SDL_Rect fire_r;
+        fire_r.x = fire_x - fire_d/2;
+        fire_r.y = fire_y - fire_d/2;
+        fire_r.w = fire_d;
+        fire_r.h = fire_d;
+
+    par do
+        // move
+        var _SDL_TouchFingerEvent* e;
+        every e = SDL_FINGERMOTION do
+            if _SDL_Rect_vs_Touch(&move_r, e) then
+                if e:x < move_x then
+                    this.ax = -1;
+                else
+                    this.ax =  1;
+                end
+                if e:y < move_y then
+                    this.ay = -1;
+                else
+                    this.ay =  1;
+                end
+            end
+        end
+    with
+        // fire
+        var _SDL_TouchFingerEvent* e;
+        every e = SDL_FINGERDOWN do
+            if _SDL_Rect_vs_Touch(&fire_r, e) then
+                emit this.ok_fired;
+            end
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(_REN, this.move_x,this.move_y, this.move_d,
+                                    0xFF,0x00,0x00,0x33);
+            _filledCircleRGBA(_REN, this.fire_x,this.fire_y, this.fire_d,
+                                    0xFF,0x00,0x00,0x33);
+        end
+    end
+end

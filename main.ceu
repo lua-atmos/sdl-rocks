@@ -3,6 +3,8 @@
 #include "colors.ceu"
 #include "ui-texture.ceu"
 
+_printf("1\n");
+
 input void SDL_REDRAW;
 input int  SDL_DT;
 input void SDL_QUIT;
@@ -40,20 +42,27 @@ end
     finalize with
         _SDL_DestroyRenderer(_REN);
     end
+_printf("2\n");
 
 // FONT
+/*
     native do
         TTF_Font* FONT;
     end
     _TTF_Init();
+_printf("A\n");
         finalize with
             _TTF_Quit();
         end
     _FONT = _TTF_OpenFont("fnts/vera.ttf", 20);
+_printf("B\n");
         finalize with
             _TTF_CloseFont(_FONT);
         end
     _assert(_FONT != null);
+*/
+
+_printf("3\n");
 
 // TEXS
     native do
@@ -63,31 +72,55 @@ end
         SDL_Texture* TEX_ROCK  = NULL;
         SDL_Texture* TEX_rock  = NULL;
     end
+_printf("a\n");
     _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
-    finalize with
-        _SDL_DestroyTexture(_TEX_BG);
-    end
+_printf("b\n");
+        finalize with
+            _SDL_DestroyTexture(_TEX_BG);
+        end
+_printf("c\n");
     _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_SHIP1);
-    end
+        finalize with
+            _SDL_DestroyTexture(_TEX_SHIP1);
+        end
     _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_SHIP2);
-    end
+        finalize with
+            _SDL_DestroyTexture(_TEX_SHIP2);
+        end
+_printf("d\n");
     _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_ROCK);
-    end
+        finalize with
+            _SDL_DestroyTexture(_TEX_ROCK);
+        end
     _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_rock);
-    end
+        finalize with
+            _SDL_DestroyTexture(_TEX_rock);
+        end
     _assert(_TEX_BG    != null);
     _assert(_TEX_SHIP1 != null);
     _assert(_TEX_SHIP2 != null);
     _assert(_TEX_ROCK  != null);
     _assert(_TEX_rock  != null);
+_printf("4\n");
+
+// SNDS
+    _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
+        finalize with
+            _Mix_CloseAudio();            // TODO: slow
+        end
+
+    native do
+        Mix_Music* SND_BG = NULL;
+    end
+    _SND_BG = _Mix_LoadMUS("snds/space_sprinkles.mp3");
+        finalize with
+            _Mix_FreeMusic(_SND_BG);
+        end
+        //_assert(_SND_BG != null);
+
+    //_Mix_PlayMusic(_SND_BG, -1);
+    //_Mix_HaltMusic();
+_printf("5\n");
 
 class Points with
     var int v = 0;
@@ -96,6 +129,7 @@ do
     var _SDL_Texture* tex;
     var _char[10] str;
     _sprintf(str, "%d", this.v);
+/*
     finalize
         tex = _SDL_text2texture(_REN, _FONT, str,
                                     &_colors.white, null);
@@ -107,6 +141,7 @@ do
         this.tex = tex;
     end;
     ui._go(&this.rect);
+*/
     await FOREVER;
 end
 
@@ -117,39 +152,7 @@ interface Controller with
     event void ok_fired;
 end
 
-class KeyController with
-    interface Controller;
-    var int k_up, k_down, k_left, k_right;
-    var int k_fire;
-do
-    par/or do
-        var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYDOWN do
-            if key:keysym.sym == this.k_up then
-                this.ay = -500;
-            else/if key:keysym.sym == this.k_down then
-                this.ay =  500;
-            else/if key:keysym.sym == this.k_left then
-                this.ax = -500;
-            else/if key:keysym.sym == this.k_right then
-                this.ax =  500;
-            else/if key:keysym.sym == this.k_fire then
-                emit this.ok_fired;
-            end
-        end
-    with
-        var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYUP do
-            if key:keysym.sym == this.k_up
-            or key:keysym.sym == this.k_down then
-                this.ay = 0;
-            else/if key:keysym.sym == this.k_left
-                 or key:keysym.sym == this.k_right then
-                this.ax = 0;
-            end
-        end
-    end
-end
+#include "controllers.ceu"
 
 interface Object with
     var int id;
@@ -198,6 +201,16 @@ with
             this.rect = r2;
         end;
 
+#ifndef __ANDROID__
+        var TouchController controller1 with
+            this.move_x = _REN_W / 10;
+            this.move_y = _REN_H /  5;
+            this.move_d = _REN_H / 10;
+            this.fire_x = _REN_W / 10;
+            this.fire_y = _REN_H - _REN_H/5;
+            this.fire_d = _REN_H / 20;
+        end;
+#else
         var KeyController controller1 with
             this.k_up    = _SDLK_w;
             this.k_down  = _SDLK_s;
@@ -205,6 +218,7 @@ with
             this.k_right = _SDLK_d;
             this.k_fire  = _SDLK_z;
         end;
+#endif
 
         var Ship ship1 with
             this.id = _OBJ_SHIP1;
@@ -221,6 +235,16 @@ with
             this.controller = &controller1;
         end;
 
+#ifndef __ANDROID__
+        var TouchController controller2 with
+            this.move_x = _REN_W - _REN_W/10;
+            this.move_y = _REN_H - _REN_H/ 5;
+            this.move_d = _REN_H / 10;
+            this.fire_x = _REN_W - _REN_W/10;
+            this.fire_y = _REN_H / 5;
+            this.fire_d = _REN_H / 20;
+        end;
+#else
         var KeyController controller2 with
             this.k_up    = _SDLK_UP;
             this.k_down  = _SDLK_DOWN;
@@ -228,6 +252,7 @@ with
             this.k_right = _SDLK_RIGHT;
             this.k_fire  = _SDLK_SEMICOLON;
         end;
+#endif
 
         var Ship ship2 with
             this.id = _OBJ_SHIP2;
