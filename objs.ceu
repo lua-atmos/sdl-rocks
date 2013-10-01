@@ -60,12 +60,7 @@ do
                            0x77,0x77,0x77,0xFF);
         end
     with
-        var Object* obj;
-        every obj = this.collided do
-            if obj:id != this.id-1 then
-                break;
-            end
-        end
+        await go_kill;
     end
 end
 
@@ -99,10 +94,10 @@ do
         every dt=SDL_DT do
             vx = vx + this.controller:ax*dt;
             vy = vy + this.controller:ay*dt;
-            if vx> _REN_W/5 then vx= _REN_W/5; end
-            if vx<-_REN_W/5 then vx=-_REN_W/5; end
-            if vy> _REN_H/5 then vy= _REN_H/5; end
-            if vy<-_REN_H/5 then vy=-_REN_H/5; end
+            if vx> _REN_W/10 then vx= _REN_W/10; end
+            if vx<-_REN_W/10 then vx=-_REN_W/10; end
+            if vy> _REN_H/10 then vy= _REN_H/10; end
+            if vy<-_REN_H/10 then vy=-_REN_H/10; end
 
             sx = sx + vx*dt/1000;
             sy = sy + vy*dt/1000;
@@ -161,13 +156,7 @@ do
 #ifdef SDL_SIMUL
         await 10min;
 #endif
-        var Object* obj;
-        every obj = this.collided do
-            if  obj:id != this.id
-            and obj:id != this.id+1 then
-                break;
-            end
-        end
+        await go_kill;
     end
 
     emit ok_killed;
@@ -226,12 +215,7 @@ do
             _SDL_RenderCopy(_REN, _TEX_ROCK, &clip, &r);
         end
     with
-        var Object* obj;
-        every obj = this.collided do
-            if obj:id < _OBJ_ROCK then
-                break;
-            end
-        end
+        await go_kill;
     end
 end
 
@@ -285,11 +269,47 @@ do
             _SDL_RenderCopy(_REN, _TEX_rock, &clip, &r);
         end
     with
-        var Object* obj;
-        every obj = this.collided do
-            if obj:id < _OBJ_ROCK then
-                break;
-            end
+        await go_kill;
+    end
+end
+
+class BonusLife with
+    interface Object;
+    var int id = _OBJ_BONUS_LIFE;
+    var int dir = 0;
+do
+    _assert(this.dir != 0);
+
+    // TODO: 10 hardcoded
+    this.rect.w = 10;
+    this.rect.h = 10;
+
+    // TODO: 75 hardcoded
+    var _float vx = (_rand()%75 + 1) * this.dir;
+    var _float vy = (_rand()%75 + 1);
+    if _rand() % 2 then
+        vy = -vy;
+    end
+
+    par/or do
+        var Object* obj = &this;
+        var ObjectMove move with
+            this.obj = obj;
+            this.vx  = vx;
+            this.vy  = vy;
+        end;
+        await move.ok;
+    with
+        every SDL_REDRAW do
+            var _SDL_Rect r;
+                r.x = this.rect.x - this.rect.w/2;
+                r.y = this.rect.y - this.rect.h/2;
+                r.w = this.rect.w;
+                r.h = this.rect.h;
+            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+                                    0x00,0x77,0x00,0xFF);
         end
+    with
+        await go_kill;
     end
 end

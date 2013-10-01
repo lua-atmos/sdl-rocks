@@ -9,21 +9,34 @@ input void SDL_QUIT;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 input _SDL_KeyboardEvent* SDL_KEYUP;
 
+native nohold _getVS();
 native do
     SDL_Renderer* REN = NULL;
     int REN_W, REN_H;
 
     enum {
-        OBJ_SHIP1 = 1,
+        OBJ_SHIP1 = 0,
         OBJ_FIRE1,
         OBJ_SHIP2,
         OBJ_FIRE2,
         OBJ_ROCK,
-        OBJ_rock
+        OBJ_rock,
+        OBJ_BONUS_LIFE,
+        OBJ_MAX
     };
+
+    char idVSid[OBJ_MAX][OBJ_MAX] = {
+        { 0, 0, 1, 1, 1, 1, 0 },    // SHIP1
+        { 0, 0, 1, 1, 1, 1, 1 },    // FIRE1
+        { 1, 1, 0, 0, 1, 1, 0 },    // SHIP2
+        { 1, 1, 0, 0, 1, 1, 1 },    // FIRE2
+        { 1, 1, 1, 1, 0, 0, 0 },    // ROCK
+        { 1, 1, 1, 1, 0, 0, 0 },    // rock
+        { 1, 1, 1, 1, 0, 0, 0 },    // BONUS_LIFE
+    };
+
     void* OBJS[30];
     int OBJS_N = 0;
-
 end
 
 // SCREEN
@@ -113,22 +126,27 @@ end
 class Points with
     var int v = 0;
     var _SDL_Rect rect;
+    event void inc;
 do
-    var _SDL_Texture* tex;
-    var _char[10] str;
-    _sprintf(str, "%d", this.v);
-    finalize
-        tex = _SDL_text2texture(_REN, _FONT, str,
-                                    &_colors.white, null);
-    with
-        _SDL_DestroyTexture(tex);
+    loop do
+        var _SDL_Texture* tex;
+        var _char[10] str;
+        _sprintf(str, "%d", this.v);
+        finalize
+            tex = _SDL_text2texture(_REN, _FONT, str,
+                                        &_colors.white, null);
+        with
+            _SDL_DestroyTexture(tex);
+        end
+        var UITexture ui with
+            this.ren = _REN;
+            this.tex = tex;
+        end;
+        ui._go(&this.rect);
+
+        await this.inc;
+        this.v = v + 1;
     end
-    var UITexture ui with
-        this.ren = _REN;
-        this.tex = tex;
-    end;
-    ui._go(&this.rect);
-    await FOREVER;
 end
 
 _srand(_time(null));
@@ -143,7 +161,23 @@ end
 interface Object with
     var int id;
     var _SDL_Rect rect;
-    event Object* collided;
+    event void go_kill;
+    native do
+        int getVS (int id, CEU_Object** o1, CEU_Object** o2) {
+            if (*_CEU_Object_id(*o1) == id) {
+                return 1;
+            } else if (*_CEU_Object_id(*o2) == id) {
+                CEU_Object* tmp = *o1;
+                *o1 = *o2;
+                *o2 = tmp;
+                return 1;
+            } else {
+                *o1 = NULL;
+                *o2 = NULL;
+                return 0;
+            }
+        }
+    end
 end
 
 #include "objs.ceu"
@@ -166,27 +200,22 @@ with
         r.y = _REN_H / 2;
     bg._go(&r);
 
-    var int points1 = 0;
-    var int points2 = 0;
-
     var _SDL_Rect r1;
         r1.x = 50;
         r1.y = _REN_H - 50;
+    var Points points1 with
+        this.rect = r1;
+    end;
+
     var _SDL_Rect r2;
         r2.x = _REN_W - 50;
         r2.y = _REN_H - 50;
+    var Points points2 with
+        this.rect = r2;
+    end;
 
     loop do
     do
-        var Points pt1 with
-            this.v = points1;
-            this.rect = r1;
-        end;
-        var Points pt2 with
-            this.v = points2;
-            this.rect = r2;
-        end;
-
 #ifdef __ANDROID__
         var TouchController controller1 with
             this.move_r.x = 0;
@@ -261,10 +290,10 @@ with
 
         par/or do
             await ship1.ok_killed;
-            points2 = points2 + 1;
+            emit points2.inc;
         with
             await ship2.ok_killed;
-            points1 = points1 + 1;
+            emit points1.inc;
         with
             loop do
                 var int dt = 500 + _rand()%3000 ;
@@ -293,40 +322,60 @@ with
                             r2.y = r2.y - r2.h/2;
 
                         if _SDL_HasIntersection(&r1, &r2) then
+                            var Object* oo1;
+                            var Object* oo2;
 
-                            // spawn 2 small rocks
-                            var _SDL_Rect* r = null;
-                            var int oth_id;
-                            if o1:id == _OBJ_ROCK and
-                               o2:id <  _OBJ_ROCK then
-                                r = &r1;
-                                oth_id = o2:id;
-                            else/if o2:id == _OBJ_ROCK and
-                                    o1:id <  _OBJ_ROCK then
-                                r = &r2;
-                                oth_id = o1:id;
-                            end
-                            if r != null then
+                            // BigRock vs Fire:
+                            //  - 70%: spawn 2 small rocks
+                            //  - 30%: spawn 1-up
+                            oo1 = o1;
+                            oo2 = o2;
+                            if _getVS(_OBJ_ROCK, &oo1, &oo2) and
+                               (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
                                 var int dir;
-                                if oth_id == _OBJ_FIRE1 then
+                                if oo2:id == _OBJ_FIRE1 then
                                     dir =  1;
                                 else
                                     dir = -1;
                                 end
-                                spawn [10] RockSmall with
-                                    this.rect.x = r:x;
-                                    this.rect.y = r:y;
-                                    this.dir    = dir;
-                                end;
-                                spawn [10] RockSmall with
-                                    this.rect.x = r:x;
-                                    this.rect.y = r:y;
-                                    this.dir    = dir;
-                                end;
+                                var int pct = _rand() % 100;
+                                if pct < 70 then
+                                    loop i,2 do
+                                        spawn [20] RockSmall with
+                                            this.rect.x = oo2:rect.x;
+                                            this.rect.y = oo2:rect.y;
+                                            this.dir    = dir;
+                                        end;
+                                    end
+                                else
+                                    spawn [2] BonusLife with
+                                        this.rect.x = oo2:rect.x;
+                                        this.rect.y = oo2:rect.y;
+                                        this.dir    = -dir;
+                                    end;
+                                end
                             end
 
-                            emit o1:collided => o2;
-                            emit o2:collided => o1;
+                            // BonusLife vs Ship: points++
+                            oo1 = o1;
+                            oo2 = o2;
+                            if _getVS(_OBJ_BONUS_LIFE, &oo1, &oo2) then
+                                if oo2:id == _OBJ_SHIP1 then
+                                    emit points1.inc;
+                                else/if oo2:id == _OBJ_SHIP2 then
+                                    emit points2.inc;
+                                end
+                            end
+
+                            // "go_kill" must be in the end
+                            var int id1 = o1:id;
+                            var int id2 = o2:id;
+                            if _idVSid[id1][id2] then
+                                emit o1:go_kill;
+                            end
+                            if _idVSid[id2][id1] then
+                                emit o2:go_kill;
+                            end
                         end
                     end
                 end
