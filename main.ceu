@@ -3,8 +3,6 @@
 #include "colors.ceu"
 #include "ui-texture.ceu"
 
-_printf("1\n");
-
 input void SDL_REDRAW;
 input int  SDL_DT;
 input void SDL_QUIT;
@@ -42,27 +40,21 @@ end
     finalize with
         _SDL_DestroyRenderer(_REN);
     end
-_printf("2\n");
 
 // FONT
-/*
     native do
         TTF_Font* FONT;
     end
     _TTF_Init();
-_printf("A\n");
         finalize with
             _TTF_Quit();
         end
     _FONT = _TTF_OpenFont("fnts/vera.ttf", 20);
-_printf("B\n");
         finalize with
             _TTF_CloseFont(_FONT);
         end
     _assert(_FONT != null);
-*/
 
-_printf("3\n");
 
 // TEXS
     native do
@@ -72,13 +64,10 @@ _printf("3\n");
         SDL_Texture* TEX_ROCK  = NULL;
         SDL_Texture* TEX_rock  = NULL;
     end
-_printf("a\n");
     _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
-_printf("b\n");
         finalize with
             _SDL_DestroyTexture(_TEX_BG);
         end
-_printf("c\n");
     _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
         finalize with
             _SDL_DestroyTexture(_TEX_SHIP1);
@@ -87,7 +76,6 @@ _printf("c\n");
         finalize with
             _SDL_DestroyTexture(_TEX_SHIP2);
         end
-_printf("d\n");
     _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
         finalize with
             _SDL_DestroyTexture(_TEX_ROCK);
@@ -101,7 +89,6 @@ _printf("d\n");
     _assert(_TEX_SHIP2 != null);
     _assert(_TEX_ROCK  != null);
     _assert(_TEX_rock  != null);
-_printf("4\n");
 
 // SNDS
     _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
@@ -109,6 +96,7 @@ _printf("4\n");
             _Mix_CloseAudio();            // TODO: slow
         end
 
+/*
     native do
         Mix_Music* SND_BG = NULL;
     end
@@ -116,11 +104,11 @@ _printf("4\n");
         finalize with
             _Mix_FreeMusic(_SND_BG);
         end
-        //_assert(_SND_BG != null);
+        _assert(_SND_BG != null);
 
-    //_Mix_PlayMusic(_SND_BG, -1);
+    _Mix_PlayMusic(_SND_BG, -1);
     //_Mix_HaltMusic();
-_printf("5\n");
+*/
 
 class Points with
     var int v = 0;
@@ -129,7 +117,6 @@ do
     var _SDL_Texture* tex;
     var _char[10] str;
     _sprintf(str, "%d", this.v);
-/*
     finalize
         tex = _SDL_text2texture(_REN, _FONT, str,
                                     &_colors.white, null);
@@ -141,7 +128,6 @@ do
         this.tex = tex;
     end;
     ui._go(&this.rect);
-*/
     await FOREVER;
 end
 
@@ -201,14 +187,16 @@ with
             this.rect = r2;
         end;
 
-#ifndef __ANDROID__
+#ifdef __ANDROID__
         var TouchController controller1 with
-            this.move_x = _REN_W / 10;
-            this.move_y = _REN_H /  5;
-            this.move_d = _REN_H / 10;
-            this.fire_x = _REN_W / 10;
-            this.fire_y = _REN_H - _REN_H/5;
-            this.fire_d = _REN_H / 20;
+            this.move_r.x = 0;
+            this.move_r.y = 0;
+            this.move_r.w = _REN_W/2;
+            this.move_r.h = _REN_H/2;
+            this.fire_r.x = 0;
+            this.fire_r.y = _REN_H/2;
+            this.fire_r.w = _REN_W/2;
+            this.fire_r.h = _REN_H/2;
         end;
 #else
         var KeyController controller1 with
@@ -235,14 +223,16 @@ with
             this.controller = &controller1;
         end;
 
-#ifndef __ANDROID__
+#ifdef __ANDROID__
         var TouchController controller2 with
-            this.move_x = _REN_W - _REN_W/10;
-            this.move_y = _REN_H - _REN_H/ 5;
-            this.move_d = _REN_H / 10;
-            this.fire_x = _REN_W - _REN_W/10;
-            this.fire_y = _REN_H / 5;
-            this.fire_d = _REN_H / 20;
+            this.move_r.x = _REN_W/2;
+            this.move_r.y = _REN_H/2;
+            this.move_r.w = _REN_W/2;
+            this.move_r.h = _REN_H/2;
+            this.fire_r.x = _REN_W/2;
+            this.fire_r.y = 0;
+            this.fire_r.w = _REN_W/2;
+            this.fire_r.h = _REN_H/2;
         end;
 #else
         var KeyController controller2 with

@@ -1,18 +1,28 @@
 class Fire with
     interface Object;
     var int dir;
+    var int vy;
 do
-    this.rect.w = 3;
+    // TODO: hardcoded
+    this.rect.w = 15;
     this.rect.h = 3;
 
     par/or do
         var int dt;
         var int sx = this.rect.x * 1000;
+        var int sy = this.rect.y * 1000;
         every dt=SDL_DT do
-            sx = sx + 200*dt * this.dir;
+            sx = sx + _REN_W/3*dt * this.dir;
             this.rect.x = sx / 1000;
             if this.rect.x < 0
             or this.rect.x > _REN_W then
+                break;
+            end
+
+            sy = sy + this.vy;
+            this.rect.y = sy / 1000;
+            if this.rect.y < 0
+            or this.rect.y > _REN_H then
                 break;
             end
 
@@ -22,8 +32,8 @@ do
         end
     with
         every SDL_REDRAW do
-            _filledCircleRGBA(_REN, rect.x,rect.y, rect.w,
-                                    0x77,0x77,0x77,0xFF);
+            _boxRGBA(_REN, rect.x,rect.y, rect.x+rect.w,rect.y+rect.h,
+                           0x77,0x77,0x77,0xFF);
         end
     with
         var Object* obj;
@@ -68,10 +78,10 @@ do
         every dt=SDL_DT do
             vx = vx + (this.controller:ax * dt / 1000);
             vy = vy + (this.controller:ay * dt / 1000);
-            if vx> 3000 then vx= 3000; end
-            if vx<-3000 then vx=-3000; end
-            if vy> 3000 then vy= 3000; end
-            if vy<-3000 then vy=-3000; end
+            if vx> _REN_W*3 then vx= _REN_W*3; end
+            if vx<-_REN_W*3 then vx=-_REN_W*3; end
+            if vy> _REN_H*3 then vy= _REN_H*3; end
+            if vy<-_REN_H*3 then vy=-_REN_H*3; end
 
             sx = sx + vx;
             sy = sy + vy;
@@ -93,6 +103,11 @@ do
             this.rect.x = sx/1000;
             this.rect.y = sy/1000;
 
+/*
+if this.id == _OBJ_SHIP1 then
+    _printf("%d :: %d :: %d\n", controller:ax, vx, this.rect.x);
+end
+*/
             // collisions
             _OBJS[_OBJS_N] = &this;
             _OBJS_N = _OBJS_N + 1;
@@ -110,6 +125,9 @@ do
             end
             var _SDL_Rect r;
                 r.x = this.rect.x - this.rect.w/2;
+if this.id == _OBJ_SHIP1 then
+    _printf("          :: %d\n", this.rect.x);
+end
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
@@ -121,6 +139,7 @@ do
                 spawn[3] Fire with
                     this.id   = id + 1;
                     this.dir  = dir;
+                    this.vy   = vy;
                     this.rect = rect;
                 end;
             end
@@ -154,8 +173,8 @@ do
         clip.w = this.rect.w;
         clip.h = this.rect.h;
 
-    var int vx = _rand()%150 + 1;
-    var int vy = _rand()%150 + 1;
+    var int vx = _rand()%(_REN_W/5) + 1;
+    var int vy = _rand()%(_REN_H/5) + 1;
 
     this.rect.x = _REN_W/3 + _rand()%_REN_W/3;
     if _rand() % 2 then
@@ -192,10 +211,8 @@ do
             _OBJS_N = _OBJS_N + 1;
         end
     with
-        var int v = vx * vy;
-        if v < 0 then
-            v = -v;
-        end
+        // TODO: hardcoded
+        var int v = vx*vx + vy*vy;
         var int dt = 500000 / v;
         every (dt)ms do
             clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
