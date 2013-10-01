@@ -117,7 +117,11 @@ int main (int argc, char *argv[])
         CEU_THREADS_MUTEX_UNLOCK(&CEU.threads_mutex);
 #endif
 
-        int has = SDL_WaitEventTimeout(&evt, tm);
+        int has;
+NEXT:
+        has = SDL_WaitEventTimeout(&evt, tm);
+        if (evt.type==SDL_FINGERMOTION && SDL_PollEvent(NULL))
+            goto NEXT;
 
 #ifdef CEU_THREADS
         CEU_THREADS_MUTEX_LOCK(&CEU.threads_mutex);
