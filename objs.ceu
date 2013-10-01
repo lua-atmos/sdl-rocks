@@ -301,13 +301,14 @@ do
         await move.ok;
     with
         every SDL_REDRAW do
-            var _SDL_Rect r;
-                r.x = this.rect.x - this.rect.w/2;
-                r.y = this.rect.y - this.rect.h/2;
-                r.w = this.rect.w;
-                r.h = this.rect.h;
             _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
                                     0x00,0x77,0x00,0xFF);
+
+            var _SDL_Rect r;
+                _SDL_QueryTexture(_TEX_BONUS_LIFE, null, null, &r.w, &r.h);
+                r.x =  _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
+                r.y =  _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
+            _SDL_RenderCopy(_REN, _TEX_BONUS_LIFE, null, &r);
         end
     with
         await go_kill;
