@@ -1,3 +1,42 @@
+/*
+ * Move the object with constant speed until it goes out of screen.
+ * (all objects, except "Ship")
+ */
+class ObjectMove with
+    var Object* obj = null;
+    var _float vx = 0;
+    var _float vy = 0;
+    event void ok;
+do
+    _assert(this.obj != null);
+
+    var _float sx = obj:rect.x;
+    var _float sy = obj:rect.y;
+
+    var int dt;
+    every dt=SDL_DT do
+        sx = sx + this.vx*dt/1000;
+        obj:rect.x = sx;
+        if obj:rect.x < 0
+        or obj:rect.x > _REN_W then
+            break;
+        end
+
+        sy = sy + this.vy*dt/1000;
+        obj:rect.y = sy;
+        if obj:rect.y < 0
+        or obj:rect.y > _REN_H then
+            break;
+        end
+
+        // collisions
+        _OBJS[_OBJS_N] = obj;     // TODO: bug (finalize)
+        _OBJS_N = _OBJS_N + 1;
+    end
+
+    emit this.ok;
+end
+
 class Fire with
     interface Object;
     var int dir;
@@ -8,28 +47,13 @@ do
     this.rect.h = 3;
 
     par/or do
-        var int dt;
-        var int sx = this.rect.x * 1000;
-        var int sy = this.rect.y * 1000;
-        every dt=SDL_DT do
-            sx = sx + _REN_W/3*dt * this.dir;
-            this.rect.x = sx / 1000;
-            if this.rect.x < 0
-            or this.rect.x > _REN_W then
-                break;
-            end
-
-            sy = sy + this.vy;
-            this.rect.y = sy / 1000;
-            if this.rect.y < 0
-            or this.rect.y > _REN_H then
-                break;
-            end
-
-            // collisions
-            _OBJS[_OBJS_N] = &this;     // TODO: bug (finalize)
-            _OBJS_N = _OBJS_N + 1;
-        end
+        var Object* obj = &this;
+        var ObjectMove move with
+            this.obj = obj;
+            this.vx  = _REN_W/3 * dir;
+            this.vy  = vy;
+        end;
+        await move.ok;
     with
         every SDL_REDRAW do
             _boxRGBA(_REN, rect.x,rect.y, rect.x+rect.w,rect.y+rect.h,
@@ -65,26 +89,23 @@ do
         clip.w = 30;
         clip.h = 30;
 
-    this.lim_x1 = this.lim_x1 * 1000;
-    this.lim_x2 = this.lim_x2 * 1000;
-    this.lim_y1 = this.lim_y1 * 1000;
-    this.lim_y2 = this.lim_y2 * 1000;
-
-    var int sx=this.rect.x*1000, vx=0;
-    var int sy=this.rect.y*1000, vy=0;
+    var _float sx = this.rect.x;
+    var _float vx = 0;
+    var _float sy = this.rect.y;
+    var _float vy = 0;
 
     par/or do
         var int dt;
         every dt=SDL_DT do
-            vx = vx + (this.controller:ax * dt / 1000);
-            vy = vy + (this.controller:ay * dt / 1000);
-            if vx> _REN_W*3 then vx= _REN_W*3; end
-            if vx<-_REN_W*3 then vx=-_REN_W*3; end
-            if vy> _REN_H*3 then vy= _REN_H*3; end
-            if vy<-_REN_H*3 then vy=-_REN_H*3; end
+            vx = vx + this.controller:ax*dt;
+            vy = vy + this.controller:ay*dt;
+            if vx> _REN_W/5 then vx= _REN_W/5; end
+            if vx<-_REN_W/5 then vx=-_REN_W/5; end
+            if vy> _REN_H/5 then vy= _REN_H/5; end
+            if vy<-_REN_H/5 then vy=-_REN_H/5; end
 
-            sx = sx + vx;
-            sy = sy + vy;
+            sx = sx + vx*dt/1000;
+            sy = sy + vy*dt/1000;
             if sx < this.lim_x1 then
                 sx = this.lim_x1;
                 vx = 0;
@@ -100,14 +121,9 @@ do
                 vy = 0;
             end
 
-            this.rect.x = sx/1000;
-            this.rect.y = sy/1000;
+            this.rect.x = sx;
+            this.rect.y = sy;
 
-/*
-if this.id == _OBJ_SHIP1 then
-    _printf("%d :: %d :: %d\n", controller:ax, vx, this.rect.x);
-end
-*/
             // collisions
             _OBJS[_OBJS_N] = &this;
             _OBJS_N = _OBJS_N + 1;
@@ -125,9 +141,6 @@ end
             end
             var _SDL_Rect r;
                 r.x = this.rect.x - this.rect.w/2;
-if this.id == _OBJ_SHIP1 then
-    _printf("          :: %d\n", this.rect.x);
-end
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
@@ -173,8 +186,8 @@ do
         clip.w = this.rect.w;
         clip.h = this.rect.h;
 
-    var int vx = _rand()%(_REN_W/5) + 1;
-    var int vy = _rand()%(_REN_H/5) + 1;
+    var _float vx = _rand()%(_REN_W/5) + 1;
+    var _float vy = _rand()%(_REN_H/5) + 1;
 
     this.rect.x = _REN_W/3 + _rand()%_REN_W/3;
     if _rand() % 2 then
@@ -189,27 +202,13 @@ do
 
     par/or do
         await 1s;
-
-        var int sx = this.rect.x * 1000;
-        var int sy = this.rect.y * 1000;
-        var int dt;
-        every dt=SDL_DT do
-            sx = sx + vx*dt;
-            sy = sy + vy*dt;
-            this.rect.x = sx / 1000;
-            this.rect.y = sy / 1000;
-
-            if this.rect.x < 0
-            or this.rect.x > _REN_W
-            or this.rect.y < 0
-            or this.rect.y > _REN_H then
-                break;
-            end
-
-            // collisions
-            _OBJS[_OBJS_N] = &this;
-            _OBJS_N = _OBJS_N + 1;
-        end
+        var Object* obj = &this;
+        var ObjectMove move with
+            this.obj = obj;
+            this.vx  = vx;
+            this.vy  = vy;
+        end;
+        await move.ok;
     with
         // TODO: hardcoded
         var int v = vx*vx + vy*vy;
@@ -252,33 +251,21 @@ do
         clip.w = this.rect.w;
         clip.h = this.rect.h;
 
-    var int vx = (_rand()%75 + 1) * this.dir;
-    var int vy = (_rand()%75 + 1);
+    // TODO: 75 hardcoded
+    var _float vx = (_rand()%75 + 1) * this.dir;
+    var _float vy = (_rand()%75 + 1);
     if _rand() % 2 then
         vy = -vy;
     end
 
     par/or do
-        var int sx = this.rect.x * 1000;
-        var int sy = this.rect.y * 1000;
-        var int dt;
-        every dt=SDL_DT do
-            sx = sx + vx*dt;
-            sy = sy + vy*dt;
-            this.rect.x = sx / 1000;
-            this.rect.y = sy / 1000;
-
-            if this.rect.x < 0
-            or this.rect.x > _REN_W
-            or this.rect.y < 0
-            or this.rect.y > _REN_H then
-                break;
-            end
-
-            // collisions
-            _OBJS[_OBJS_N] = &this;
-            _OBJS_N = _OBJS_N + 1;
-        end
+        var Object* obj = &this;
+        var ObjectMove move with
+            this.obj = obj;
+            this.vx  = vx;
+            this.vy  = vy;
+        end;
+        await move.ok;
     with
         var int v = vx * vy;
         if v < 0 then

@@ -134,7 +134,7 @@ end
 _srand(_time(null));
 
 interface Controller with
-    var int ax, ay;
+    var _float ax, ay;
     event void ok_fired;
 end
 
