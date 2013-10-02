@@ -15,9 +15,10 @@ native do
     int REN_W, REN_H;
 
     enum {
-        OBJ_SHIP1 = 0,
-        OBJ_FIRE1,
+        OBJ_NULL = 0,
+        OBJ_SHIP1,
         OBJ_SHIP2,
+        OBJ_FIRE1,
         OBJ_FIRE2,
         OBJ_ROCK,
         OBJ_rock,
@@ -26,13 +27,14 @@ native do
     };
 
     char idVSid[OBJ_MAX][OBJ_MAX] = {
-        { 0, 0, 1, 1, 1, 1, 0 },    // SHIP1
-        { 0, 0, 1, 1, 1, 1, 1 },    // FIRE1
-        { 1, 1, 0, 0, 1, 1, 0 },    // SHIP2
-        { 1, 1, 0, 0, 1, 1, 1 },    // FIRE2
-        { 1, 1, 1, 1, 0, 0, 0 },    // ROCK
-        { 1, 1, 1, 1, 0, 0, 0 },    // rock
-        { 1, 1, 1, 1, 0, 0, 0 },    // BONUS_LIFE
+        { 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
+        { 0, 0, 1, 0, 1, 1, 1, 0 },    // SHIP1
+        { 0, 1, 0, 1, 0, 1, 1, 0 },    // SHIP2
+        { 0, 0, 1, 0, 1, 1, 1, 1 },    // FIRE1
+        { 0, 1, 0, 1, 0, 1, 1, 1 },    // FIRE2
+        { 0, 1, 1, 1, 1, 0, 0, 0 },    // ROCK
+        { 0, 1, 1, 1, 1, 0, 0, 0 },    // rock
+        { 0, 1, 1, 1, 1, 0, 0, 0 },    // BONUS_LIFE
     };
 
     void* OBJS[30];
@@ -309,7 +311,7 @@ with
             emit points1.inc;
         with
             loop do
-                var int dt = 500 + _rand()%3000 ;
+                var int dt = 500 + _rand()%2000;
                 await (dt)ms;
                 spawn [10] RockBig;
             end

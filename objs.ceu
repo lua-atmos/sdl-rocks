@@ -145,7 +145,7 @@ do
         do
             every this.controller:ok_fired do
                 spawn[3] Fire with
-                    this.id   = id + 1;
+                    this.id   = id + 2;
                     this.dir  = dir;
                     this.vy   = vy;
                     this.rect = rect;
@@ -190,7 +190,7 @@ do
     end
 
     par/or do
-        await 1s;
+        await (_rand() % 5000)ms;
         var Object* obj = &this;
         var ObjectMove move with
             this.obj = obj;
