@@ -67,26 +67,26 @@ do
                 with
                     var _SDL_TouchFingerEvent* e2;
                     every e2 = SDL_FINGERMOTION do
-                        // TODO: bug continue
                         // TODO: 20 hardcoded
-                        if e2:fingerId == id then
-                            var _SDL_Point pt2;
-                                pt2.x = e2:x * _REN_W;
-                                pt2.y = e2:y * _REN_H;
-                            if      pt2.x <= pt1.x-20 then
-                                this.ax = -(_float)_REN_W/5000;
-                            else/if pt2.x >= pt1.x+20 then
-                                this.ax =  (_float)_REN_W/5000;
-                            else
-                                this.ax =  0;
-                            end
-                            if      pt2.y <= pt1.y-20 then
-                                this.ay = -(_float)_REN_H/5000;
-                            else/if pt2.y >= pt1.y+20 then
-                                this.ay =  (_float)_REN_H/5000;
-                            else
-                                this.ay =  0;
-                            end
+                        if e2:fingerId != id then
+                            continue;
+                        end
+                        var _SDL_Point pt2;
+                            pt2.x = e2:x * _REN_W;
+                            pt2.y = e2:y * _REN_H;
+                        if      pt2.x <= pt1.x-20 then
+                            this.ax = -(_float)_REN_W/5000;
+                        else/if pt2.x >= pt1.x+20 then
+                            this.ax =  (_float)_REN_W/5000;
+                        else
+                            this.ax =  0;
+                        end
+                        if      pt2.y <= pt1.y-20 then
+                            this.ay = -(_float)_REN_H/5000;
+                        else/if pt2.y >= pt1.y+20 then
+                            this.ay =  (_float)_REN_H/5000;
+                        else
+                            this.ay =  0;
                         end
                     end
                 end

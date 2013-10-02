@@ -3,6 +3,11 @@
 #include "colors.ceu"
 #include "ui-texture.ceu"
 
+/* TODO:
+ * OBJ_BOMB[1,2] two-fingers tap
+ *  (fire: DOWN->UP for one finger)
+ */
+
 input void SDL_REDRAW;
 input int  SDL_DT;
 input void SDL_QUIT;
@@ -23,18 +28,20 @@ native do
         OBJ_ROCK,
         OBJ_rock,
         OBJ_BONUS_LIFE,
+        OBJ_BONUS_BOMB,
         OBJ_MAX
     };
 
     char idVSid[OBJ_MAX][OBJ_MAX] = {
-        { 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
-        { 0, 0, 1, 0, 1, 1, 1, 0 },    // SHIP1
-        { 0, 1, 0, 1, 0, 1, 1, 0 },    // SHIP2
-        { 0, 0, 1, 0, 1, 1, 1, 1 },    // FIRE1
-        { 0, 1, 0, 1, 0, 1, 1, 1 },    // FIRE2
-        { 0, 1, 1, 1, 1, 0, 0, 0 },    // ROCK
-        { 0, 1, 1, 1, 1, 0, 0, 0 },    // rock
-        { 0, 1, 1, 1, 1, 0, 0, 0 },    // BONUS_LIFE
+        { 0, 0, 0, 0, 0, 0, 0, 0, 1 },    // NULL
+        { 0, 0, 1, 0, 1, 1, 1, 0, 1 },    // SHIP1
+        { 0, 1, 0, 1, 0, 1, 1, 0, 1 },    // SHIP2
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1 },    // FIRE1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1 },    // FIRE2
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // ROCK
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // rock
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // BONUS_LIFE
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // BONUS_BOMB
     };
 
     void* OBJS[30];
@@ -52,9 +59,9 @@ end
     _SDL_GetWindowSize(win, &_REN_W, &_REN_H);
 
     _REN = _SDL_CreateRenderer(win, -1, 0);
-    finalize with
-        _SDL_DestroyRenderer(_REN);
-    end
+        finalize with
+            _SDL_DestroyRenderer(_REN);
+        end
 
 // FONT
     native do
@@ -85,6 +92,7 @@ end
         SDL_Texture* TEX_ROCK       = NULL;
         SDL_Texture* TEX_rock       = NULL;
         SDL_Texture* TEX_BONUS_LIFE = NULL;
+        SDL_Texture* TEX_BONUS_BOMB[5];
     end
     _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
         finalize with
@@ -111,12 +119,26 @@ end
         finalize with
             _SDL_DestroyTexture(_TEX_BONUS_LIFE);
         end
+    loop i, 5 do
+        var _char[5] str;
+        _sprintf(str, "%d", i+1);
+        _TEX_BONUS_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                               &_colors.white, null);
+    end
+        finalize with
+            loop i, 5 do
+                _SDL_DestroyTexture(_TEX_BONUS_BOMB[i]);
+            end
+        end
     _assert(_TEX_BG         != null);
     _assert(_TEX_SHIP1      != null);
     _assert(_TEX_SHIP2      != null);
     _assert(_TEX_ROCK       != null);
     _assert(_TEX_rock       != null);
     _assert(_TEX_BONUS_LIFE != null);
+    loop i, 5 do
+        _assert(_TEX_BONUS_BOMB[i] != null);
+    end
 
 // SNDS
     _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
@@ -313,7 +335,7 @@ with
             loop do
                 var int dt = 500 + _rand()%2000;
                 await (dt)ms;
-                spawn [10] RockBig;
+                spawn RockBig;
             end
         with
             every SDL_DT do
@@ -342,7 +364,8 @@ with
 
                             // BigRock vs Fire:
                             //  - 70%: spawn 2 small rocks
-                            //  - 30%: spawn 1-up
+                            //  - 10%: spawn 1-up
+                            //  - 20%: spawn bomb
                             oo1 = o1;
                             oo2 = o2;
                             if _getVS(_OBJ_ROCK, &oo1, &oo2) and
@@ -356,17 +379,23 @@ with
                                 var int pct = _rand() % 100;
                                 if pct < 70 then
                                     loop i,2 do
-                                        spawn [20] RockSmall with
-                                            this.rect.x = oo2:rect.x;
-                                            this.rect.y = oo2:rect.y;
+                                        spawn RockSmall with
+                                            this.rect.x = (int) oo2:rect.x;
+                                            this.rect.y = (int) oo2:rect.y;
                                             this.dir    = dir;
                                         end;
                                     end
-                                else
-                                    spawn [2] BonusLife with
-                                        this.rect.x = oo2:rect.x;
-                                        this.rect.y = oo2:rect.y;
+                                else/if pct < 80 then
+                                    spawn BonusLife with
+                                        this.rect.x = (int) oo2:rect.x;
+                                        this.rect.y = (int) oo2:rect.y;
                                         this.dir    = -dir;
+                                    end;
+                                else
+                                    spawn BonusBomb with
+                                        this.rect.x = (int) oo2:rect.x;
+                                        this.rect.y = (int) oo2:rect.y;
+                                        this.dir    = dir;
                                     end;
                                 end
                             end
