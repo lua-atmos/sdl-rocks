@@ -145,6 +145,7 @@ SKIP_MOTION:
                     break;
 
                 // handle onPause/onResume
+#ifdef __ANDROID__
                 case SDL_APP_WILLENTERBACKGROUND:
                     isPaused = 1;
                     break;
@@ -152,6 +153,7 @@ SKIP_MOTION:
                     isPaused = 0;
                     old = SDL_GetTicks();   // ignores previous 'old' on resume
                     break;
+#endif
             }
         }
 
@@ -175,15 +177,20 @@ SKIP_MOTION:
 #endif
         {
 #ifdef CEU_WCLOCKS
-            if (WCLOCK_nxt != CEU_WCLOCK_INACTIVE) {
+#ifndef CEU_IN_SDL_DT
+            if (WCLOCK_nxt != CEU_WCLOCK_INACTIVE)
+            {
                 redraw = WCLOCK_nxt <= 1000*dt;
+#endif
                 ceu_go_wclock(1000*dt);
                 if (ret) goto END;
                 while (WCLOCK_nxt <= 0) {
                     ceu_go_wclock(0);
                     if (ret) goto END;
                 }
+#ifndef CEU_IN_SDL_DT
             }
+#endif
 #endif
 #ifdef CEU_IN_SDL_DT
             ceu_go_event(CEU_IN_SDL_DT, (void*)dt);
