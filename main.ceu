@@ -379,10 +379,10 @@ with
                             var Object* oo2;
 
                             // BigRock vs Fire:
-                            //  - 60%: spawn 2 small rocks
+                            //  - 50%: spawn 2 small rocks
                             //  - 10%: spawn 1-up
                             //  - 10%: spawn fire width
-                            //  - 20%: spawn bomb
+                            //  - 30%: spawn bomb
                             oo1 = o1;
                             oo2 = o2;
                             if _getVS(_OBJ_ROCK, &oo1, &oo2) and
@@ -394,7 +394,7 @@ with
                                     dir = -1;
                                 end
                                 var int pct = _rand() % 100;
-                                if pct < 60 then
+                                if pct < 50 then
                                     loop i,2 do
                                         spawn RockSmall with
                                             this.rect.x = (int) oo2:rect.x;
@@ -402,13 +402,13 @@ with
                                             this.dir    = dir;
                                         end;
                                     end
-                                else/if pct < 70 then
+                                else/if pct < 60 then
                                     spawn BonusLife with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.dir    = -dir;
                                     end;
-                                else/if pct < 80 then
+                                else/if pct < 70 then
                                     spawn BonusFire with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
