@@ -401,12 +401,12 @@ do
             _idVSid[_OBJ_BONUS_BOMB][_OBJ_ROCK+i] = 1;
         end
 
-        // explode 50w/s
+        // explode 30w/s
         par/or do
             await 200ms;
         with
             var _float d = this.rect.w;
-            var _float v = 50 * this.rect.w;
+            var _float v = 30 * this.rect.w;
             var int dt;
             every dt = SDL_DT do
                 d = d + v*dt/1000;

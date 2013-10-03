@@ -140,8 +140,10 @@ SKIP_MOTION:
             {
                 // skip MOTION event if queue is not empty
                 case SDL_FINGERMOTION:
-                    if (SDL_PollEvent(NULL))
+                    if (SDL_PollEvent(NULL)) {
+                        tm = -1;
                         goto SKIP_MOTION;
+                    }
                     break;
 
                 // handle onPause/onResume

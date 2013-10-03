@@ -10,6 +10,9 @@
  *   bonus for both
  * - PAUSE/IF salva img emostra pause em cima
  * - OBJS lenght (sum of all)
+ * - SHIP expl.
+ * - cheats
+ * - sound effects
  */
 
 input void SDL_REDRAW;
@@ -459,7 +462,7 @@ with
     end
     end
 with
-    /* calculate FPS */
+    // calculate FPS
     var int fps = 0;
     loop do
         var int c = 0;
