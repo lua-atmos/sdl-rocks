@@ -4,8 +4,12 @@
 #include "ui-texture.ceu"
 
 /* TODO:
- * OBJ_BOMB[1,2] two-fingers tap
- *  (fire: DOWN->UP for one finger)
+ * - OBJ_BOMB[1,2] two-fingers tap
+ *   (fire: DOWN->UP for one finger)
+ * - ENERGY (keep everything) + LIFE
+ *   bonus for both
+ * - PAUSE/IF salva img emostra pause em cima
+ * - OBJS lenght (sum of all)
  */
 
 input void SDL_REDRAW;
@@ -29,19 +33,21 @@ native do
         OBJ_rock,
         OBJ_BONUS_LIFE,
         OBJ_BONUS_BOMB,
+        OBJ_BONUS_FIRE,
         OBJ_MAX
     };
 
     char idVSid[OBJ_MAX][OBJ_MAX] = {
-        { 0, 0, 0, 0, 0, 0, 0, 0, 1 },    // NULL
-        { 0, 0, 1, 0, 1, 1, 1, 0, 1 },    // SHIP1
-        { 0, 1, 0, 1, 0, 1, 1, 0, 1 },    // SHIP2
-        { 0, 0, 1, 0, 1, 1, 1, 1, 1 },    // FIRE1
-        { 0, 1, 0, 1, 0, 1, 1, 1, 1 },    // FIRE2
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // ROCK
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // rock
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // BONUS_LIFE
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0 },    // BONUS_BOMB
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1 },    // SHIP1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1 },    // SHIP2
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1 },    // FIRE1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1 },    // FIRE2
+        { 0, 1, 1, 1, 1, 0, 0, 0, 1, 0 },    // ROCK
+        { 0, 1, 1, 1, 1, 0, 0, 0, 1, 0 },    // rock
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_LIFE
+        { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1 },    // BONUS_BOMB
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_FIRE
     };
 
     void* OBJS[30];
@@ -92,7 +98,8 @@ end
         SDL_Texture* TEX_ROCK       = NULL;
         SDL_Texture* TEX_rock       = NULL;
         SDL_Texture* TEX_BONUS_LIFE = NULL;
-        SDL_Texture* TEX_BONUS_BOMB[5];
+        SDL_Texture* TEX_BONUS_FIRE = NULL;
+        SDL_Texture* TEX_BONUS_BOMB[3];
     end
     _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
         finalize with
@@ -119,14 +126,19 @@ end
         finalize with
             _SDL_DestroyTexture(_TEX_BONUS_LIFE);
         end
-    loop i, 5 do
+    _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
+                                        &_colors.white, null);
+        finalize with
+            _SDL_DestroyTexture(_TEX_BONUS_FIRE);
+        end
+    loop i, 3 do
         var _char[5] str;
         _sprintf(str, "%d", i+1);
         _TEX_BONUS_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
                                                &_colors.white, null);
     end
         finalize with
-            loop i, 5 do
+            loop i, 3 do
                 _SDL_DestroyTexture(_TEX_BONUS_BOMB[i]);
             end
         end
@@ -136,7 +148,8 @@ end
     _assert(_TEX_ROCK       != null);
     _assert(_TEX_rock       != null);
     _assert(_TEX_BONUS_LIFE != null);
-    loop i, 5 do
+    _assert(_TEX_BONUS_FIRE != null);
+    loop i, 3 do
         _assert(_TEX_BONUS_BOMB[i] != null);
     end
 
@@ -363,8 +376,9 @@ with
                             var Object* oo2;
 
                             // BigRock vs Fire:
-                            //  - 70%: spawn 2 small rocks
+                            //  - 60%: spawn 2 small rocks
                             //  - 10%: spawn 1-up
+                            //  - 10%: spawn fire width
                             //  - 20%: spawn bomb
                             oo1 = o1;
                             oo2 = o2;
@@ -377,7 +391,7 @@ with
                                     dir = -1;
                                 end
                                 var int pct = _rand() % 100;
-                                if pct < 70 then
+                                if pct < 60 then
                                     loop i,2 do
                                         spawn RockSmall with
                                             this.rect.x = (int) oo2:rect.x;
@@ -385,8 +399,14 @@ with
                                             this.dir    = dir;
                                         end;
                                     end
-                                else/if pct < 80 then
+                                else/if pct < 70 then
                                     spawn BonusLife with
+                                        this.rect.x = (int) oo2:rect.x;
+                                        this.rect.y = (int) oo2:rect.y;
+                                        this.dir    = -dir;
+                                    end;
+                                else/if pct < 80 then
+                                    spawn BonusFire with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.dir    = -dir;
@@ -411,14 +431,25 @@ with
                                 end
                             end
 
+                            // BonusFire vs Ship: fire.rect.w++
+                            oo1 = o1;
+                            oo2 = o2;
+                            if _getVS(_OBJ_BONUS_FIRE, &oo1, &oo2) then
+                                if oo2:id == _OBJ_SHIP1 or
+                                   oo2:id == _OBJ_SHIP2 then
+                                    var Ship* ship = (Ship*) oo2;
+                                    ship:fire_w = ship:fire_w + 1;
+                                end
+                            end
+
                             // "go_kill" must be in the end
                             var int id1 = o1:id;
                             var int id2 = o2:id;
                             if _idVSid[id1][id2] then
-                                emit o1:go_kill;
+                                emit o2:go_kill;
                             end
                             if _idVSid[id2][id1] then
-                                emit o2:go_kill;
+                                emit o1:go_kill;
                             end
                         end
                     end
@@ -426,6 +457,37 @@ with
             end
         end
     end
+    end
+with
+    /* calculate FPS */
+    var int fps = 0;
+    loop do
+        var int c = 0;
+
+        var _char[5] str;
+        _sprintf(str, "%d", fps);
+        var _SDL_Texture* tex;
+        finalize
+            tex = _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                    &_colors.white, null);
+        with
+            _SDL_DestroyTexture(tex);
+        end
+        par/or do
+            every SDL_REDRAW do
+                c = c + 1;
+                var _SDL_Rect r;
+                    r.x = 200;
+                    r.y = 200;
+                    r.w = 30;
+                    r.h = 30;
+                _SDL_RenderCopy(_REN, tex, null, &r);
+            end
+        with
+            await 1s;
+        end
+        fps = c;
+        _printf("[FPS=%d]\n", fps);
     end
 with
     every SDL_REDRAW do

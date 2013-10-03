@@ -42,9 +42,9 @@ class Fire with
     interface Object;
     var int dir;
     var int vy;
+    var int w = 0;  // fire width (may increase with bonus)
 do
-    // TODO: hardcoded
-    this.rect.w = 15;
+    this.rect.w = _REN_W/50 + _REN_W*this.w/150;
     this.rect.h = 3;
 
     par/or do
@@ -73,6 +73,8 @@ class Ship with
 
     var int dir;
     var Controller* controller;
+
+    var int fire_w = 0;
 
     event void ok_killed;
 do
@@ -151,6 +153,7 @@ do
                     this.dir  = dir;
                     this.vy   = vy;
                     this.rect = rect;
+                    this.w    = fire_w;
                 end;
             end
         end
@@ -202,12 +205,14 @@ do
         await move.ok;
     with
         // TODO: hardcoded
+/*
         var int v = vx*vx + vy*vy;
         var int dt = 500000 / v;
         every (dt)ms do
             clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
         end
     with
+*/
         every SDL_REDRAW do
             var _SDL_Rect r;
                 r.x = this.rect.x - this.rect.w/2;
@@ -237,9 +242,8 @@ do
         clip.w = this.rect.w;
         clip.h = this.rect.h;
 
-    // TODO: 75 hardcoded
-    var _float vx = (_rand()%75 + 1) * this.dir;
-    var _float vy = (_rand()%75 + 1);
+    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var _float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
@@ -282,13 +286,11 @@ class [5] BonusLife with
 do
     _assert(this.dir != 0);
 
-    // TODO: 10 hardcoded
-    this.rect.w = 10;
-    this.rect.h = 10;
+    this.rect.w = _REN_W/50;
+    this.rect.h = _REN_W/50;
 
-    // TODO: 75 hardcoded
-    var _float vx = (_rand()%75 + 1) * this.dir;
-    var _float vy = (_rand()%75 + 1);
+    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var _float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
@@ -317,25 +319,21 @@ do
     end
 end
 
-class [5] BonusBomb with
+class [5] BonusFire with
     interface Object;
-    var int id = _OBJ_BONUS_BOMB;
+    var int id  = _OBJ_BONUS_FIRE;
     var int dir = 0;
 do
     _assert(this.dir != 0);
 
-    // TODO: 10 hardcoded
-    this.rect.w = 10;
-    this.rect.h = 10;
+    this.rect.w = _REN_W/50;
+    this.rect.h = _REN_W/50;
 
-    // TODO: 75 hardcoded
-    var _float vx = (_rand()%75 + 1) * this.dir;
-    var _float vy = (_rand()%75 + 1);
+    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var _float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
-
-    var int timer = 4;  // countdown
 
     par/or do
         var Object* obj = &this;
@@ -346,11 +344,53 @@ do
         end;
         await move.ok;
     with
-        // countdown 5-4-3-2-1-0
+        every SDL_REDRAW do
+            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+                                    0x00,0x77,0x00,0xFF);
+
+            var _SDL_Rect r;
+                _SDL_QueryTexture(_TEX_BONUS_FIRE, null, null, &r.w, &r.h);
+                r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
+                r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
+            _SDL_RenderCopy(_REN, _TEX_BONUS_FIRE, null, &r);
+        end
+    with
+        await go_kill;
+    end
+end
+
+class [5] BonusBomb with
+    interface Object;
+    var int id = _OBJ_BONUS_BOMB;
+    var int dir = 0;
+do
+    _assert(this.dir != 0);
+
+    this.rect.w = _REN_W/50;
+    this.rect.h = _REN_W/50;
+
+    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var _float vy = (_rand()%(_REN_H/10) + 1);
+    if _rand() % 2 then
+        vy = -vy;
+    end
+
+    var int timer = 2;  // countdown
+
+    par/or do
+        var Object* obj = &this;
+        var ObjectMove move with
+            this.obj = obj;
+            this.vx  = vx;
+            this.vy  = vy;
+        end;
+        await move.ok;
+    with
+        // countdown 3-2-1-0
         // (or kill)
         par/or do
             var int dt = 500 + _rand() % 2000;
-            loop i, 5 do
+            loop i, 3 do
                 await (dt) ms;
                 timer = timer - 1;
             end
