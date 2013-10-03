@@ -461,6 +461,7 @@ with
         end
     end
     end
+#ifdef DEBUG
 with
     // calculate FPS
     var int fps = 0;
@@ -492,6 +493,7 @@ with
         fps = c;
         _printf("[FPS=%d]\n", fps);
     end
+#endif
 with
     every SDL_REDRAW do
         _SDL_RenderPresent(_REN);
