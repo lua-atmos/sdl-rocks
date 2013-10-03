@@ -9,8 +9,6 @@
  * - ENERGY (keep everything) + LIFE
  *   bonus for both
  * - PAUSE/IF salva img emostra pause em cima
- * - OBJS lenght (sum of all)
- * - cheats
  * - sound effects
  */
 
@@ -20,6 +18,27 @@ input void SDL_QUIT;
 //input void SDL_APP_WILLENTERBACKGROUND;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 input _SDL_KeyboardEvent* SDL_KEYUP;
+
+/* Max number of instances for each class.
+ * Use on each "spawn[n] ClassID".
+ * Defines _OBJ_N avoiding buffer overflows in _OBJS
+ */
+
+#define _OBJ_SHIP_N         1       // x2
+#define _OBJ_FIRE_N         3       // x2
+#define _OBJ_ROCK_N         10
+#define _OBJ_rock_N         20
+#define _OBJ_BONUS_LIFE_N   5
+#define _OBJ_BONUS_BOMB_N   5
+#define _OBJ_BONUS_FIRE_N   5
+
+#define _OBJ_N + 2*_OBJ_SHIP_N      \
+               + 2*_OBJ_FIRE_N      \
+               + _OBJ_ROCK_N        \
+               + _OBJ_rock_N        \
+               + _OBJ_BONUS_LIFE_N  \
+               + _OBJ_BONUS_BOMB_N  \
+               + _OBJ_BONUS_FIRE_N
 
 native nohold _getVS();
 native do
@@ -53,7 +72,7 @@ native do
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_FIRE
     };
 
-    void* OBJS[30];     // TODO: hardcoded
+    void* OBJS[_OBJ_N];
     int OBJS_N = 0;
 end
 

@@ -146,7 +146,7 @@ do
     with
         do
             every this.controller:ok_fired do
-                spawn[3] Fire with
+                spawn[_OBJ_FIRE_N] Fire with
                     this.id   = id + 2;
                     this.dir  = dir;
                     this.vy   = vy;
@@ -184,7 +184,7 @@ do
     emit ok_killed;
 end
 
-class [10] RockBig with
+class [_OBJ_ROCK_N] RockBig with
     interface Object;
     var int id = _OBJ_ROCK;
 do
@@ -242,7 +242,7 @@ do
     end
 end
 
-class [20] RockSmall with
+class [_OBJ_rock_N] RockSmall with
     interface Object;
     var int id = _OBJ_rock;
     var int dir = 0;
@@ -294,7 +294,7 @@ do
     end
 end
 
-class [5] BonusLife with
+class [_OBJ_BONUS_LIFE_N] BonusLife with
     interface Object;
     var int id = _OBJ_BONUS_LIFE;
     var int dir = 0;
@@ -334,7 +334,7 @@ do
     end
 end
 
-class [5] BonusFire with
+class [_OBJ_BOUNS_FIRE_N] BonusFire with
     interface Object;
     var int id  = _OBJ_BONUS_FIRE;
     var int dir = 0;
@@ -374,7 +374,7 @@ do
     end
 end
 
-class [5] BonusBomb with
+class [_OBJ_BOUNS_BOMB_N] BonusBomb with
     interface Object;
     var int id = _OBJ_BONUS_BOMB;
     var int dir = 0;
