@@ -79,12 +79,10 @@ class Ship with
     event void ok_killed;
 do
     _assert(this.tex != null);
-    this.rect.w = 30;
-    this.rect.h = 30;
 
     var _SDL_Rect clip;
         clip.x =  0;
-        clip.w = 30;
+        clip.w = 30;        // TODO: hardcoded
         clip.h = 30;
 
     var _float sx = this.rect.x;
@@ -190,7 +188,7 @@ class [10] RockBig with
     interface Object;
     var int id = _OBJ_ROCK;
 do
-    this.rect.w = 30;
+    this.rect.w = 30;       // TODO: hardcoded
     this.rect.h = 30;
 
     var _SDL_Rect clip;

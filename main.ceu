@@ -53,7 +53,7 @@ native do
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_FIRE
     };
 
-    void* OBJS[30];
+    void* OBJS[30];     // TODO: hardcoded
     int OBJS_N = 0;
 end
 
@@ -299,7 +299,9 @@ with
         var Ship ship1 with
             this.id = _OBJ_SHIP1;
             this.tex = _TEX_SHIP1;
-            this.rect.x = 30;
+            this.rect.w = 30;       // TODO: hardcoded
+            this.rect.h = 30;
+            this.rect.x = this.rect.w;
             this.rect.y = _REN_H/2;
 
             this.lim_x1 = this.rect.w/2;
@@ -336,7 +338,9 @@ with
         var Ship ship2 with
             this.id = _OBJ_SHIP2;
             this.tex = _TEX_SHIP2;
-            this.rect.x = _REN_W - 30;
+            this.rect.w = 30;       // TODO: hardcoded
+            this.rect.h = 30;
+            this.rect.x = _REN_W - this.rect.w;
             this.rect.y = _REN_H/2;
 
             this.lim_x1 = _REN_W/2 + this.rect.w/2;
