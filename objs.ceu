@@ -396,9 +396,14 @@ do
             await go_kill;
         end
 
-        // explode x 5*d
+        // collide with ROCK => MAX
+        loop i, (_OBJ_MAX-_OBJ_ROCK) do
+            _idVSid[_OBJ_BONUS_BOMB][_OBJ_ROCK+i] = 1;
+        end
+
+        // explode 50w/s
         par/or do
-            await 100ms;
+            await 200ms;
         with
             var _float d = this.rect.w;
             var _float v = 50 * this.rect.w;
