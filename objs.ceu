@@ -204,15 +204,14 @@ do
         end;
         await move.ok;
     with
-        // TODO: hardcoded
-/*
-        var int v = vx*vx + vy*vy;
-        var int dt = 500000 / v;
-        every (dt)ms do
-            clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
+        var _float v := _sqrt(vx*vx + vy*vy);
+        var _float x = 0;
+        var int dt;
+        every dt = SDL_DT do
+            x = x + v*dt/1000;
+            clip.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
     with
-*/
         every SDL_REDRAW do
             var _SDL_Rect r;
                 r.x = this.rect.x - this.rect.w/2;
@@ -257,13 +256,12 @@ do
         end;
         await move.ok;
     with
-        var int v = vx * vy;
-        if v < 0 then
-            v = -v;
-        end
-        var int dt = 500000 / v;
-        every (dt)ms do
-            clip.x = (clip.x + this.rect.w) % (6*this.rect.w);
+        var _float v := _sqrt(vx*vx + vy*vy);
+        var _float x = 0;
+        var int dt;
+        every dt = SDL_DT do
+            x = x + v*dt/1000;
+            clip.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
     with
         every SDL_REDRAW do
@@ -398,12 +396,18 @@ do
             await go_kill;
         end
 
-        // explode 10*d
-        var int d = this.rect.w;
-        loop i, 10 do
-            this.rect.w = this.rect.w + d;
-            this.rect.h = this.rect.h + d;
-            await 10ms;
+        // explode x 5*d
+        par/or do
+            await 100ms;
+        with
+            var _float d = this.rect.w;
+            var _float v = 50 * this.rect.w;
+            var int dt;
+            every dt = SDL_DT do
+                d = d + v*dt/1000;
+                this.rect.w = (int)d;
+                this.rect.h = (int)d;
+            end
         end
     with
         every SDL_REDRAW do
