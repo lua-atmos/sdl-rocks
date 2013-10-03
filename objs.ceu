@@ -161,7 +161,7 @@ do
 #ifdef SDL_SIMUL
         await 10min;
 #endif
-        await go_kill;
+        await go_kill until (not this.controller:cheat_immortal?);
     end
 
     // explode 20w/s

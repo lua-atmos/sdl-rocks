@@ -10,7 +10,6 @@
  *   bonus for both
  * - PAUSE/IF salva img emostra pause em cima
  * - OBJS lenght (sum of all)
- * - SHIP expl.
  * - cheats
  * - sound effects
  */
@@ -18,6 +17,7 @@
 input void SDL_REDRAW;
 input int  SDL_DT;
 input void SDL_QUIT;
+//input void SDL_APP_WILLENTERBACKGROUND;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 input _SDL_KeyboardEvent* SDL_KEYUP;
 
@@ -207,6 +207,8 @@ _srand(_time(null));
 interface Controller with
     var _float ax, ay;
     event void ok_fired;
+
+    var int cheat_immortal?;
 end
 
 #include "controllers.ceu"
@@ -237,6 +239,9 @@ end
 
 par/or do
     await SDL_QUIT;
+//with
+    // TODO: battery: WaitTimeout??
+    //await SDL_APP_WILLENTERBACKGROUND;
 //with
     //#include "simul.ceu"
 with
@@ -287,6 +292,7 @@ with
             this.k_left  = _SDLK_a;
             this.k_right = _SDLK_d;
             this.k_fire  = _SDLK_z;
+            this.k_immortal = _SDLK_1;
         end;
 #endif
 
@@ -323,6 +329,7 @@ with
             this.k_left  = _SDLK_LEFT;
             this.k_right = _SDLK_RIGHT;
             this.k_fire  = _SDLK_SEMICOLON;
+            this.k_immortal = _SDLK_0;
         end;
 #endif
 
@@ -491,7 +498,7 @@ with
             await 1s;
         end
         fps = c;
-        _printf("[FPS=%d]\n", fps);
+        //_printf("[FPS=%d]\n", fps);
     end
 #endif
 with
