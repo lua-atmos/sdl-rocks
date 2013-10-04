@@ -78,7 +78,7 @@ end
 // SCREEN
     var _SDL_Window* win;
         finalize
-            win = _SDL_CreateWindow("Rocks!", 500, 400, 640, 480,
+            win = _SDL_CreateWindow("Rocks!", 500, 400, 1280, 800,
                                     _SDL_WINDOW_SHOWN);
         with
             _SDL_DestroyWindow(win);
