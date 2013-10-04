@@ -8,7 +8,6 @@
  *   (fire: DOWN->UP for one finger)
  * - BONUS_ENERGY
  * - PAUSE/IF salva img emostra pause em cima
- * - sound effects
  */
 
 input void SDL_REDRAW;
@@ -54,8 +53,8 @@ native do
         OBJ_ROCK,
         OBJ_rock,
         OBJ_BONUS_LIFE,
-        OBJ_BONUS_BOMB,
         OBJ_BONUS_FIRE,
+        OBJ_BONUS_BOMB,
         OBJ_MAX
     };
 
@@ -68,8 +67,8 @@ native do
         { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 },    // ROCK
         { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 },    // rock
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_LIFE
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_BOMB
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_FIRE
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 },    // BONUS_BOMB
     };
 
     void* OBJS[_OBJ_N];
@@ -91,49 +90,12 @@ end
             _SDL_DestroyRenderer(_REN);
         end
 
-// FONT
-    native do
-        TTF_Font* FONT_BIG;
-        TTF_Font* FONT_SMALL;
-    end
-    _TTF_Init();
-        finalize with
-            _TTF_Quit();
-        end
-    _FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
-        finalize with
-            _TTF_CloseFont(_FONT_BIG);
-        end
-    _assert(_FONT_BIG != null);
-    _FONT_SMALL = _TTF_OpenFont("fnts/vera.ttf", _REN_H/40);
-        finalize with
-            _TTF_CloseFont(_FONT_SMALL);
-        end
-    _assert(_FONT_SMALL != null);
-
-
+// FONTS
+    #include "fnts.ceu"
 // TEXS
     #include "texs.ceu"
-
 // SNDS
-    _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
-        finalize with
-            _Mix_CloseAudio();            // TODO: slow
-        end
-
-/*
-    native do
-        Mix_Music* SND_BG = NULL;
-    end
-    _SND_BG = _Mix_LoadMUS("snds/space_sprinkles.mp3");
-        finalize with
-            _Mix_FreeMusic(_SND_BG);
-        end
-        _assert(_SND_BG != null);
-
-    _Mix_PlayMusic(_SND_BG, -1);
-    //_Mix_HaltMusic();
-*/
+    #include "snds.ceu"
 
 class Points with
     var int v = 0;
@@ -186,8 +148,8 @@ interface Object with
                 *o2 = tmp;
                 return 1;
             } else {
-                *o1 = NULL;
-                *o2 = NULL;
+                //*o1 = NULL;
+                //*o2 = NULL;
                 return 0;
             }
         }
@@ -240,6 +202,7 @@ with
             r.y = _REN_H/2 - r.h/2;
         var int blink? = 0;
         par/or do
+            await 1s;
 #ifdef __ANDROID__
             await SDL_FINGERDOWN;
 #else
@@ -256,6 +219,7 @@ with
                 end
             end
         end
+        _Mix_PlayChannel(-1, _SND_START, 0);
 
 #ifdef __ANDROID__
         var TouchController controller1 with
@@ -371,6 +335,23 @@ with
                         if _SDL_HasIntersection(&r1, &r2) then
                             var Object* oo1;
                             var Object* oo2;
+
+                            // ROCK sound vs FIRE
+                            oo1 = o1;
+                            oo2 = o2;
+                            if _getVS(_OBJ_FIRE1, &oo1, &oo2) or
+                               _getVS(_OBJ_FIRE2, &oo1, &oo2) then
+                                if (oo2:id >= _OBJ_ROCK) and
+                                   (oo2:id <= _OBJ_BONUS_FIRE) then
+                                    _Mix_PlayChannel(-1, _SND_ROCK, 0);
+                                end
+                            else/if _getVS(_OBJ_SHIP1, &oo1, &oo2) or
+                                    _getVS(_OBJ_SHIP2, &oo1, &oo2) then
+                                if (oo2:id >= _OBJ_BONUS_LIFE) and
+                                   (oo2:id <= _OBJ_BONUS_FIRE) then
+                                    _Mix_PlayChannel(-1, _SND_BONUS, 0);
+                                end
+                            end
 
                             // BigRock vs Fire:
                             //  - 50%: spawn 2 small rocks

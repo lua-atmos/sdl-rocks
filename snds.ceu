@@ -1,0 +1,59 @@
+_Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
+    finalize with
+        _Mix_CloseAudio();            // TODO: slow
+    end
+
+native do
+    Mix_Chunk* SND_FIRE      = NULL;
+    Mix_Chunk* SND_BONUS     = NULL;
+    Mix_Chunk* SND_ROCK      = NULL;
+    Mix_Chunk* SND_HIT_DEC   = NULL;
+    Mix_Chunk* SND_EXPLOSION = NULL;
+    Mix_Chunk* SND_START     = NULL;
+end
+
+_SND_FIRE = _Mix_LoadWAV("snds/fire.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_FIRE);
+    end
+_SND_BONUS = _Mix_LoadWAV("snds/bonus.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_BONUS);
+    end
+_SND_ROCK = _Mix_LoadWAV("snds/rock.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_ROCK);
+    end
+_SND_HIT_DEC = _Mix_LoadWAV("snds/hit_dec.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_HIT_DEC);
+    end
+_SND_EXPLOSION = _Mix_LoadWAV("snds/explosion.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_EXPLOSION);
+    end
+_SND_START = _Mix_LoadWAV("snds/start.wav");
+    finalize with
+        _Mix_FreeChunk(_SND_START);
+    end
+
+_assert(_SND_FIRE      != null);
+_assert(_SND_BONUS     != null);
+_assert(_SND_ROCK      != null);
+_assert(_SND_HIT_DEC   != null);
+_assert(_SND_EXPLOSION != null);
+_assert(_SND_START     != null);
+
+/*
+native do
+    Mix_Music* SND_BG = NULL;
+end
+_SND_BG = _Mix_LoadMUS("snds/space_sprinkles.mp3");
+    finalize with
+        _Mix_FreeMusic(_SND_BG);
+    end
+    _assert(_SND_BG != null);
+
+_Mix_PlayMusic(_SND_BG, -1);
+//_Mix_HaltMusic();
+*/

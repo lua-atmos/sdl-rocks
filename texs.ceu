@@ -76,5 +76,3 @@ _assert(_TEX_BONUS_FIRE != null);
 loop i, 3 do
     _assert(_TEX_BONUS_BOMB[i] != null);
 end
-
-

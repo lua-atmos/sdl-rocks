@@ -112,8 +112,13 @@ do
             var int v = await go_hit
                         until (not this.controller:cheat_immortal?);
             this.hits = hits + v;
-            if this.hits == 0 then
-                break;
+
+            if v < 0 then
+                if this.hits <= 0 then
+                    break;
+                else
+                    _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
+                end
             end
 
             // v < 0 ? stay immortal for 2s and blink
@@ -129,13 +134,16 @@ do
         // spawn a "Fire" every "ok_fired"
         do
             every this.controller:ok_fired do
-                spawn[_OBJ_FIRE_N] Fire with
+                var int ok? = spawn[_OBJ_FIRE_N] Fire with
                     this.id   = id + 2;
                     this.dir  = dir;
                     this.vy   = vy;
                     this.rect = rect;
                     this.w    = fire_w;
                 end;
+                if ok? then
+                    _Mix_PlayChannel(-1, _SND_FIRE, 0);
+                end
             end
         end
     with
@@ -211,6 +219,7 @@ do
     end
 
     // explode 20w/s
+    _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
     par/or do
         await 100ms;
     with
@@ -467,6 +476,7 @@ do
         end
 
         // explode 30w/s
+        _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
         par/or do
             await 200ms;
         with

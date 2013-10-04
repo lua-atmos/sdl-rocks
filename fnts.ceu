@@ -1,0 +1,18 @@
+native do
+    TTF_Font* FONT_BIG;
+    TTF_Font* FONT_SMALL;
+end
+_TTF_Init();
+    finalize with
+        _TTF_Quit();
+    end
+_FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
+    finalize with
+        _TTF_CloseFont(_FONT_BIG);
+    end
+_assert(_FONT_BIG != null);
+_FONT_SMALL = _TTF_OpenFont("fnts/vera.ttf", _REN_H/40);
+    finalize with
+        _TTF_CloseFont(_FONT_SMALL);
+    end
+_assert(_FONT_SMALL != null);
