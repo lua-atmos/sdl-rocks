@@ -1,7 +1,6 @@
 #include <stdio.h>
 
-// definitely lost: 3,285 bytes in 25 blocks
-
+// definitely lost: 2,478 bytes in 17 blocks
 
 #ifdef __ANDROID__
 #include "SDL.h"
@@ -131,6 +130,8 @@ SKIP_MOTION:
         {
             has = SDL_WaitEventTimeout(&evt, tm);
         }
+//if (has)
+    //printf("EVENT %x\n", evt.type);
 
         if (has) {
             switch (evt.type)

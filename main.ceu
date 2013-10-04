@@ -1,5 +1,3 @@
-#define SIMUL
-
 #include "sdl.ceu"
 #include "sdl-gfx.ceu"
 #include "colors.ceu"

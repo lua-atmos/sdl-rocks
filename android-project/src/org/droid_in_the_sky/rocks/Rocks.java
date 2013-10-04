@@ -20,6 +20,7 @@ public class Rocks extends SDLActivity {
 */
     public void onConfigurationChanged (Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        // kill process: avoids having to deal w/ EGL context recreation
         android.os.Process.killProcess(android.os.Process.myPid());
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
