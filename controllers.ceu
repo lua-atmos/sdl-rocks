@@ -1,7 +1,7 @@
 class KeyController with
     interface Controller;
     var int k_up, k_down, k_left, k_right;
-    var int k_fire;
+    var int k_fire, k_shield;
 
     var int k_immortal;
     var int cheat_immortal? = 0;
@@ -22,6 +22,8 @@ do
                 this.ax =  (_float)_REN_W/5000;
             else/if key:keysym.sym == this.k_fire then
                 emit this.ok_fired;
+            else/if key:keysym.sym == this.k_shield then
+                emit this.ok_shield;
             end
         end
     with

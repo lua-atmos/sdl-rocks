@@ -65,8 +65,9 @@ do
     end
 end
 
-#define _SHIP_FIRE_MAX  5
 #define _SHIP_HITS_MAX  3
+#define _SHIP_FIRES_MAX  5
+#define _SHIP_SHIELDS_MAX  3
 
 class Ship with
     interface Object;
@@ -78,19 +79,20 @@ class Ship with
     var Controller* controller;
 
     var int fire_w =  0;
-    var int fires  =  _SHIP_FIRE_MAX;     // number of fires
-    var int hits   =  _SHIP_HITS_MAX;     // number of hit points
 
     event void go_shield;
     event void ok_killed;
 do
     _assert(this.tex != null);
 
+    var int dim = 30;         // TODO: harcoded
     var _SDL_Rect clip_r;
         clip_r.x =  0;
-        clip_r.w = 30;        // TODO: hardcoded
-        clip_r.h = 30;
+        clip_r.w = dim;
+        clip_r.h = dim;
 
+    // hits
+    var int hits = _SHIP_HITS_MAX;      // number of hit points
     var int blink? = 0;
     var _SDL_Rect hits_r;
         if this.dir > 0 then
@@ -101,6 +103,8 @@ do
         hits_r.w = _REN_W/100;
         hits_r.y = this.lim_y1 + _REN_H/100;
 
+    // fires
+    var int fires = _SHIP_FIRES_MAX;    // number of fires
     var _SDL_Rect fires_r;
         if this.dir > 0 then
             fires_r.x = this.lim_x1 + 2*_REN_W/100;
@@ -109,6 +113,18 @@ do
         end
         fires_r.w = _REN_W/100;
         fires_r.y = this.lim_y1 + _REN_H/100;
+
+    // shields
+    var int shields = 0;                // number of shields
+    var int hasShield? = 0;             // is it active now?
+    var _SDL_Rect shields_r;
+        if this.dir > 0 then
+            shields_r.x = this.lim_x1 + 3*_REN_W/100;
+        else
+            shields_r.x = this.lim_x2 - 3*_REN_W/100;
+        end
+        shields_r.w = _REN_W/100;
+        shields_r.y = this.lim_y1 + _REN_H/100;
 
     var _float sx = this.rect.x;
     var _float vx = 0;
@@ -124,16 +140,17 @@ do
 #endif
         loop do
             var int v = await go_hit
-                        until (not this.controller:cheat_immortal?);
-            this.hits = hits + v;
+                        until not (this.controller:cheat_immortal? or
+                                   hasShield?);
+            hits = hits + v;
 
             if v > 0 then
                 // don't go over the MAX
-                if this.hits > _SHIP_HITS_MAX then
-                    this.hits = _SHIP_HITS_MAX;
+                if hits > _SHIP_HITS_MAX then
+                    hits = _SHIP_HITS_MAX;
                 end
             else
-                if this.hits <= 0 then
+                if hits <= 0 then
                     break;
                 end
 
@@ -151,18 +168,59 @@ do
     with
         // a new "fires" every 2s
         every 2s do
-            if this.fires < _SHIP_FIRE_MAX then
-                this.fires = this.fires + 1;
+            if fires < _SHIP_FIRES_MAX then
+                fires = fires + 1;
+            end
+        end
+    with
+        // a new "shield"
+        every this.go_shield do
+            if shields < _SHIP_SHIELDS_MAX then
+                shields = shields + 1;
+            end
+        end
+    with
+        // spawn shield
+        loop do
+            await this.controller:ok_shield
+            until (shields > 0);
+
+            shields = shields - 1;
+            hasShield? = 1;
+            finalize with
+                this.rect.w = dim;
+                this.rect.h = dim;
+                hasShield? = 0;
+            end
+
+            // explode 20w/s
+            _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+            par/or do
+                await 100ms;
+            with
+                var _float d = this.rect.w;
+                var _float v = 20 * this.rect.w;
+                var int dt;
+                every dt = SDL_DT do
+                    d = d + v*dt/1000;
+                    this.rect.w = (int)d;
+                    this.rect.h = (int)d;
+                end
+            with
+                every SDL_REDRAW do
+                    _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+                                            0x00,0x00,0xFF,0xDD);
+                end
             end
         end
     with
         // spawn a "Fire" every "ok_fired"
         do
             every this.controller:ok_fired do
-                if this.fires == 0 then
+                if fires == 0 then
                     continue;
                 end
-                this.fires = this.fires - 1;
+                fires = fires - 1;
                 var int ok? = spawn[_OBJ_FIRE_N] Fire with
                     this.id   = id + 2;
                     this.dir  = dir;
@@ -214,7 +272,7 @@ do
     with
         every SDL_REDRAW do
             // draw hits
-            hits_r.h = this.hits * _REN_H/20;
+            hits_r.h = hits * _REN_H/20;
             _boxRGBA(_REN, hits_r.x, hits_r.y,
                            hits_r.x+hits_r.w, hits_r.y+hits_r.h,
                            0x00,0xFF,0x00,0x77);
@@ -224,13 +282,24 @@ do
                                  0x77,0x77,0x77,0xFF);
 
             // draw fires
-            fires_r.h = this.fires * _REN_H/33;
+            fires_r.h = fires * _REN_H/33;
             _boxRGBA(_REN, fires_r.x, fires_r.y,
                            fires_r.x+fires_r.w, fires_r.y+fires_r.h,
                            0xFF,0x00,0x00,0x77);
-            fires_r.h = _SHIP_FIRE_MAX * _REN_H/33;
+            fires_r.h = _SHIP_FIRES_MAX * _REN_H/33;
             _rectangleRGBA(_REN, fires_r.x, fires_r.y,
                                  fires_r.x+fires_r.w, fires_r.y+fires_r.h,
+                                 0x77,0x77,0x77,0xFF);
+
+            // draw shields
+            shields_r.h = shields * _REN_H/33;
+            _boxRGBA(_REN, shields_r.x, shields_r.y,
+                           shields_r.x+shields_r.w, shields_r.y+shields_r.h,
+                           0x00,0x00,0xFF,0xDD);
+            shields_r.h = _SHIP_SHIELDS_MAX * _REN_H/33;
+            _rectangleRGBA(_REN, shields_r.x, shields_r.y,
+                                 shields_r.x+shields_r.w, 
+                                 shields_r.y+shields_r.h,
                                  0x77,0x77,0x77,0xFF);
 
             if blink? then
@@ -239,20 +308,20 @@ do
 
             // choose ship frame
             if this.controller:ay > 0 then
-                clip_r.y = this.rect.w*3;
+                clip_r.y = dim*3;
             else/if this.controller:ay < 0 then
-                clip_r.y = this.rect.w*2;
+                clip_r.y = dim*2;
             else/if this.controller:ax * this.dir < 0 then
                 clip_r.y = 0;
             else
-                clip_r.y = this.rect.w*1;
+                clip_r.y = dim*1;
             end
             // redraw sprite
             var _SDL_Rect r;
-                r.x = this.rect.x - this.rect.w/2;
-                r.y = this.rect.y - this.rect.h/2;
-                r.w = this.rect.w;
-                r.h = this.rect.h;
+                r.x = this.rect.x - dim/2;
+                r.y = this.rect.y - dim/2;
+                r.w = dim;
+                r.h = dim;
             _SDL_RenderCopy(_REN, this.tex, &clip_r, &r);
         end
     end

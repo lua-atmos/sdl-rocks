@@ -129,6 +129,7 @@ _srand(_time(null));
 interface Controller with
     var _float ax, ay;
     event void ok_fired;
+    event void ok_shield;
 
     var int cheat_immortal?;
 end
@@ -240,6 +241,7 @@ with
             this.k_left  = _SDLK_a;
             this.k_right = _SDLK_d;
             this.k_fire  = _SDLK_z;
+            this.k_shield   = _SDLK_x;
             this.k_immortal = _SDLK_1;
         end;
 #endif
@@ -279,6 +281,7 @@ with
             this.k_left  = _SDLK_LEFT;
             this.k_right = _SDLK_RIGHT;
             this.k_fire  = _SDLK_SEMICOLON;
+            this.k_shield   = _SDLK_PERIOD;
             this.k_immortal = _SDLK_0;
         end;
 #endif
