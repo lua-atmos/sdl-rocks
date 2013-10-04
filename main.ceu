@@ -6,8 +6,7 @@
 /* TODO:
  * - OBJ_BOMB[1,2] two-fingers tap
  *   (fire: DOWN->UP for one finger)
- * - ENERGY (keep everything) + LIFE
- *   bonus for both
+ * - BONUS_ENERGY
  * - PAUSE/IF salva img emostra pause em cima
  * - sound effects
  */
@@ -235,7 +234,7 @@ end
 interface Object with
     var int id;
     var _SDL_Rect rect;
-    event void go_kill;
+    event int go_hit;
     native do
         int getVS (int id, CEU_Object** o1, CEU_Object** o2) {
             if (*_CEU_Object_id(*o1) == id) {
@@ -475,14 +474,14 @@ with
                                 end
                             end
 
-                            // "go_kill" must be in the end
+                            // "go_hit" must be in the end
                             var int id1 = o1:id;
                             var int id2 = o2:id;
                             if _idVSid[id1][id2] then
-                                emit o2:go_kill;
+                                emit o2:go_hit => -1;
                             end
                             if _idVSid[id2][id1] then
-                                emit o1:go_kill;
+                                emit o1:go_hit => -1;
                             end
                         end
                     end

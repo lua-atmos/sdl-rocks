@@ -61,7 +61,7 @@ do
                            0x77,0x77,0x77,0xFF);
         end
     with
-        await go_kill;
+        await go_hit;
     end
 end
 
@@ -75,15 +75,26 @@ class Ship with
     var Controller* controller;
 
     var int fire_w = 0;
+    var int hits   = 3;     // number of hit points
 
     event void ok_killed;
 do
     _assert(this.tex != null);
 
-    var _SDL_Rect clip;
-        clip.x =  0;
-        clip.w = 30;        // TODO: hardcoded
-        clip.h = 30;
+    var _SDL_Rect clip_r;
+        clip_r.x =  0;
+        clip_r.w = 30;        // TODO: hardcoded
+        clip_r.h = 30;
+
+    var int blink? = 0;
+    var _SDL_Rect hits_r;
+        if this.dir > 0 then
+            hits_r.x = this.lim_x1 + _REN_W/100;
+        else
+            hits_r.x = this.lim_x2 - _REN_W/100;
+        end
+        hits_r.w = _REN_W/100;
+        hits_r.y = this.lim_y1 + _REN_H/100;
 
     var _float sx = this.rect.x;
     var _float vx = 0;
@@ -91,6 +102,44 @@ do
     var _float vy = 0;
 
     par/or do
+        // add/sub hit points on "go_hit" (unless "cheat_immortal?")
+        // "go_hit" if == 0
+
+#ifdef SDL_SIMUL
+        await 10min;
+#endif
+        loop do
+            var int v = await go_hit
+                        until (not this.controller:cheat_immortal?);
+            this.hits = hits + v;
+            if this.hits == 0 then
+                break;
+            end
+
+            // v < 0 ? stay immortal for 2s and blink
+            par/or do
+                every 100ms do
+                    blink? = not blink?;
+                end
+            with
+                await 2s;
+            end
+        end
+    with
+        // spawn a "Fire" every "ok_fired"
+        do
+            every this.controller:ok_fired do
+                spawn[_OBJ_FIRE_N] Fire with
+                    this.id   = id + 2;
+                    this.dir  = dir;
+                    this.vy   = vy;
+                    this.rect = rect;
+                    this.w    = fire_w;
+                end;
+            end
+        end
+    with
+        // move ship up to the screen limits
         var int dt;
         every dt=SDL_DT do
             vx = vx + this.controller:ax*dt;
@@ -127,39 +176,38 @@ do
         end
     with
         every SDL_REDRAW do
-            if this.controller:ay > 0 then
-                clip.y = this.rect.w*3;
-            else/if this.controller:ay < 0 then
-                clip.y = this.rect.w*2;
-            else/if this.controller:ax * this.dir < 0 then
-                clip.y = 0;
-            else
-                clip.y = this.rect.w*1;
+            // draw hits
+            hits_r.h = this.hits * _REN_H/20;
+            _boxRGBA(_REN, hits_r.x, hits_r.y,
+                           hits_r.x+hits_r.w, hits_r.y+hits_r.h,
+                           0x00,0xFF,0x00,0x77);
+            hits_r.h = 3 * _REN_H/20;
+            _rectangleRGBA(_REN, hits_r.x, hits_r.y,
+                                 hits_r.x+hits_r.w, hits_r.y+hits_r.h,
+                                 0x77,0x77,0x77,0xFF);
+
+            if blink? then
+                continue;
             end
+
+            // choose ship frame
+            if this.controller:ay > 0 then
+                clip_r.y = this.rect.w*3;
+            else/if this.controller:ay < 0 then
+                clip_r.y = this.rect.w*2;
+            else/if this.controller:ax * this.dir < 0 then
+                clip_r.y = 0;
+            else
+                clip_r.y = this.rect.w*1;
+            end
+            // redraw sprite
             var _SDL_Rect r;
                 r.x = this.rect.x - this.rect.w/2;
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, this.tex, &clip, &r);
+            _SDL_RenderCopy(_REN, this.tex, &clip_r, &r);
         end
-    with
-        do
-            every this.controller:ok_fired do
-                spawn[_OBJ_FIRE_N] Fire with
-                    this.id   = id + 2;
-                    this.dir  = dir;
-                    this.vy   = vy;
-                    this.rect = rect;
-                    this.w    = fire_w;
-                end;
-            end
-        end
-    with
-#ifdef SDL_SIMUL
-        await 10min;
-#endif
-        await go_kill until (not this.controller:cheat_immortal?);
     end
 
     // explode 20w/s
@@ -191,11 +239,11 @@ do
     this.rect.w = 30;       // TODO: hardcoded
     this.rect.h = 30;
 
-    var _SDL_Rect clip;
-        clip.x =  0;
-        clip.y =  0;
-        clip.w = this.rect.w;
-        clip.h = this.rect.h;
+    var _SDL_Rect clip_r;
+        clip_r.x =  0;
+        clip_r.y =  0;
+        clip_r.w = this.rect.w;
+        clip_r.h = this.rect.h;
 
     var _float vx = _rand()%(_REN_W/5) + 1;
     var _float vy = _rand()%(_REN_H/5) + 1;
@@ -226,7 +274,7 @@ do
         var int dt;
         every dt = SDL_DT do
             x = x + v*dt/1000;
-            clip.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
+            clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
     with
         every SDL_REDRAW do
@@ -235,10 +283,10 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip, &r);
+            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip_r, &r);
         end
     with
-        await go_kill;
+        await go_hit;
     end
 end
 
@@ -252,11 +300,11 @@ do
     this.rect.w = 18;
     this.rect.h = 18;
 
-    var _SDL_Rect clip;
-        clip.x =  0;
-        clip.y =  0;
-        clip.w = this.rect.w;
-        clip.h = this.rect.h;
+    var _SDL_Rect clip_r;
+        clip_r.x =  0;
+        clip_r.y =  0;
+        clip_r.w = this.rect.w;
+        clip_r.h = this.rect.h;
 
     var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
     var _float vy = (_rand()%(_REN_H/10) + 1);
@@ -278,7 +326,7 @@ do
         var int dt;
         every dt = SDL_DT do
             x = x + v*dt/1000;
-            clip.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
+            clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
     with
         every SDL_REDRAW do
@@ -287,10 +335,10 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_rock, &clip, &r);
+            _SDL_RenderCopy(_REN, _TEX_rock, &clip_r, &r);
         end
     with
-        await go_kill;
+        await go_hit;
     end
 end
 
@@ -330,11 +378,11 @@ do
             _SDL_RenderCopy(_REN, _TEX_BONUS_LIFE, null, &r);
         end
     with
-        await go_kill;
+        await go_hit;
     end
 end
 
-class [_OBJ_BOUNS_FIRE_N] BonusFire with
+class [_OBJ_BONUS_FIRE_N] BonusFire with
     interface Object;
     var int id  = _OBJ_BONUS_FIRE;
     var int dir = 0;
@@ -370,11 +418,11 @@ do
             _SDL_RenderCopy(_REN, _TEX_BONUS_FIRE, null, &r);
         end
     with
-        await go_kill;
+        await go_hit;
     end
 end
 
-class [_OBJ_BOUNS_BOMB_N] BonusBomb with
+class [_OBJ_BONUS_BOMB_N] BonusBomb with
     interface Object;
     var int id = _OBJ_BONUS_BOMB;
     var int dir = 0;
@@ -410,7 +458,7 @@ do
                 timer = timer - 1;
             end
         with
-            await go_kill;
+            await go_hit;
         end
 
         // collide with ROCK => MAX
