@@ -6,7 +6,7 @@
 /* TODO:
  * - OBJ_BOMB[1,2] two-fingers tap
  *   (fire: DOWN->UP for one finger)
- * - BONUS_ENERGY
+ * - BONUS_HITS
  * - PAUSE/IF salva img emostra pause em cima
  */
 
@@ -383,7 +383,7 @@ with
                                         this.rect.y = (int) oo2:rect.y;
                                         this.dir    = -dir;
                                     end;
-                                else/if pct < 70 then
+                                else/if pct < 80 then
                                     spawn BonusFire with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;

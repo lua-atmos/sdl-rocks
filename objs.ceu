@@ -44,7 +44,7 @@ class Fire with
     var int vy;
     var int w = 0;  // fire width (may increase with bonus)
 do
-    this.rect.w = _REN_W/50 + _REN_W*this.w/150;
+    this.rect.w = _REN_W/50 + _REN_W*this.w/100;
     this.rect.h = 3;
 
     par/or do
@@ -74,8 +74,9 @@ class Ship with
     var int dir;
     var Controller* controller;
 
-    var int fire_w = 0;
-    var int hits   = 3;     // number of hit points
+    var int fire_w =  0;
+    var int fires  =  5;     // number of fires
+    var int hits   =  3;     // number of hit points
 
     event void ok_killed;
 do
@@ -95,6 +96,15 @@ do
         end
         hits_r.w = _REN_W/100;
         hits_r.y = this.lim_y1 + _REN_H/100;
+
+    var _SDL_Rect fires_r;
+        if this.dir > 0 then
+            fires_r.x = this.lim_x1 + 2*_REN_W/100;
+        else
+            fires_r.x = this.lim_x2 - 2*_REN_W/100;
+        end
+        fires_r.w = _REN_W/100;
+        fires_r.y = this.lim_y1 + _REN_H/100;
 
     var _float sx = this.rect.x;
     var _float vx = 0;
@@ -131,9 +141,20 @@ do
             end
         end
     with
+        // a new "fires" every 2s
+        every 2s do
+            if this.fires < 5 then
+                this.fires = this.fires + 1;
+            end
+        end
+    with
         // spawn a "Fire" every "ok_fired"
         do
             every this.controller:ok_fired do
+                if this.fires == 0 then
+                    continue;
+                end
+                this.fires = this.fires - 1;
                 var int ok? = spawn[_OBJ_FIRE_N] Fire with
                     this.id   = id + 2;
                     this.dir  = dir;
@@ -192,6 +213,16 @@ do
             hits_r.h = 3 * _REN_H/20;
             _rectangleRGBA(_REN, hits_r.x, hits_r.y,
                                  hits_r.x+hits_r.w, hits_r.y+hits_r.h,
+                                 0x77,0x77,0x77,0xFF);
+
+            // draw fires
+            fires_r.h = this.fires * _REN_H/33;
+            _boxRGBA(_REN, fires_r.x, fires_r.y,
+                           fires_r.x+fires_r.w, fires_r.y+fires_r.h,
+                           0xFF,0x00,0x00,0x77);
+            fires_r.h = 5 * _REN_H/33;
+            _rectangleRGBA(_REN, fires_r.x, fires_r.y,
+                                 fires_r.x+fires_r.w, fires_r.y+fires_r.h,
                                  0x77,0x77,0x77,0xFF);
 
             if blink? then
