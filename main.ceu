@@ -1,4 +1,4 @@
-//#define SIMUL
+#define SIMUL
 
 #include "sdl.ceu"
 #include "sdl-gfx.ceu"
@@ -7,6 +7,7 @@
 
 /* TODO:
  * - PAUSE/IF salva img emostra pause em cima
+ * - BONUS_ACCEL
  */
 
 input void SDL_REDRAW;
@@ -207,7 +208,7 @@ with
         var int blink? = 0;
         par/or do
             await 1s;
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && !defined(SIMUL)
             await SDL_FINGERDOWN;
 #else
             await SDL_KEYDOWN;
@@ -225,7 +226,7 @@ with
         end
         _Mix_PlayChannel(-1, _SND_START, 0);
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && !defined(SIMUL)
         var TouchController controller1 with
             this.move_r.x = 0;
             this.move_r.y = 0;
@@ -265,7 +266,7 @@ with
             this.controller = &controller1;
         end;
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && !defined(SIMUL)
         var TouchController controller2 with
             this.move_r.x = _REN_W/2;
             this.move_r.y = _REN_H/2;
