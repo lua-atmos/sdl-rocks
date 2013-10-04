@@ -112,14 +112,28 @@ do
             end
         end
     with
-        // fire
+        // fire / shield
         loop do
             var _SDL_Point pt;
-            var _SDL_TouchFingerEvent* e =
+            var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
                     _SDL_Rect_vs_Point(&fire_r,
-                                       _SDL_Touch2Point(&pt,e,_REN_W,_REN_H));
-            emit this.ok_fired;
+                                       _SDL_Touch2Point(&pt,e1,_REN_W,_REN_H));
+            var int id = e1:fingerId;
+
+            par/or do
+                // fire: FINGERUP on same finger
+                var _SDL_TouchFingerEvent* e2 =
+                    await SDL_FINGERUP until (e2:fingerId == id);
+                emit this.ok_fired;
+            with
+                // fire: FINGERDOWN on other finger
+                var _SDL_TouchFingerEvent* e2 =
+                    await SDL_FINGERDOWN until
+                        _SDL_Rect_vs_Point(&fire_r,
+                                           _SDL_Touch2Point(&pt,e2,_REN_W,_REN_H));
+                emit this.ok_shield;
+            end
         end
     with
         // toggle cheat_immortal?
