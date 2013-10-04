@@ -104,36 +104,33 @@ int main (int argc, char *argv[])
 #ifndef SDL_SIMUL
 
         /*
-         * With isPaused,  'tm=-1' (only events).
-         * With SDL_DT,    'tm=0' (update as fast as possible).
-         * Without SDL_DT, 'tm' respects the timers.
+         * With    SDL_DT, 'tm=0' (update as fast as possible).
+         * Without SDL_DT, 'tm=?' respects the timers.
          */
-        s32 tm;
-#ifdef __ANDROID__
-        if (isPaused) {
-            tm = -1;
-        }
-        else
-#endif
-        {
 #ifdef CEU_IN_SDL_DT
-            tm = 0;
+        s32 tm =  0;
 #else
-            tm = -1;
+        s32 tm = -1;
 #ifdef CEU_WCLOCKS
-            if (WCLOCK_nxt != CEU_WCLOCK_INACTIVE)
-                tm = WCLOCK_nxt / 1000;
+        if (WCLOCK_nxt != CEU_WCLOCK_INACTIVE)
+            tm = WCLOCK_nxt / 1000;
 #endif
 #ifdef CEU_ASYNCS
-            if (ASYNC_nxt)
-                tm = 0;
+        if (ASYNC_nxt)
+            tm = 0;
 #endif
 #endif  // CEU_IN_SDL_DT
-        }
 
         int has;
 SKIP_MOTION:
-        has = SDL_WaitEventTimeout(&evt, tm);
+#ifdef __ANDROID__
+        if (isPaused) {
+            has = SDL_WaitEvent(&evt);
+        } else
+#endif
+        {
+            has = SDL_WaitEventTimeout(&evt, tm);
+        }
 
         if (has) {
             switch (evt.type)
