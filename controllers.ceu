@@ -6,6 +6,9 @@ class KeyController with
     var int k_immortal;
     var int cheat_immortal? = 0;
 do
+    this.ax = 0;
+    this.ay = 0;
+
     par do
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYDOWN do

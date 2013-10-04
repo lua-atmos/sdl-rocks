@@ -6,7 +6,6 @@
 /* TODO:
  * - OBJ_BOMB[1,2] two-fingers tap
  *   (fire: DOWN->UP for one finger)
- * - BONUS_HITS
  * - PAUSE/IF salva img emostra pause em cima
  */
 
@@ -23,23 +22,19 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
  * Defines _OBJ_N avoiding buffer overflows in _OBJS
  */
 
-#define _OBJ_SHIP_N         1       // x2
-#define _OBJ_FIRE_N         3       // x2
-#define _OBJ_ROCK_N         10
-#define _OBJ_rock_N         20
-#define _OBJ_BONUS_LIFE_N   5
-#define _OBJ_BONUS_HITS_N   5
-#define _OBJ_BONUS_FIRE_N   5
-#define _OBJ_BONUS_BOMB_N   5
+#define _OBJ_SHIP_N     1       // x2
+#define _OBJ_FIRE_N     3       // x2
+#define _OBJ_ROCK_N     10
+#define _OBJ_rock_N     20
+#define _OBJ_BONUS_N    10
+#define _OBJ_BOMB_N     5
 
-#define _OBJ_N + 2*_OBJ_SHIP_N      \
-               + 2*_OBJ_FIRE_N      \
-               + _OBJ_ROCK_N        \
-               + _OBJ_rock_N        \
-               + _OBJ_BONUS_LIFE_N  \
-               + _OBJ_BONUS_HITS_N  \
-               + _OBJ_BONUS_FIRE_N  \
-               + _OBJ_BONUS_BOMB_N
+#define _OBJ_N + 2*_OBJ_SHIP_N  \
+               + 2*_OBJ_FIRE_N  \
+               + _OBJ_ROCK_N    \
+               + _OBJ_rock_N    \
+               + _OBJ_BONUS_N   \
+               + _OBJ_BOMB_N
 
 native nohold _getVS();
 native do
@@ -56,23 +51,25 @@ native do
         OBJ_rock,
         OBJ_BONUS_LIFE,
         OBJ_BONUS_HITS,
+        OBJ_BONUS_SHIELD,
         OBJ_BONUS_FIRE,
         OBJ_BONUS_BOMB,
         OBJ_MAX
     };
 
     char idVSid[OBJ_MAX][OBJ_MAX] = {
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
-        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // SHIP1
-        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1 },    // SHIP2
-        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // FIRE1
-        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1 },    // FIRE2
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },    // ROCK
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },    // rock
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 },    // BONUS_LIFE
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 },    // BONUS_HITS
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 },    // BONUS_FIRE
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },    // BONUS_BOMB
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 },    // SHIP1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // SHIP2
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 },    // FIRE1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // FIRE2
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // ROCK
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // rock
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_LIFE
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_HITS
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_SHIELD
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_FIRE
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_BOMB
     };
 
     void* OBJS[_OBJ_N];
@@ -359,8 +356,9 @@ with
 
                             // BigRock vs Fire:
                             //  - 40%: spawn 2 small rocks
-                            //  - 15%: spawn (+1)
-                            //  - 15%: spawn (H)
+                            //  - 10%: spawn (+1)
+                            //  - 10%: spawn (H)
+                            //  - 10%: spawn (S)
                             //  - 15%: spawn (F)
                             //  - 15%: spawn (B)
                             oo1 = o1;
@@ -382,26 +380,40 @@ with
                                             this.dir    = dir;
                                         end;
                                     end
-                                else/if pct < 55 then
-                                    spawn BonusLife with
+                                else/if pct < 50 then
+                                    spawn Bonus with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
+                                        this.id     = _OBJ_BONUS_LIFE;
+                                        this.tex    = _TEX_BONUS_LIFE;
+                                        this.dir    = -dir;
+                                    end;
+                                else/if pct < 60 then
+                                    spawn Bonus with
+                                        this.rect.x = (int) oo2:rect.x;
+                                        this.rect.y = (int) oo2:rect.y;
+                                        this.id     = _OBJ_BONUS_HITS;
+                                        this.tex    = _TEX_BONUS_HITS;
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
-                                    spawn BonusHits with
+                                    spawn Bonus with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
+                                        this.id     = _OBJ_BONUS_SHIELD;
+                                        this.tex    = _TEX_BONUS_SHIELD;
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
-                                    spawn BonusFire with
+                                    spawn Bonus with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
+                                        this.id     = _OBJ_BONUS_FIRE;
+                                        this.tex    = _TEX_BONUS_FIRE;
                                         this.dir    = -dir;
                                     end;
                                 else
-                                    spawn BonusBomb with
+                                    spawn Bomb with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.dir    = dir;
@@ -427,6 +439,17 @@ with
                                 if (oo2:id == _OBJ_SHIP1) or
                                    (oo2:id == _OBJ_SHIP2) then
                                     emit oo2:go_hit => 1;
+                                end
+                            end
+
+                            // BonusShield vs Ship: go_shield
+                            oo1 = o1;
+                            oo2 = o2;
+                            if _getVS(_OBJ_BONUS_SHIELD, &oo1, &oo2) then
+                                if oo2:id == _OBJ_SHIP1 or
+                                   oo2:id == _OBJ_SHIP2 then
+                                    var Ship* ship = (Ship*) oo2;
+                                    emit ship:go_shield;
                                 end
                             end
 

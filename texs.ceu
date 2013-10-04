@@ -6,6 +6,7 @@ native do
     SDL_Texture* TEX_ROCK       = NULL;
     SDL_Texture* TEX_rock       = NULL;
     SDL_Texture* TEX_BONUS_LIFE = NULL;
+    SDL_Texture* TEX_BONUS_SHIELD = NULL;
     SDL_Texture* TEX_BONUS_HITS = NULL;
     SDL_Texture* TEX_BONUS_FIRE = NULL;
     SDL_Texture* TEX_BONUS_BOMB[3];
@@ -48,6 +49,12 @@ _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
         _SDL_DestroyTexture(_TEX_BONUS_LIFE);
     end
 
+_TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
+                                    &_colors.white, null);
+    finalize with
+        _SDL_DestroyTexture(_TEX_BONUS_SHIELD);
+    end
+
 _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
                                     &_colors.white, null);
     finalize with
@@ -79,6 +86,7 @@ _assert(_TEX_SHIP2      != null);
 _assert(_TEX_ROCK       != null);
 _assert(_TEX_rock       != null);
 _assert(_TEX_BONUS_LIFE != null);
+_assert(_TEX_BONUS_SHIELD != null);
 _assert(_TEX_BONUS_HITS != null);
 _assert(_TEX_BONUS_FIRE != null);
 loop i, 3 do

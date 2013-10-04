@@ -81,6 +81,7 @@ class Ship with
     var int fires  =  _SHIP_FIRE_MAX;     // number of fires
     var int hits   =  _SHIP_HITS_MAX;     // number of hit points
 
+    event void go_shield;
     event void ok_killed;
 do
     _assert(this.tex != null);
@@ -389,12 +390,15 @@ do
     end
 end
 
-class [_OBJ_BONUS_LIFE_N] BonusLife with
+class [_OBJ_BONUS_N] Bonus with
     interface Object;
-    var int id = _OBJ_BONUS_LIFE;
+    var int id  = 0;
     var int dir = 0;
+    var _SDL_Texture* tex = null;
 do
+    _assert(this.id  != 0);
     _assert(this.dir != 0);
+    _assert(this.tex != null);
 
     this.rect.w = _REN_W/50;
     this.rect.h = _REN_W/50;
@@ -419,97 +423,17 @@ do
                                     0x00,0x77,0x00,0xFF);
 
             var _SDL_Rect r;
-                _SDL_QueryTexture(_TEX_BONUS_LIFE, null, null, &r.w, &r.h);
+                _SDL_QueryTexture(this.tex, null, null, &r.w, &r.h);
                 r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
                 r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
-            _SDL_RenderCopy(_REN, _TEX_BONUS_LIFE, null, &r);
+            _SDL_RenderCopy(_REN, this.tex, null, &r);
         end
     with
         await go_hit;
     end
 end
 
-class [_OBJ_BONUS_HITS_N] BonusHits with    // TODO: same as BonusLife
-    interface Object;
-    var int id = _OBJ_BONUS_HITS;
-    var int dir = 0;
-do
-    _assert(this.dir != 0);
-
-    this.rect.w = _REN_W/50;
-    this.rect.h = _REN_W/50;
-
-    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var _float vy = (_rand()%(_REN_H/10) + 1);
-    if _rand() % 2 then
-        vy = -vy;
-    end
-
-    par/or do
-        var Object* obj = &this;
-        var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
-        end;
-        await move.ok;
-    with
-        every SDL_REDRAW do
-            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
-                                    0x00,0x77,0x00,0xFF);
-
-            var _SDL_Rect r;
-                _SDL_QueryTexture(_TEX_BONUS_HITS, null, null, &r.w, &r.h);
-                r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
-                r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
-            _SDL_RenderCopy(_REN, _TEX_BONUS_HITS, null, &r);
-        end
-    with
-        await go_hit;
-    end
-end
-
-class [_OBJ_BONUS_FIRE_N] BonusFire with
-    interface Object;
-    var int id  = _OBJ_BONUS_FIRE;
-    var int dir = 0;
-do
-    _assert(this.dir != 0);
-
-    this.rect.w = _REN_W/50;
-    this.rect.h = _REN_W/50;
-
-    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var _float vy = (_rand()%(_REN_H/10) + 1);
-    if _rand() % 2 then
-        vy = -vy;
-    end
-
-    par/or do
-        var Object* obj = &this;
-        var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
-        end;
-        await move.ok;
-    with
-        every SDL_REDRAW do
-            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
-                                    0x00,0x77,0x00,0xFF);
-
-            var _SDL_Rect r;
-                _SDL_QueryTexture(_TEX_BONUS_FIRE, null, null, &r.w, &r.h);
-                r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
-                r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
-            _SDL_RenderCopy(_REN, _TEX_BONUS_FIRE, null, &r);
-        end
-    with
-        await go_hit;
-    end
-end
-
-class [_OBJ_BONUS_BOMB_N] BonusBomb with
+class [_OBJ_BOMB_N] Bomb with
     interface Object;
     var int id = _OBJ_BONUS_BOMB;
     var int dir = 0;
