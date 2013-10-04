@@ -1,11 +1,11 @@
+//#define SIMUL
+
 #include "sdl.ceu"
 #include "sdl-gfx.ceu"
 #include "colors.ceu"
 #include "ui-texture.ceu"
 
 /* TODO:
- * - OBJ_BOMB[1,2] two-fingers tap
- *   (fire: DOWN->UP for one finger)
  * - PAUSE/IF salva img emostra pause em cima
  */
 
@@ -165,8 +165,10 @@ par/or do
 //with
     // TODO: battery: WaitTimeout??
     //await SDL_APP_WILLENTERBACKGROUND;
-//with
-    //#include "simul.ceu"
+#ifdef SIMUL
+with
+    #include "simul.ceu"
+#endif
 with
     every SDL_REDRAW do
         _boxRGBA(_REN, 0,0, _REN_W,_REN_H, 0,0,0, 0xFF);
@@ -246,18 +248,18 @@ with
         end;
 #endif
 
+        var int dim;    // dim = w
+            _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
         var Ship ship1 with
             this.id = _OBJ_SHIP1;
             this.tex = _TEX_SHIP1;
-            this.rect.w = 30;       // TODO: hardcoded
-            this.rect.h = 30;
-            this.rect.x = this.rect.w;
+            this.rect.x = dim;
             this.rect.y = _REN_H/2;
 
-            this.lim_x1 = this.rect.w/2;
-            this.lim_x2 = _REN_W/2 - this.rect.w/2;
-            this.lim_y1 = this.rect.h/2;
-            this.lim_y2 = _REN_H - this.rect.h/2;
+            this.lim_x1 = dim/2;
+            this.lim_x2 = _REN_W/2 - dim/2;
+            this.lim_y1 = dim/2;
+            this.lim_y2 = _REN_H - dim/2;
 
             this.dir        = 1;
             this.controller = &controller1;
@@ -286,18 +288,18 @@ with
         end;
 #endif
 
+        var int dim;    // dim = w
+            _SDL_QueryTexture(_TEX_SHIP2, null, null, &dim, null);
         var Ship ship2 with
             this.id = _OBJ_SHIP2;
             this.tex = _TEX_SHIP2;
-            this.rect.w = 30;       // TODO: hardcoded
-            this.rect.h = 30;
-            this.rect.x = _REN_W - this.rect.w;
+            this.rect.x = _REN_W - dim;
             this.rect.y = _REN_H/2;
 
-            this.lim_x1 = _REN_W/2 + this.rect.w/2;
-            this.lim_x2 = _REN_W - this.rect.w/2;
-            this.lim_y1 = this.rect.h/2;
-            this.lim_y2 = _REN_H - this.rect.h/2;
+            this.lim_x1 = _REN_W/2 + dim/2;
+            this.lim_x2 = _REN_W - dim/2;
+            this.lim_y1 = dim/2;
+            this.lim_y2 = _REN_H - dim/2;
 
             this.dir        = -1;
             this.controller = &controller2;

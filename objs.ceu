@@ -85,7 +85,11 @@ class Ship with
 do
     _assert(this.tex != null);
 
-    var int dim = 30;         // TODO: harcoded
+    var int dim;    // dim = w
+        _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
+    this.rect.w = dim;
+    this.rect.h = dim;
+
     var _SDL_Rect clip_r;
         clip_r.x =  0;
         clip_r.w = dim;
@@ -193,13 +197,13 @@ do
                 hasShield? = 0;
             end
 
-            // explode 20w/s
+            // explode 30w/s
             _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
             par/or do
                 await 100ms;
             with
                 var _float d = this.rect.w;
-                var _float v = 20 * this.rect.w;
+                var _float v = 30 * this.rect.w;
                 var int dt;
                 every dt = SDL_DT do
                     d = d + v*dt/1000;
@@ -326,13 +330,13 @@ do
         end
     end
 
-    // explode 20w/s
+    // explode 30w/s
     _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
     par/or do
         await 100ms;
     with
-        var _float d = this.rect.w;
-        var _float v = 20 * this.rect.w;
+        var _float d = dim;
+        var _float v = 30 * dim;
         var int dt;
         every dt = SDL_DT do
             d = d + v*dt/1000;
@@ -353,8 +357,10 @@ class [_OBJ_ROCK_N] RockBig with
     interface Object;
     var int id = _OBJ_ROCK;
 do
-    this.rect.w = 30;       // TODO: hardcoded
-    this.rect.h = 30;
+    var int dim;    // dim = h
+        _SDL_QueryTexture(_TEX_ROCK, null, null, null, &dim);
+    this.rect.w = dim;
+    this.rect.h = dim;
 
     var _SDL_Rect clip_r;
         clip_r.x =  0;
@@ -414,8 +420,10 @@ class [_OBJ_rock_N] RockSmall with
 do
     _assert(this.dir != 0);
 
-    this.rect.w = 18;
-    this.rect.h = 18;
+    var int dim;    // dim = h
+        _SDL_QueryTexture(_TEX_rock, null, null, null, &dim);
+    this.rect.w = dim;
+    this.rect.h = dim;
 
     var _SDL_Rect clip_r;
         clip_r.x =  0;
@@ -469,8 +477,8 @@ do
     _assert(this.dir != 0);
     _assert(this.tex != null);
 
-    this.rect.w = _REN_W/50;
-    this.rect.h = _REN_W/50;
+    this.rect.w = _REN_W/30;
+    this.rect.h = _REN_W/30;
 
     var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
     var _float vy = (_rand()%(_REN_H/10) + 1);
@@ -488,7 +496,7 @@ do
         await move.ok;
     with
         every SDL_REDRAW do
-            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
                                     0x00,0x77,0x00,0xFF);
 
             var _SDL_Rect r;
@@ -509,8 +517,8 @@ class [_OBJ_BOMB_N] Bomb with
 do
     _assert(this.dir != 0);
 
-    this.rect.w = _REN_W/50;
-    this.rect.h = _REN_W/50;
+    this.rect.w = _REN_W/30;
+    this.rect.h = _REN_W/30;
 
     var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
     var _float vy = (_rand()%(_REN_H/10) + 1);
@@ -546,13 +554,13 @@ do
             _idVSid[_OBJ_BONUS_BOMB][_OBJ_ROCK+i] = 1;
         end
 
-        // explode 30w/s
+        // explode 40w/s
         _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
         par/or do
             await 200ms;
         with
             var _float d = this.rect.w;
-            var _float v = 30 * this.rect.w;
+            var _float v = 40 * this.rect.w;
             var int dt;
             every dt = SDL_DT do
                 d = d + v*dt/1000;
@@ -562,7 +570,7 @@ do
         end
     with
         every SDL_REDRAW do
-            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
                                     0xFF,0x00,0x00,0xFF);
 
             if timer >= 0 then

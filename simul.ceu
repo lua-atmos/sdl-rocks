@@ -1,5 +1,3 @@
-#define SDL_SIMUL
-
 _srand(_time(null));
 
 loop do
@@ -19,17 +17,21 @@ loop do
         else/if pct < 40 then
             e_key.keysym.sym = _SDLK_d;
         else/if pct < 50 then
-            e_key.keysym.sym = _SDLK_z;
-        else/if pct < 60 then
             e_key.keysym.sym = _SDLK_UP;
-        else/if pct < 70 then
+        else/if pct < 60 then
             e_key.keysym.sym = _SDLK_DOWN;
-        else/if pct < 80 then
+        else/if pct < 70 then
             e_key.keysym.sym = _SDLK_LEFT;
-        else/if pct < 90 then
+        else/if pct < 80 then
             e_key.keysym.sym = _SDLK_RIGHT;
-        else
+        else/if pct < 85 then
+            e_key.keysym.sym = _SDLK_z;
+        else/if pct < 90 then
             e_key.keysym.sym = _SDLK_SEMICOLON;
+        else/if pct < 95 then
+            e_key.keysym.sym = _SDLK_x;
+        else
+            e_key.keysym.sym = _SDLK_PERIOD;
         end
 
         dt = _rand() % 2000;
