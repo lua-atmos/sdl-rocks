@@ -51,6 +51,14 @@ int ASYNC_nxt = 0;
 #define ceu_out_async(v) ASYNC_nxt = v;
 #endif
 
+#define SDL_MOTION_FLOOD_AVOID
+#ifdef SDL_MOTION_FLOOD_AVOID
+int SDL_motion_flood_avoid_id = -1;
+SDL_bool SDL_motion_flood_avoid_filter (SDL_Event* evt) {
+    return ((SDL_TouchFingerEvent*)evt)->fingerId == SDL_motion_flood_avoid_id;
+}
+#endif
+
 #include "_ceu_code.cceu"
 
 #ifdef __ANDROID__
@@ -265,8 +273,11 @@ SKIP_MOTION:
 #ifdef CEU_IN_SDL_FINGERMOTION
                 case SDL_FINGERMOTION:
                     // avoid MOTION floods
-                    SDL_FlushEvent(SDL_FINGERMOTION);
-                    SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE);
+#ifdef SDL_MOTION_FLOOD_AVOID
+                    SDL_motion_flood_avoid_id = ((SDL_TouchFingerEvent*)&evt)->fingerId;
+                    SDL_FlushEvent(SDL_FINGERMOTION, SDL_motion_flood_avoid_filter);
+                    SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE, NULL);
+#endif
                     ceu_go_event(CEU_IN_SDL_FINGERMOTION, &evt);
                     break;
 #endif
