@@ -58,7 +58,7 @@ do
     with
         every SDL_REDRAW do
             _boxRGBA(_REN, rect.x,rect.y, rect.x+rect.w,rect.y+rect.h,
-                           0x77,0x77,0x77,0xFF);
+                           0xFF,0xFF,0x88,0xFF);
         end
     with
         await go_hit;
@@ -197,13 +197,13 @@ do
                 hasShield? = 0;
             end
 
-            // explode 30w/s
+            // explode 40w/s
             _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
             par/or do
                 await 100ms;
             with
                 var _float d = this.rect.w;
-                var _float v = 30 * this.rect.w;
+                var _float v = 40 * this.rect.w;
                 var int dt;
                 every dt = SDL_DT do
                     d = d + v*dt/1000;
@@ -330,13 +330,13 @@ do
         end
     end
 
-    // explode 30w/s
+    // explode 40w/s
     _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
     par/or do
         await 100ms;
     with
         var _float d = dim;
-        var _float v = 30 * dim;
+        var _float v = 40 * dim;
         var int dt;
         every dt = SDL_DT do
             d = d + v*dt/1000;
@@ -512,7 +512,7 @@ end
 
 class [_OBJ_BOMB_N] Bomb with
     interface Object;
-    var int id = _OBJ_BONUS_BOMB;
+    var int id = _OBJ_BOMB;
     var int dir = 0;
 do
     _assert(this.dir != 0);
@@ -550,9 +550,7 @@ do
         end
 
         // collide with ROCK => MAX
-        loop i, (_OBJ_MAX-_OBJ_ROCK) do
-            _idVSid[_OBJ_BONUS_BOMB][_OBJ_ROCK+i] = 1;
-        end
+        this.id = _OBJ_EXPLOSION;
 
         // explode 40w/s
         _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
@@ -575,11 +573,11 @@ do
 
             if timer >= 0 then
                 var _SDL_Rect r;
-                    _SDL_QueryTexture(_TEX_BONUS_BOMB[timer], null, null,
+                    _SDL_QueryTexture(_TEX_BOMB[timer], null, null,
                                                               &r.w, &r.h);
                     r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
                     r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
-                _SDL_RenderCopy(_REN, _TEX_BONUS_BOMB[timer], null, &r);
+                _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, &r);
             end
         end
     end

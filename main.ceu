@@ -23,8 +23,8 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 
 #define _OBJ_SHIP_N     1       // x2
 #define _OBJ_FIRE_N     3       // x2
-#define _OBJ_ROCK_N     10
-#define _OBJ_rock_N     20
+#define _OBJ_ROCK_N     50
+#define _OBJ_rock_N     50
 #define _OBJ_BONUS_N    10
 #define _OBJ_BOMB_N     5
 
@@ -52,7 +52,8 @@ native do
         OBJ_BONUS_HITS,
         OBJ_BONUS_SHIELD,
         OBJ_BONUS_FIRE,
-        OBJ_BONUS_BOMB,
+        OBJ_BOMB,
+        OBJ_EXPLOSION,
         OBJ_MAX
     };
 
@@ -68,7 +69,8 @@ native do
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_HITS
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_SHIELD
         { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_FIRE
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_BOMB
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BOMB
+        { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 },    // EXPLOSION
     };
 
     void* OBJS[_OBJ_N];
@@ -311,8 +313,12 @@ with
             await ship2.ok_killed;
             emit points1.inc;
         with
+            var int freq = 2000;
             loop do
-                var int dt = 500 + _rand()%2000;
+                var int dt = _rand() % freq;
+                if freq > 50 then
+                    freq = freq - 10;
+                end
                 await (dt)ms;
                 spawn RockBig;
             end

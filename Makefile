@@ -1,7 +1,7 @@
-#CFLAGS = -DCEU_RUNTESTS -DCEU_DEBUG #-DSIMUL #-DCEU_DEBUG_TRAILS
+#CFLAGS = -DCEU_RUNTESTS -DCEU_DEBUG -DSIMUL #-DCEU_DEBUG_TRAILS
 
 all:
-	ceu --cpp-args "-I ." main.ceu
+	ceu --cpp-args "-I . $(CFLAGS)" main.ceu
 	gcc -g -Os main.c $(CFLAGS) -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lSDL2_net -lSDL2_gfx -lpthread -lm \
 		-o rocks.exe
 

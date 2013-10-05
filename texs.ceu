@@ -9,7 +9,7 @@ native do
     SDL_Texture* TEX_BONUS_SHIELD = NULL;
     SDL_Texture* TEX_BONUS_HITS = NULL;
     SDL_Texture* TEX_BONUS_FIRE = NULL;
-    SDL_Texture* TEX_BONUS_BOMB[3];
+    SDL_Texture* TEX_BOMB[3];
 end
 
 _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
@@ -70,12 +70,12 @@ _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
 loop i, 3 do
     var _char[5] str;
     _sprintf(str, "%d", i+1);
-    _TEX_BONUS_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                           &_colors.white, null);
+    _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                     &_colors.white, null);
 end
     finalize with
         loop i, 3 do
-            _SDL_DestroyTexture(_TEX_BONUS_BOMB[i]);
+            _SDL_DestroyTexture(_TEX_BOMB[i]);
         end
     end
 
@@ -90,5 +90,5 @@ _assert(_TEX_BONUS_SHIELD != null);
 _assert(_TEX_BONUS_HITS != null);
 _assert(_TEX_BONUS_FIRE != null);
 loop i, 3 do
-    _assert(_TEX_BONUS_BOMB[i] != null);
+    _assert(_TEX_BOMB[i] != null);
 end
