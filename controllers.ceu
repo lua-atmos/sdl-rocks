@@ -152,7 +152,7 @@ do
             par/or do
                 await 1s;
             with
-                // 2x H/2 movement with same finger
+                // 4x H/2 movement with same finger
                 var int count = 0;
                 loop do
                     var _SDL_TouchFingerEvent* e2 =
@@ -164,7 +164,7 @@ do
                         pt1 := pt2;
                             // copy not reference
                         count = count + 1;
-                        if count == 2 then
+                        if count == 4 then
                             break;
                         end
                     end

@@ -133,19 +133,11 @@ SKIP_MOTION:
 //if (has)
     //printf("EVENT %x\n", evt.type);
 
+        // handle onPause/onResume
+#ifdef __ANDROID__
         if (has) {
             switch (evt.type)
             {
-                // skip MOTION event if queue is not empty
-                case SDL_FINGERMOTION:
-                    if (SDL_PollEvent(NULL)) {
-                        tm = -1;
-                        goto SKIP_MOTION;
-                    }
-                    break;
-
-                // handle onPause/onResume
-#ifdef __ANDROID__
                 case SDL_APP_WILLENTERBACKGROUND:
                     isPaused = 1;
                     break;
@@ -153,9 +145,9 @@ SKIP_MOTION:
                     isPaused = 0;
                     old = SDL_GetTicks();   // ignores previous 'old' on resume
                     break;
-#endif
             }
         }
+#endif
 
 #if defined(CEU_WCLOCKS) || defined(CEU_IN_SDL_DT)
         u32 now = SDL_GetTicks();
@@ -272,7 +264,9 @@ SKIP_MOTION:
 #endif
 #ifdef CEU_IN_SDL_FINGERMOTION
                 case SDL_FINGERMOTION:
-                    handled = 0;
+                    // avoid MOTION floods
+                    SDL_FlushEvent(SDL_FINGERMOTION);
+                    SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE);
                     ceu_go_event(CEU_IN_SDL_FINGERMOTION, &evt);
                     break;
 #endif

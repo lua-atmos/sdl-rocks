@@ -23,8 +23,8 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 
 #define _OBJ_SHIP_N     1       // x2
 #define _OBJ_FIRE_N     3       // x2
-#define _OBJ_ROCK_N     50
-#define _OBJ_rock_N     50
+#define _OBJ_ROCK_N     40
+#define _OBJ_rock_N     40
 #define _OBJ_BONUS_N    10
 #define _OBJ_BOMB_N     5
 
