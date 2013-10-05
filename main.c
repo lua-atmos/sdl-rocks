@@ -150,7 +150,7 @@ SKIP_MOTION:
                     int id = ((SDL_TouchFingerEvent*)&evt)->fingerId;
                     if (SDL_PollEvent(NULL) && FINGER_id==id) {
                         //SDL_FlushEvent(SDL_FINGERMOTION, SDL_motion_flood_avoid_filter);
-                        SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE, NULL);
+                        SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE);
                         goto SKIP_MOTION;
                     } else {
                         FINGER_id = id;
