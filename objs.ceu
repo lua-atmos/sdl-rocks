@@ -501,8 +501,8 @@ do
 
             var _SDL_Rect r;
                 _SDL_QueryTexture(this.tex, null, null, &r.w, &r.h);
-                r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
-                r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
+                r.x = this.rect.x - r.w/2;
+                r.y = this.rect.y - r.h/2;
             _SDL_RenderCopy(_REN, this.tex, null, &r);
         end
     with
@@ -575,8 +575,8 @@ do
                 var _SDL_Rect r;
                     _SDL_QueryTexture(_TEX_BOMB[timer], null, null,
                                                               &r.w, &r.h);
-                    r.x = (int) _UI_align(this.rect.x, r.w, _UI_ALIGN_CENTER);
-                    r.y = (int) _UI_align(this.rect.y, r.h, _UI_ALIGN_MIDDLE);
+                    r.x = this.rect.x - r.w/2;
+                    r.y = this.rect.y - r.h/2;
                 _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, &r);
             end
         end

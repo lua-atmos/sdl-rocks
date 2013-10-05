@@ -1,11 +1,11 @@
 #include "sdl.ceu"
 #include "sdl-gfx.ceu"
 #include "colors.ceu"
-#include "ui-texture.ceu"
 
 /* TODO:
  * - PAUSE/IF salva img emostra pause em cima
  * - BONUS_ACCEL
+ * - MENU: control-sides, reset-points
  */
 
 input void SDL_REDRAW;
@@ -36,6 +36,7 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
                + _OBJ_BOMB_N
 
 native nohold _getVS();
+native nohold _SDL_text2texture();
 native do
     SDL_Renderer* REN = NULL;
     int REN_W, REN_H;
@@ -73,6 +74,23 @@ native do
         { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 },    // EXPLOSION
     };
 
+    SDL_Texture* SDL_text2texture (SDL_Renderer* ren,
+                                   TTF_Font* font, char* text,
+                                   SDL_Color* fg, SDL_Color* bg)
+    {
+        // Text => Surface
+        SDL_Surface* sfc;
+        if (bg == NULL)
+            sfc = TTF_RenderText_Blended(font, text, *fg);
+        else
+            sfc = TTF_RenderText_Shaded(font, text, *fg, *bg);
+
+        // Surface => Texture
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, sfc);
+        SDL_FreeSurface(sfc);
+
+        return tex;
+    }
     void* OBJS[_OBJ_N];
     int OBJS_N = 0;
 end
@@ -114,13 +132,19 @@ do
         with
             _SDL_DestroyTexture(tex);
         end
-        var UITexture ui with
-            this.ren = _REN;
-            this.tex = tex;
-        end;
-        ui._go(&this.rect);
+        _SDL_QueryTexture(tex, null, null, &this.rect.w, &this.rect.h);
 
-        await this.inc;
+        par/or do
+            await this.inc;
+        with
+            every SDL_REDRAW do
+                var _SDL_Rect r = this.rect;
+                    r.x = r.x - r.w/2;
+                    r.y = r.y - r.h/2;
+                _SDL_RenderCopy(_REN, tex, null, &r);
+            end
+        end
+
         this.v = v + 1;
     end
 end
@@ -171,19 +195,15 @@ with
     #include "simul.ceu"
 #endif
 with
+    // background image
+    var _SDL_Rect r;
+        _SDL_QueryTexture(_TEX_BG, null, null, &r.w, &r.h);
+        r.x = (_REN_W - r.w) / 2;
+        r.y = (_REN_H - r.h) / 2;
     every SDL_REDRAW do
-        _boxRGBA(_REN, 0,0, _REN_W,_REN_H, 0,0,0, 0xFF);
+        _SDL_RenderCopy(_REN, _TEX_BG, null, &r);
     end
 with
-    var UITexture bg with
-        this.ren = _REN;
-        this.tex = _TEX_BG;
-    end;
-    var _SDL_Rect r;
-        r.x = _REN_W / 2;
-        r.y = _REN_H / 2;
-    bg._go(&r);
-
     var _SDL_Rect r1;
         r1.x = 50;
         r1.y = _REN_H - 50;
