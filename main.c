@@ -53,10 +53,7 @@ int ASYNC_nxt = 0;
 
 #define SDL_MOTION_FLOOD_AVOID
 #ifdef SDL_MOTION_FLOOD_AVOID
-int SDL_motion_flood_avoid_id = -1;
-SDL_bool SDL_motion_flood_avoid_filter (SDL_Event* evt) {
-    return ((SDL_TouchFingerEvent*)evt)->fingerId == SDL_motion_flood_avoid_id;
-}
+int FINGER_id = -1;
 #endif
 
 #include "_ceu_code.cceu"
@@ -129,7 +126,9 @@ int main (int argc, char *argv[])
 #endif  // CEU_IN_SDL_DT
 
         int has;
+#ifdef SDL_MOTION_FLOOD_AVOID
 SKIP_MOTION:
+#endif
 #ifdef __ANDROID__
         if (isPaused) {
             has = SDL_WaitEvent(&evt);
@@ -141,11 +140,25 @@ SKIP_MOTION:
 //if (has)
     //printf("EVENT %x\n", evt.type);
 
-        // handle onPause/onResume
 #ifdef __ANDROID__
         if (has) {
             switch (evt.type)
             {
+                // handle MOTION floods
+#ifdef SDL_MOTION_FLOOD_AVOID
+                case SDL_FINGERMOTION: {
+                    int id = ((SDL_TouchFingerEvent*)&evt)->fingerId;
+                    if (SDL_PollEvent(NULL) && FINGER_id==id) {
+                        //SDL_FlushEvent(SDL_FINGERMOTION, SDL_motion_flood_avoid_filter);
+                        SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE, NULL);
+                        goto SKIP_MOTION;
+                    } else {
+                        FINGER_id = id;
+                    }
+                    break;
+                }
+#endif
+                // handle onPause/onResume
                 case SDL_APP_WILLENTERBACKGROUND:
                     isPaused = 1;
                     break;
@@ -272,12 +285,6 @@ SKIP_MOTION:
 #endif
 #ifdef CEU_IN_SDL_FINGERMOTION
                 case SDL_FINGERMOTION:
-                    // avoid MOTION floods
-#ifdef SDL_MOTION_FLOOD_AVOID
-                    SDL_motion_flood_avoid_id = ((SDL_TouchFingerEvent*)&evt)->fingerId;
-                    SDL_FlushEvent(SDL_FINGERMOTION, SDL_motion_flood_avoid_filter);
-                    SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE, NULL);
-#endif
                     ceu_go_event(CEU_IN_SDL_FINGERMOTION, &evt);
                     break;
 #endif
