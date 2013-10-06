@@ -34,7 +34,7 @@ loop do
             e_key.keysym.sym = _SDLK_PERIOD;
         end
 
-        dt = _rand() % 2000;
+        dt = _rand() % 100;
         emit (dt)ms;
         emit SDL_REDRAW;
         emit SDL_DT => dt;
@@ -44,15 +44,6 @@ loop do
         emit SDL_KEYDOWN => &e_key;
         emit SDL_REDRAW;
 
-        dt = _rand() % 2000;
-        emit (dt)ms;
-        emit SDL_REDRAW;
-        emit SDL_DT => dt;
-        emit SDL_REDRAW;
-
-        e_key.type = _SDL_KEYDOWN;
-        emit SDL_KEYUP => &e_key;
-
-        _SDL_Delay(100);
+        //_SDL_Delay(10);
     end
 end
