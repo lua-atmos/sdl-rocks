@@ -6,6 +6,7 @@
  * - PAUSE/IF salva img emostra pause em cima
  * - BONUS_ACCEL
  * - MENU: control-sides, reset-points
+ * - start at 1/2 speed of previous match
  */
 
 input void SDL_REDRAW;

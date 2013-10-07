@@ -53,7 +53,10 @@ int ASYNC_nxt = 0;
 
 #define SDL_MOTION_FLOOD_AVOID
 #ifdef SDL_MOTION_FLOOD_AVOID
-int FINGER_id = -1;
+int FLOOD_FILTER (SDL_Event* evt, void* fingerId) {
+    return evt->type == SDL_FINGERMOTION &&
+           ((SDL_TouchFingerEvent*)evt)->fingerId == (int)fingerId;
+}
 #endif
 
 #include "_ceu_code.cceu"
@@ -126,9 +129,6 @@ int main (int argc, char *argv[])
 #endif  // CEU_IN_SDL_DT
 
         int has;
-#ifdef SDL_MOTION_FLOOD_AVOID
-SKIP_MOTION:
-#endif
 #ifdef __ANDROID__
         if (isPaused) {
             has = SDL_WaitEvent(&evt);
@@ -139,36 +139,6 @@ SKIP_MOTION:
         }
 //if (has)
     //printf("EVENT %x\n", evt.type);
-
-#ifdef __ANDROID__
-        if (has) {
-            switch (evt.type)
-            {
-                // handle MOTION floods
-#ifdef SDL_MOTION_FLOOD_AVOID
-                case SDL_FINGERMOTION: {
-                    int id = ((SDL_TouchFingerEvent*)&evt)->fingerId;
-                    if (SDL_PollEvent(NULL) && FINGER_id==id) {
-                        //SDL_FlushEvent(SDL_FINGERMOTION, SDL_motion_flood_avoid_filter);
-                        SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE);
-                        goto SKIP_MOTION;
-                    } else {
-                        FINGER_id = id;
-                    }
-                    break;
-                }
-#endif
-                // handle onPause/onResume
-                case SDL_APP_WILLENTERBACKGROUND:
-                    isPaused = 1;
-                    break;
-                case SDL_APP_WILLENTERFOREGROUND:
-                    isPaused = 0;
-                    old = SDL_GetTicks();   // ignores previous 'old' on resume
-                    break;
-            }
-        }
-#endif
 
 #if defined(CEU_WCLOCKS) || defined(CEU_IN_SDL_DT)
         u32 now = SDL_GetTicks();
@@ -228,14 +198,28 @@ SKIP_MOTION:
                     ceu_go_event(CEU_IN_SDL_WINDOWEVENT, &evt);
                     break;
 #endif
-#ifdef CEU_IN_SDL_APP_WILLENTERBACKGROUND
+
+#if defined(CEU_IN_SDL_APP_WILLENTERBACKGROUND) || defined(__ANDROID__)
                 case SDL_APP_WILLENTERBACKGROUND:
+#ifdef __ANDROID__
+                    // handle onPause/onResume
+                    isPaused = 1;
+#endif
+#ifdef CEU_IN_SDL_APP_WILLENTERBACKGROUND
                     ceu_go_event(CEU_IN_SDL_APP_WILLENTERBACKGROUND, &evt);
+#endif
                     break;
 #endif
-#ifdef CEU_IN_SDL_APP_WILLENTERFOREGROUND
+#if defined(CEU_IN_SDL_APP_WILLENTERFOREGROUND) || defined(__ANDROID__)
                 case SDL_APP_WILLENTERFOREGROUND:
+#ifdef __ANDROID__
+                    // handle onPause/onResume
+                    isPaused = 0;
+                    old = SDL_GetTicks();   // ignores previous 'old' on resume
+#endif
+#ifdef CEU_IN_SDL_APP_WILLENTERFOREGROUND
                     ceu_go_event(CEU_IN_SDL_APP_WILLENTERFOREGROUND, &evt);
+#endif
                     break;
 #endif
 #ifdef CEU_IN_SDL_KEYDOWN
@@ -286,6 +270,12 @@ SKIP_MOTION:
 #ifdef CEU_IN_SDL_FINGERMOTION
                 case SDL_FINGERMOTION:
                     ceu_go_event(CEU_IN_SDL_FINGERMOTION, &evt);
+#ifdef SDL_MOTION_FLOOD_AVOID
+                    // handle MOTION floods
+                    SDL_FlushEventsFilter(FLOOD_FILTER,
+                        (void*)((SDL_TouchFingerEvent*)&evt)->fingerId);
+                    SDL_FlushEvents(SDL_DOLLARGESTURE, SDL_MULTIGESTURE);
+#endif
                     break;
 #endif
                 default:

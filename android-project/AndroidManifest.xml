@@ -4,8 +4,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="org.droid_in_the_sky.rocks"
-      android:versionCode="1"
-      android:versionName="1.0">
+      android:versionCode="2"
+      android:versionName="1.1">
 
     <!-- Create a Java class extending SDLActivity and place it in a
          directory under src matching the package, e.g.
