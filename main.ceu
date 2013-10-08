@@ -11,7 +11,7 @@
 
 /*
  * External events used in the game.
- * The SDL runtime trigger these events and the game can react to them.
+ * The SDL runtime triggers these events and the game can react to them.
  *
  * = NAME =         = WHEN? =
  *
@@ -45,10 +45,10 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 
 #define _OBJ_N + 2*_OBJ_SHIP_N  \
                + 2*_OBJ_FIRE_N  \
-               + _OBJ_ROCK_N    \
-               + _OBJ_rock_N    \
-               + _OBJ_BONUS_N   \
-               + _OBJ_BOMB_N
+               +   _OBJ_ROCK_N  \
+               +   _OBJ_rock_N  \
+               +   _OBJ_BONUS_N \
+               +   _OBJ_BOMB_N
 
 /*
  * Some C definitions.
@@ -166,17 +166,13 @@ end
 
 /*
  * "Object" interface.
- * Each player has a controller to control the ship.
- * The Controller interface is as follows:
- * The objects know how to react to input themselves.
- * We provide two implementations in "controllers.ceu": TouchController (for 
- * tablets and phones) and KeyController (for desktops).
+ * Each game object implements this interface.
+ * The objects know how to animate and redraw themselves.
  */
-
 interface Object with
     var   int       id;       // Object type identifier (e.g. _OBJ_SHIP1)
     var   _SDL_Rect rect;     // Position (x,y) and dimension (w,h).
-    event void      go_hit;   // Emit to signal a collision
+    event void      go_hit;   // Signal that the object has collided.
 
     /*
      * Helper function.
