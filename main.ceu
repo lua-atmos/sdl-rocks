@@ -1,10 +1,10 @@
 /*
  * Include the standard declarations & definitions for the SDL binding for Céu:
  * sdl.ceu:         basic functions/types (e.g. SDL_Window)
- * sdl-gfx.ceu:     drawing primitives (e.g. _bezierRGBA)
- * sdl-colors.ceu:  most common colors (e.g. colors.white)
+ * sdl-gfx.ceu:     drawing primitives (e.g. bezierRGBA)
+ * sdl-colors.ceu:  most commonly used colors (e.g. colors.white)
+ * (Ignore them for now.)
  */
-
 #include "sdl.ceu"
 #include "sdl-gfx.ceu"
 #include "sdl-colors.ceu"
@@ -24,7 +24,6 @@
  * SDL_KEYUP        user releases a key, carries the key information
  * SDL_FINGERDOWN   user touches the screen, carries the touch information
  */
-
 input void SDL_QUIT;
 input int  SDL_DT;
 input void SDL_REDRAW;
@@ -37,7 +36,6 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
  * _OBJ_N sums up all of them to hold the maximum number of objects that can be 
  * active at a time.
  */
-
 #define _OBJ_SHIP_N     1       // x2       // spaceship
 #define _OBJ_FIRE_N     3       // x2       // spaceship shoots
 #define _OBJ_ROCK_N     40                  // big meteors
@@ -56,10 +54,9 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
  * Some C definitions.
  * Céu relies on C to declare globals, enums, and functions.
  */
-
 native do
     /*
-     * We have a unique renderer for the game.
+     * We have a unique global renderer for the game.
      */
     SDL_Renderer* REN = NULL;
     int REN_W, REN_H;
@@ -69,18 +66,18 @@ native do
      */
     enum {
         OBJ_NULL = 0,       // not used
-        OBJ_SHIP1,
-        OBJ_SHIP2,
-        OBJ_FIRE1,
-        OBJ_FIRE2,
-        OBJ_ROCK,
-        OBJ_rock,
-        OBJ_BONUS_LIFE,
-        OBJ_BONUS_HITS,
-        OBJ_BONUS_SHIELD,
-        OBJ_BONUS_FIRE,
-        OBJ_BOMB,
-        OBJ_EXPLOSION,      // OBJ_BOMB becomes OBJ_EXPLOSION whe exploding
+        OBJ_SHIP1,          // 1st player's ship
+        OBJ_SHIP2,          // 2nd player's ship
+        OBJ_FIRE1,          // shoots from SHIP1
+        OBJ_FIRE2,          // shoots from SHIP2
+        OBJ_ROCK,           // big meteor
+        OBJ_rock,           // small meteor
+        OBJ_BONUS_LIFE,     // bonus that increments the player's points
+        OBJ_BONUS_HITS,     // bonus that increments the player's hit points
+        OBJ_BONUS_SHIELD,   // bonus that gives a shield to be used
+        OBJ_BONUS_FIRE,     // bonus that increases the FIRE width
+        OBJ_BOMB,           // a 3->2->1->EXPLODE bomb
+        OBJ_EXPLOSION,      // OBJ_BOMB becomes OBJ_EXPLOSION when exploding
         OBJ_MAX             // not used
     };
 
@@ -97,24 +94,25 @@ native do
      * An explosion (OBJ_EXPLOSION) collides with all objects (id[12][*]).
      */
     char idVSid[OBJ_MAX][OBJ_MAX] = {
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    // NULL
-        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 },    // SHIP1
-        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // SHIP2
-        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1 },    // FIRE1
-        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1 },    // FIRE2
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // ROCK
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // rock
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_LIFE
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_HITS
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_SHIELD
-        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BONUS_FIRE
-        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },    // BOMB
-        { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 },    // EXPLOSION
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    // [00] NULL
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },    // [01] SHIP1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0 },    // [02] SHIP2
+        { 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },    // [03] FIRE1
+        { 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0 },    // [04] FIRE2
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [05] ROCK
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [06] rock
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [07] BONUS_LIFE
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [08] BONUS_HITS
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [09] BONUS_SHIELD
+        { 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [10] BONUS_FIRE
+        { 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },    // [11] BOMB
+        { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 },    // [12] EXPLOSION
+    //   00 01 02 03 04 05 06 07 08 09 10 11 12
     };
 
     /*
      * Transforms a string into a graphical texture.
-     * (SKIP)
+     *  (Ignore it for now.)
      */
     SDL_Texture* SDL_text2texture (SDL_Renderer* ren,
                                    TTF_Font* font, char* text,
@@ -138,23 +136,25 @@ native nohold _getVS();
 native nohold _SDL_text2texture();
 
 /*
+ * "Points" interface.
  * For each player we show its corresponding number of points, which are 
  * manipulated through the Points inteface.
  * The objects know how to redraw themselves.
- * We provide an implementation in "points.ceu": TextPoints (SKIP).
+ * We provide an implementation in "points.ceu": TextPoints.
  */
 interface Points with
     var   _SDL_Point pos;       // The (centered) position to show the points.
     event void       go_inc;    // Emit to increment the number of points.
 end
-#include "points.ceu"
+#include "points.ceu"           // (Ignore it for now.)
 
 /*
+ * "Controller" interface.
  * Each player has a controller to control the ship.
  * The Controller interface is as follows:
  * The objects know how to react to input themselves.
- * We provide two implementations in "controllers.ceu" (SKIP): TouchController 
- * (for tablets and phones) and KeyController (for desktops).
+ * We provide two implementations in "controllers.ceu": TouchController (for 
+ * tablets and phones) and KeyController (for desktops).
  */
 interface Controller with
     var  _float ax, ay;       // The current acceleration imposed to the ship.
@@ -162,7 +162,16 @@ interface Controller with
     event void  ok_fired;     // Emitted when the controllers shoots a fire.
     event void  ok_shield;    // Emitted when the controllers invokes a shield.
 end
-#include "controllers.ceu"
+#include "controllers.ceu"    // (Ignore it for now.)
+
+/*
+ * "Object" interface.
+ * Each player has a controller to control the ship.
+ * The Controller interface is as follows:
+ * The objects know how to react to input themselves.
+ * We provide two implementations in "controllers.ceu": TouchController (for 
+ * tablets and phones) and KeyController (for desktops).
+ */
 
 interface Object with
     var   int       id;       // Object type identifier (e.g. _OBJ_SHIP1)
@@ -170,7 +179,8 @@ interface Object with
     event void      go_hit;   // Emit to signal a collision
 
     /*
-     * Helper function (SKIP).
+     * Helper function.
+     *  (Ignore it for now.)
      */
     native do
         int getVS (int id, CEU_Object** o1, CEU_Object** o2) {
@@ -189,7 +199,7 @@ interface Object with
         }
     end
 end
-#include "objs.ceu"
+#include "objs.ceu"    // (Ignore it for now.)
 
 /*
  * GAME EXECUTION STARTS HERE
@@ -223,7 +233,7 @@ _REN = _SDL_CreateRenderer(win, -1, 0);
 /*
  * Allocate all fonts, textures and sounds used in the game.
  * The code is similar to the previous for window and renderer.
- * (skip reding it now)
+ * (Ignore them for now.)
  */
 #include "fnts.ceu"
 #include "texs.ceu"
@@ -713,12 +723,30 @@ with
                              * the previous effects becuase it may destroy the 
                              * object from the memory.
                              */
-                        end
-                    end
-                end
-            end
-        end
-    end
+                        end // o2 iteration
+                    end // o1 iteration
+                    /*
+                     * Finished comparing all objects alive.
+                     * Wait for the next frame.
+                     */
+                end // coolision detection loop
+            end // game innermost "par/or"
+            /*
+             * One of the ships was destroyed (ship.ok_killed).
+             * The innermost "par/or" terminated.
+             */
+        end // the "battle block"
+        /*
+         * The "battle block" terminated, the ships, controllers, and all 
+         * dynamic items are destroyed.
+         * Restart the "main loop" to show the "= TAP TO START =" message.
+         * The points are kept.
+         */
+    end // the "main loop"
+    /*
+     * The "main loop" never terminates.
+     * This "end" is never surpassed.
+     */
 #ifdef DEBUG
 with
     /*
