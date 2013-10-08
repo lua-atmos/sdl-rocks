@@ -51,7 +51,9 @@ int ASYNC_nxt = 0;
 #define ceu_out_async(v) ASYNC_nxt = v;
 #endif
 
+#ifdef __ANDROID__
 #define SDL_MOTION_FLOOD_AVOID
+#endif
 #ifdef SDL_MOTION_FLOOD_AVOID
 int FLOOD_FILTER (SDL_Event* evt, void* fingerId) {
     return evt->type == SDL_FINGERMOTION &&

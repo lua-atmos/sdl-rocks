@@ -4,7 +4,7 @@ class KeyController with
     var int k_fire, k_shield;
 
     var int k_immortal;
-    var int cheat_immortal? = 0;
+    var int isImmortal? = 0;
 do
     this.ax = 0;
     this.ay = 0;
@@ -38,11 +38,11 @@ do
             end
         end
     with
-        // toggle cheat_immortal?
+        // toggle isImmortal?
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYDOWN do
             if key:keysym.sym == this.k_immortal then
-                this.cheat_immortal? = not this.cheat_immortal?;
+                this.isImmortal? = not this.isImmortal?;
             end
         end
     end
@@ -136,7 +136,7 @@ do
             end
         end
     with
-        // toggle cheat_immortal?
+        // toggle isImmortal?
         // y-axis movement: H/2 -> H/2 (in "fire" side in < 1s)
         loop do
             // starting point in "fire" side
@@ -170,7 +170,7 @@ do
                     end
                 end
                 // finally
-                this.cheat_immortal? = 1 - this.cheat_immortal?;
+                this.isImmortal? = not this.isImmortal?;
             end
         end
     end

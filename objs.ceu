@@ -80,6 +80,7 @@ class Ship with
 
     var int fire_w =  0;
 
+    event void go_H;
     event void go_shield;
     event void ok_killed;
 do
@@ -136,37 +137,37 @@ do
     var _float vy = 0;
 
     par/or do
-        // add/sub hit points on "go_hit" (unless "cheat_immortal?")
+        every this.go_H do
+            // don't go over the MAX
+            if hits > _SHIP_HITS_MAX then
+                hits = _SHIP_HITS_MAX;
+            end
+        end
+    with
+
+        // add/sub hit points on "go_hit" (unless "isImmortal?")
         // "go_hit" if == 0
 
 #ifdef SDL_SIMUL
         await 10min;
 #endif
         loop do
-            var int v = await go_hit
-                        until not (this.controller:cheat_immortal? or
-                                   hasShield?);
-            hits = hits + v;
+            await this.go_hit until not (this.controller:isImmortal? or
+                                         hasShield?);
+            hits = hits - 1;
 
-            if v > 0 then
-                // don't go over the MAX
-                if hits > _SHIP_HITS_MAX then
-                    hits = _SHIP_HITS_MAX;
-                end
-            else
-                if hits <= 0 then
-                    break;
-                end
+            if hits <= 0 then
+                break;
+            end
 
-                // stay immortal for 2s and blink
-                _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
-                par/or do
-                    every 100ms do
-                        blink? = not blink?;
-                    end
-                with
-                    await 2s;
+            // stay immortal for 2s and blink
+            _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
+            par/or do
+                every 100ms do
+                    blink? = not blink?;
                 end
+            with
+                await 2s;
             end
         end
     with

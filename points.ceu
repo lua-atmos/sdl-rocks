@@ -1,0 +1,34 @@
+class TextPoints with
+    interface Points;
+do
+    var int v = 0;
+    var _SDL_Rect rect;
+        rect.x = this.pos.x;
+        rect.y = this.pos.y;
+
+    loop do
+        var _SDL_Texture* tex;
+        var _char[10] str;
+        _sprintf(str, "%d", v);
+        finalize
+            tex = _SDL_text2texture(_REN, _FONT_BIG, str,
+                                        &_colors.white, null);
+        with
+            _SDL_DestroyTexture(tex);
+        end
+        _SDL_QueryTexture(tex, null, null, &rect.w, &rect.h);
+
+        par/or do
+            await this.go_inc;
+        with
+            var _SDL_Rect r = rect;
+                r.x = r.x - r.w/2;
+                r.y = r.y - r.h/2;
+            every SDL_REDRAW do
+                _SDL_RenderCopy(_REN, tex, null, &r);
+            end
+        end
+
+        v = v + 1;
+    end
+end
