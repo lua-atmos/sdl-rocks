@@ -10,7 +10,7 @@
 #include "sdl-colors.ceu"
 
 /*
- * External events used in the game.
+ * External events used in this file.
  * The SDL runtime triggers these events and the game can react to them.
  *
  * = NAME =         = WHEN? =
@@ -21,15 +21,16 @@
  * SDL_REDRAW       every frame, to redraw the screen
  *
  * SDL_KEYDOWN      user presses a key, carries the key information
- * SDL_KEYUP        user releases a key, carries the key information
  * SDL_FINGERDOWN   user touches the screen, carries the touch information
  */
 input void SDL_QUIT;
 input int  SDL_DT;
 input void SDL_REDRAW;
-input _SDL_KeyboardEvent* SDL_KEYDOWN;
-input _SDL_KeyboardEvent* SDL_KEYUP;
+#ifdef __ANDROID__
 input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
+#else
+input _SDL_KeyboardEvent* SDL_KEYDOWN;
+#endif
 
 /*
  * Max number of instances for the graphical objects in the game.
@@ -144,9 +145,21 @@ native nohold _SDL_text2texture();
  */
 interface Points with
     var   _SDL_Point pos;       // The (centered) position to show the points.
-    event void       go_inc;    // Emit to increment the number of points.
+    event void       go_inc;    // Awaits to increment the number of points.
 end
 #include "points.ceu"           // (Ignore it for now.)
+
+/*
+ * Notice:
+ * Internal events in interfaces that have a fixed "emit -> await" direction 
+ * usage pattern should use the prefix "go_" or "ok_" in their names:
+ * "go_": client emits the event, while the instance awaits it.
+ * "ok_": instance emits the event, while the client awaits it.
+ *
+ * In the "Points" interface, "go_inc" is always emitted by the client, e.g., a 
+ * code that creates an instance "pt" will "emit pt.go_inc" to request the 
+ * object to increment the number of points.
+ */
 
 /*
  * "Controller" interface.
@@ -159,8 +172,8 @@ end
 interface Controller with
     var  _float ax, ay;       // The current acceleration imposed to the ship.
     var   int   isImmortal?;  // If the ship is immune to collisions.
-    event void  ok_fired;     // Emitted when the controllers shoots a fire.
-    event void  ok_shield;    // Emitted when the controllers invokes a shield.
+    event void  ok_fired;     // Emitted when the controller shoots a fire.
+    event void  ok_shield;    // Emitted when the controller invokes a shield.
 end
 #include "controllers.ceu"    // (Ignore it for now.)
 

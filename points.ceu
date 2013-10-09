@@ -1,12 +1,26 @@
+/*
+ * "TextPoints" implements the "Points" interface.
+ * Starting from "0", it shows the total of points in the requested position 
+ * "pos".
+ * It also continuously awaits "go_inc" to increment the points and recreate 
+ * the text to show on screen.
+ */
 class TextPoints with
-    interface Points;
+    interface Points;   // implements "Points" (pos, go_inc)
 do
+    /*
+     * Initial value, on requested position.
+     */
     var int v = 0;
     var _SDL_Rect rect;
-        rect.x = this.pos.x;
-        rect.y = this.pos.y;
+        rect.x = this.pos.x;    // centered position
+        rect.y = this.pos.y;    // centered position
 
     loop do
+        /*
+         * Transforms the current points "v" into a graphical texture to draw 
+         * on screen.
+         */
         var _SDL_Texture* tex;
         var _char[10] str;
         _sprintf(str, "%d", v);
@@ -18,8 +32,15 @@ do
         end
         _SDL_QueryTexture(tex, null, null, &rect.w, &rect.h);
 
+        /*
+         * While the value remains the same, redraw the created texture on 
+         * every frame.
+         * When a "go_inc" is requested, terminate the "par/or" and restart the 
+         * outer "loop", with the new value.
+         */
         par/or do
             await this.go_inc;
+            v = v + 1;
         with
             var _SDL_Rect r = rect;
                 r.x = r.x - r.w/2;
@@ -28,7 +49,5 @@ do
                 _SDL_RenderCopy(_REN, tex, null, &r);
             end
         end
-
-        v = v + 1;
     end
 end

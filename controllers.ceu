@@ -1,15 +1,38 @@
+#ifndef __ANDROID__
+
+/*
+ * External events used by the keyboard controller.
+ */
+input _SDL_KeyboardEvent* SDL_KEYUP;
+input _SDL_KeyboardEvent* SDL_KEYDOWN;
+
+/*
+ * "KeyController" implements the "Controller" interface.
+ * It relies on key codes passed in the constructor to configure which key to 
+ * react and set its acceleration values.
+ */
 class KeyController with
-    interface Controller;
-    var int k_up, k_down, k_left, k_right;
-    var int k_fire, k_shield;
+    interface Controller;   // implements "Controller" (ax, ay, isImmortal?,
+                            //                          ok_fired, ok_shield)
+    var int k_up, k_down, k_left, k_right;  // keys to control movement
+    var int k_fire, k_shield;               // keys to control fire/shield
+    var int k_immortal;                     // key to control isImortal?
 
-    var int k_immortal;
-    var int isImmortal? = 0;
+    /*
+     * Interface fields can be redeclared to define default values:
+     */
+    var int ax = 0;             // no acceleration by default
+    var int ay = 0;             // no acceleration by default
+    var int isImmortal? = 0;    // ship starts in normal mode
 do
-    this.ax = 0;
-    this.ay = 0;
-
+    /*
+     * No trails in parallel terminate, so we use a "par" here.
+     */
     par do
+        /*
+         * Await for key (down) presses in a loop to set the correspondent 
+         * acceleration.
+         */
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYDOWN do
             if key:keysym.sym == this.k_up then
@@ -27,6 +50,10 @@ do
             end
         end
     with
+        /*
+         * Await for key (up) releases in a loop to unset the correspondent 
+         * acceleration.
+         */
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYUP do
             if key:keysym.sym == this.k_up
@@ -38,7 +65,10 @@ do
             end
         end
     with
-        // toggle isImmortal?
+        /*
+         * Await for "k_immortal" (down) presses in a loop to toggle the 
+         * "isImmortal?" mode.
+         */
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYDOWN do
             if key:keysym.sym == this.k_immortal then
@@ -48,49 +78,76 @@ do
     end
 end
 
+#else   // ifndef __ANDROID__
+
+/*
+ * External events used by the keyboard controller.
+ */
 input _SDL_TouchFingerEvent* SDL_FINGERMOTION;
 input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 input _SDL_TouchFingerEvent* SDL_FINGERUP;
 
+/*
+ * "TouchController" implements the "Controller" interface.
+ * It relies on two rectangular areas "move_r" and "fire_r" passed in the 
+ * constructor to configure where the controller should react to input for 
+ * moving and firing the ship.
+ */
 class TouchController with
     interface Controller;
-    var _SDL_Rect move_r;
-    var _SDL_Rect fire_r;
-do
-    this.ax = 0;
-    this.ay = 0;
+    var _SDL_Rect move_r;       // rectangular area for ship movement
+    var _SDL_Rect fire_r;       // rectangular area for ship firing
 
+    /*
+     * Interface fields can be redeclared to define default values:
+     */
+    var int ax = 0;             // no acceleration by default
+    var int ay = 0;             // no acceleration by default
+    var int isImmortal? = 0;    // ship starts in normal mode
+do
+    /*
+     * No trails in parallel terminate, so we use a "par" here.
+     * (Both movement and firing are continuous.)
+     */
     par do
-        // move
+        /*
+         * Acceleration for the touch controller works as follows:
+         * 1. Await the user to touch the "move_r" area.
+         *    Hold the touch point "pt1" and "fingerId".
+         * 2. Continuously await touch motions with the same "fingerId".
+         *    Apply the acceleration by comparing the new acquired point "pt2" with the 
+         *    original point "pt1".
+         * 3. Also await the "fingerId" for untouch event and goto step 1.
+         * While in step 2 show "pt1" in the screen to provide a feedback to the user 
+         * about this reference point.
+         */
         loop do
-            // await until FINGERDOWN on move area
-            var _SDL_Point pt1;
+            /*
+             * Step 1: await touch until matching "move_r".
+             */
+            var _SDL_Point pt1;         // hold starting point
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
                     _SDL_Rect_vs_Point(&move_r,
                                        _SDL_Touch2Point(&pt1,e1,_REN_W,_REN_H));
 
-            // hold starting finger id
-            var int id = e1:fingerId;
+            var int id = e1:fingerId;   // hold starting finger id
 
             par/or do
-                // await until FINGERUP with the same finger
-                var _SDL_TouchFingerEvent* e2 =
-                    await SDL_FINGERUP until e2:fingerId == id;
-                this.ax = 0;
-                this.ay = 0;
-            with
-                // draw the starting finger point
-                every SDL_REDRAW do
-                    _filledCircleRGBA(_REN, pt1.x,pt1.y,10,
-                                      0xFF,0x00,0x00,0x33);
-                end
-            with
-                // change ax/ay depending on FINGERMOTION with the same finger
+                /*
+                 * Step 2: continuously change ax/ay depending on motion with 
+                 * the same finger id.
+                 */
                 loop do
                     var _SDL_TouchFingerEvent* e2 =
                         await SDL_FINGERMOTION until (e2:fingerId == id);
-                    // TODO: 20 hardcoded
+
+                    /*
+                     * The acceleration value is proportional to the delta 
+                     * movement in the finger.
+                     * Ignore movement in which delta is smaller than 20 
+                     * pixels. (TODO: 20 hardcoded)
+                     */
                     var _SDL_Point pt2;
                         pt2.x = e2:x * _REN_W;
                         pt2.y = e2:y * _REN_H;
@@ -109,25 +166,46 @@ do
                         this.ay =  0;
                     end
                 end
+            with
+                /*
+                 * Step 2: also draw "pt1" on every frame.
+                 */
+                every SDL_REDRAW do
+                    _filledCircleRGBA(_REN, pt1.x,pt1.y,10,
+                                      0xFF,0x00,0x00,0x33);
+                end
+            with
+                /*
+                 * Step 3: await until finger id is released.
+                 */
+                var _SDL_TouchFingerEvent* e2 =
+                    await SDL_FINGERUP until e2:fingerId == id;
+                this.ax = 0;
+                this.ay = 0;
             end
         end
     with
-        // fire / shield
+        /*
+         * Shooting and using a shield work in the same "fire_r" region:
+         * - If a one-finger touch is unpressed, then fire.
+         * - If a two-finger touch is pressed, then use the shield.
+         */
         loop do
+            // Await for the first finger touch at "fire_r".
             var _SDL_Point pt;
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
                     _SDL_Rect_vs_Point(&fire_r,
                                        _SDL_Touch2Point(&pt,e1,_REN_W,_REN_H));
-            var int id = e1:fingerId;
+            var int id = e1:fingerId;   // hold the finger id
 
             par/or do
-                // fire: FINGERUP on same finger
+                // "ok_fired" <- unpressing the same finger
                 var _SDL_TouchFingerEvent* e2 =
                     await SDL_FINGERUP until (e2:fingerId == id);
                 emit this.ok_fired;
             with
-                // fire: FINGERDOWN on other finger
+                // "ok_shield" <- pressing another finger
                 var _SDL_TouchFingerEvent* e2 =
                     await SDL_FINGERDOWN until
                         _SDL_Rect_vs_Point(&fire_r,
@@ -136,19 +214,22 @@ do
             end
         end
     with
-        // toggle isImmortal?
-        // y-axis movement: H/2 -> H/2 (in "fire" side in < 1s)
+        /*
+         * To toggle between mortal<->immortal mode, the player has to start 
+         * touching from "fire_r" and cross to "move_r" back-and-forth 4 times 
+         * in less than 1 second:
+         */
         loop do
-            // starting point in "fire" side
+            // Start from "fire_r":
             var _SDL_Point pt1;
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
                     _SDL_Rect_vs_Point(&fire_r,
                                        _SDL_Touch2Point(&pt1,e1,_REN_W,_REN_H));
 
-            // hold starting finger id
-            var int id = e1:fingerId;
+            var int id = e1:fingerId;   // hold the finger id
 
+            // Limit the movement to 1 second, otherwise restart.
             par/or do
                 await 1s;
             with
@@ -175,3 +256,5 @@ do
         end
     end
 end
+
+#endif
