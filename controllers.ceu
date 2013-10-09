@@ -36,13 +36,13 @@ do
         var _SDL_KeyboardEvent* key;
         every key = SDL_KEYDOWN do
             if key:keysym.sym == this.k_up then
-                this.ay = -(_float)_REN_H/5000;
+                this.ay = -(float)_REN_H/5000;
             else/if key:keysym.sym == this.k_down then
-                this.ay =  (_float)_REN_H/5000;
+                this.ay =  (float)_REN_H/5000;
             else/if key:keysym.sym == this.k_left then
-                this.ax = -(_float)_REN_W/5000;
+                this.ax = -(float)_REN_W/5000;
             else/if key:keysym.sym == this.k_right then
-                this.ax =  (_float)_REN_W/5000;
+                this.ax =  (float)_REN_W/5000;
             else/if key:keysym.sym == this.k_fire then
                 emit this.ok_fired;
             else/if key:keysym.sym == this.k_shield then
@@ -152,16 +152,16 @@ do
                         pt2.x = e2:x * _REN_W;
                         pt2.y = e2:y * _REN_H;
                     if      pt2.x <= pt1.x-20 then
-                        this.ax = -(_float)_REN_W/5000;
+                        this.ax = -(float)_REN_W/5000;
                     else/if pt2.x >= pt1.x+20 then
-                        this.ax =  (_float)_REN_W/5000;
+                        this.ax =  (float)_REN_W/5000;
                     else
                         this.ax =  0;
                     end
                     if      pt2.y <= pt1.y-20 then
-                        this.ay = -(_float)_REN_H/5000;
+                        this.ay = -(float)_REN_H/5000;
                     else/if pt2.y >= pt1.y+20 then
-                        this.ay =  (_float)_REN_H/5000;
+                        this.ay =  (float)_REN_H/5000;
                     else
                         this.ay =  0;
                     end

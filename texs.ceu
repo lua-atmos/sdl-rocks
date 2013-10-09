@@ -68,7 +68,7 @@ _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
     end
 
 loop i, 3 do
-    var _char[5] str;
+    var char[5] str;
     _sprintf(str, "%d", i+1);
     _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
                                      &_colors.white, null);

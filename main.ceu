@@ -168,7 +168,7 @@ end
  * tablets and phones) and KeyController (for desktops).
  */
 interface Controller with
-    var  _float ax, ay;       // The current acceleration imposed to the ship.
+    var   float ax, ay;       // The current acceleration imposed to the ship.
     var   int   isImmortal?;  // If the ship is immune to collisions.
     event void  ok_fired;     // Emitted when the controller shoots a fire.
     event void  ok_shield;    // Emitted when the controller invokes a shield.
@@ -767,7 +767,7 @@ with
         var int c = 0;              // reset the current counter
 
         // create a texture with the previous FPS
-        var _char[5] str;
+        var char[5] str;
         _sprintf(str, "%d", fps);
         var _SDL_Texture* tex;
         finalize

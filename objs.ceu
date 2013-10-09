@@ -4,14 +4,14 @@
  */
 class ObjectMove with
     var Object* obj = null;
-    var _float vx = 0;
-    var _float vy = 0;
+    var float vx = 0;
+    var float vy = 0;
     event void ok;
 do
     _assert(this.obj != null);
 
-    var _float sx = obj:rect.x;
-    var _float sy = obj:rect.y;
+    var float sx = obj:rect.x;
+    var float sy = obj:rect.y;
 
     var int dt;
     every dt=SDL_DT do
@@ -131,10 +131,10 @@ do
         shields_r.w = _REN_W/100;
         shields_r.y = this.lim_y1 + _REN_H/100;
 
-    var _float sx = this.rect.x;
-    var _float vx = 0;
-    var _float sy = this.rect.y;
-    var _float vy = 0;
+    var float sx = this.rect.x;
+    var float vx = 0;
+    var float sy = this.rect.y;
+    var float vy = 0;
 
     par/or do
         every this.go_H do
@@ -203,8 +203,8 @@ do
             par/or do
                 await 100ms;
             with
-                var _float d = this.rect.w;
-                var _float v = 40 * this.rect.w;
+                var float d = this.rect.w;
+                var float v = 40 * this.rect.w;
                 var int dt;
                 every dt = SDL_DT do
                     d = d + v*dt/1000;
@@ -336,8 +336,8 @@ do
     par/or do
         await 100ms;
     with
-        var _float d = dim;
-        var _float v = 40 * dim;
+        var float d = dim;
+        var float v = 40 * dim;
         var int dt;
         every dt = SDL_DT do
             d = d + v*dt/1000;
@@ -369,8 +369,8 @@ do
         clip_r.w = this.rect.w;
         clip_r.h = this.rect.h;
 
-    var _float vx = _rand()%(_REN_W/5) + 1;
-    var _float vy = _rand()%(_REN_H/5) + 1;
+    var float vx = _rand()%(_REN_W/5) + 1;
+    var float vy = _rand()%(_REN_H/5) + 1;
 
     this.rect.x = _REN_W/3 + _rand()%_REN_W/3;
     if _rand() % 2 then
@@ -393,8 +393,8 @@ do
         end;
         await move.ok;
     with
-        var _float v := _sqrt(vx*vx + vy*vy);
-        var _float x = 0;
+        var float v = _sqrt(vx*vx + vy*vy);
+        var float x = 0;
         var int dt;
         every dt = SDL_DT do
             x = x + v*dt/1000;
@@ -432,8 +432,8 @@ do
         clip_r.w = this.rect.w;
         clip_r.h = this.rect.h;
 
-    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var _float vy = (_rand()%(_REN_H/10) + 1);
+    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
@@ -447,8 +447,8 @@ do
         end;
         await move.ok;
     with
-        var _float v := _sqrt(vx*vx + vy*vy);
-        var _float x = 0;
+        var float v = _sqrt(vx*vx + vy*vy);
+        var float x = 0;
         var int dt;
         every dt = SDL_DT do
             x = x + v*dt/1000;
@@ -481,8 +481,8 @@ do
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
 
-    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var _float vy = (_rand()%(_REN_H/10) + 1);
+    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
@@ -521,8 +521,8 @@ do
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
 
-    var _float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var _float vy = (_rand()%(_REN_H/10) + 1);
+    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_rand()%(_REN_H/10) + 1);
     if _rand() % 2 then
         vy = -vy;
     end
@@ -558,8 +558,8 @@ do
         par/or do
             await 200ms;
         with
-            var _float d = this.rect.w;
-            var _float v = 40 * this.rect.w;
+            var float d = this.rect.w;
+            var float v = 40 * this.rect.w;
             var int dt;
             every dt = SDL_DT do
                 d = d + v*dt/1000;

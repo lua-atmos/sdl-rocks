@@ -22,7 +22,7 @@ do
          * on screen.
          */
         var _SDL_Texture* tex;
-        var _char[10] str;
+        var char[10] str;
         _sprintf(str, "%d", v);
         finalize
             tex = _SDL_text2texture(_REN, _FONT_BIG, str,
