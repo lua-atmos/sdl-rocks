@@ -1,13 +1,11 @@
 /*
  * Include the standard declarations & definitions for the SDL binding for Céu:
- * sdl.ceu:         basic functions/types (e.g. SDL_Window)
- * sdl-gfx.ceu:     drawing primitives (e.g. bezierRGBA)
- * sdl-colors.ceu:  most commonly used colors (e.g. colors.white)
  * (Ignore them for now.)
  */
-#include "sdl.ceu"
-#include "sdl-gfx.ceu"
-#include "sdl-colors.ceu"
+#include "c.ceu"            // standard C functions (e.g. assert)
+#include "sdl.ceu"          // basic functions (e.g. SDL_CreateWindow)
+#include "sdl-gfx.ceu"      // drawing primitives (e.g.  bezierRGBA)
+#include "sdl-colors.ceu"   // most commonly used colors (e.g. colors.white)
 
 /*
  * External events used in this file.
