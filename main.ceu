@@ -41,7 +41,6 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #define _OBJ_rock_N     40                  // small meteors
 #define _OBJ_BONUS_N    10                  // bonus items
 #define _OBJ_BOMB_N     5                   // bomb items
-
 #define _OBJ_N + 2*_OBJ_SHIP_N  \
                + 2*_OBJ_FIRE_N  \
                +   _OBJ_ROCK_N  \
@@ -50,7 +49,6 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
                +   _OBJ_BOMB_N
 
 /*
- * Some C definitions.
  * Céu relies on C to declare globals, enums, and functions.
  */
 native do
@@ -75,7 +73,7 @@ native do
         OBJ_BONUS_HITS,     // bonus that increments the player's hit points
         OBJ_BONUS_SHIELD,   // bonus that gives a shield to be used
         OBJ_BONUS_FIRE,     // bonus that increases the FIRE width
-        OBJ_BOMB,           // a 3->2->1->EXPLODE bomb
+        OBJ_BOMB,           // a "3->2->1->EXPLODE" bomb
         OBJ_EXPLOSION,      // OBJ_BOMB becomes OBJ_EXPLOSION when exploding
         OBJ_MAX             // not used
     };
@@ -138,19 +136,19 @@ native nohold _SDL_text2texture();
  * "Points" interface.
  * For each player we show its corresponding number of points, which are 
  * manipulated through the Points inteface.
- * The objects know how to redraw themselves.
+ * The point objects know how to redraw themselves.
  * We provide an implementation in "points.ceu": TextPoints.
  */
 interface Points with
     var   _SDL_Point pos;       // The (centered) position to show the points.
-    event void       go_inc;    // Awaits to increment the number of points.
+    event void       go_inc;    // Increments the number of points.
 end
 #include "points.ceu"           // (Ignore it for now.)
 
 /*
  * Notice:
- * Internal events in interfaces that have a fixed "emit -> await" direction 
- * usage pattern should use the prefix "go_" or "ok_" in their names:
+ * Internal event identifiers in interfaces use the prefix "go_" or "ok_" when 
+ * they have a fixed "emit->await" direction usage:
  * "go_": client emits the event, while the instance awaits it.
  * "ok_": instance emits the event, while the client awaits it.
  *
