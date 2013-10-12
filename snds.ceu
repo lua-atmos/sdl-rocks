@@ -1,17 +1,33 @@
+/*
+ * Global references to the sounds so that they can be used from anywhere in 
+ * the game.
+ */
+native do
+    Mix_Chunk* SND_FIRE      = NULL;    // ship shoot
+    Mix_Chunk* SND_BONUS     = NULL;    // getting a bonus
+    Mix_Chunk* SND_ROCK      = NULL;    // destroying a meteor
+    Mix_Chunk* SND_HIT_DEC   = NULL;    // ship being hit
+    Mix_Chunk* SND_EXPLOSION = NULL;    // explosions (ship, bomb)
+    Mix_Chunk* SND_START     = NULL;    // every battle
+end
+
+/*
+ * Open (and close) the "Mix" library.
+ * The "finalize" clause if attached to the global scope of the program (which 
+ * contains #include "snds.ceu").
+ * Once the glocal scope terminates (in the end of the program), 
+ * "_Mix_CloseAudio" is called from the "finalize" clause.
+ */
 _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
     finalize with
         _Mix_CloseAudio();            // TODO: slow
     end
 
-native do
-    Mix_Chunk* SND_FIRE      = NULL;
-    Mix_Chunk* SND_BONUS     = NULL;
-    Mix_Chunk* SND_ROCK      = NULL;
-    Mix_Chunk* SND_HIT_DEC   = NULL;
-    Mix_Chunk* SND_EXPLOSION = NULL;
-    Mix_Chunk* SND_START     = NULL;
-end
-
+/*
+ * Load (and free) each sound used in the program.
+ * The "finalize" clause ensures that each sound is properly freed on program 
+ * termination.
+ */
 _SND_FIRE = _Mix_LoadWAV("snds/fire.wav");
     finalize with
         _Mix_FreeChunk(_SND_FIRE);
@@ -43,17 +59,3 @@ _assert(_SND_ROCK      != null);
 _assert(_SND_HIT_DEC   != null);
 _assert(_SND_EXPLOSION != null);
 _assert(_SND_START     != null);
-
-/*
-native do
-    Mix_Music* SND_BG = NULL;
-end
-_SND_BG = _Mix_LoadMUS("snds/space_sprinkles.mp3");
-    finalize with
-        _Mix_FreeMusic(_SND_BG);
-    end
-    _assert(_SND_BG != null);
-
-_Mix_PlayMusic(_SND_BG, -1);
-//_Mix_HaltMusic();
-*/

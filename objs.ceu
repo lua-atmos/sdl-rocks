@@ -60,7 +60,8 @@ do
         _OBJS_N = _OBJS_N + 1;
     end
 
-    emit this.ok;   // tell the world that the object left the screen
+    // Tell the world that the object left the screen.
+    emit this.ok;
 end
 
 class Fire with
@@ -90,24 +91,27 @@ do
     end
 end
 
-#define _SHIP_HITS_MAX  3
-#define _SHIP_FIRES_MAX  5
-#define _SHIP_SHIELDS_MAX  3
+/*
+ * Maximum values for some ship properties:
+ */
+#define _SHIP_HITS_MAX      3   // maximum number of hit points for a ship
+#define _SHIP_FIRES_MAX     5   // maximum number of shots a ship can fire
+#define _SHIP_SHIELDS_MAX   3   // maximum number of shields a ship can hold
 
 class Ship with
     interface Object;
-    var _SDL_Texture* tex = null;
+    var _SDL_Texture* tex = null;           // left or right oriented image
 
-    var int lim_x1, lim_x2, lim_y1, lim_y2;
+    var int lim_x1, lim_x2, lim_y1, lim_y2; // physical screen limits that the 
+                                            // ship can move
 
-    var int dir;
-    var Controller* controller;
+    var int dir;                            // ship orientation (left=1/right=-1)
+    var Controller* controller;             // reference the ship controller
 
-    var int fire_w =  0;
-
-    event void go_H;
-    event void go_shield;
-    event void ok_killed;
+    event void go_F;                        // inc. ship number of shots
+    event void go_H;                        // inc. ship number of hit points
+    event void go_S;                        // inc. ship number of shields
+    event void ok_killed;                   // .
 do
     _assert(this.tex != null);
 
@@ -122,7 +126,7 @@ do
         clip_r.h = dim;
 
     // hits
-    var int hits = _SHIP_HITS_MAX;      // number of hit points
+    var int n_hits = _SHIP_HITS_MAX;      // number of hit points
     var int blink? = 0;
     var _SDL_Rect hits_r;
         if this.dir > 0 then
@@ -134,7 +138,7 @@ do
         hits_r.y = this.lim_y1 + _REN_H/100;
 
     // fires
-    var int fires = _SHIP_FIRES_MAX;    // number of fires
+    var int n_fires = _SHIP_FIRES_MAX;    // number of fires
     var _SDL_Rect fires_r;
         if this.dir > 0 then
             fires_r.x = this.lim_x1 + 2*_REN_W/100;
@@ -145,7 +149,7 @@ do
         fires_r.y = this.lim_y1 + _REN_H/100;
 
     // shields
-    var int shields = 0;                // number of shields
+    var int n_shields = 0;              // number of shields
     var int hasShield? = 0;             // is it active now?
     var _SDL_Rect shields_r;
         if this.dir > 0 then
@@ -164,8 +168,9 @@ do
     par/or do
         every this.go_H do
             // don't go over the MAX
-            if hits > _SHIP_HITS_MAX then
-                hits = _SHIP_HITS_MAX;
+            n_hits = n_hits + 1;
+            if n_hits > _SHIP_HITS_MAX then
+                n_hits = _SHIP_HITS_MAX;
             end
         end
     with
@@ -179,9 +184,9 @@ do
         loop do
             await this.go_hit until not (this.controller:isImmortal? or
                                          hasShield?);
-            hits = hits - 1;
+            n_hits = n_hits - 1;
 
-            if hits <= 0 then
+            if n_hits <= 0 then
                 break;
             end
 
@@ -198,24 +203,24 @@ do
     with
         // a new "fires" every 2s
         every 2s do
-            if fires < _SHIP_FIRES_MAX then
-                fires = fires + 1;
+            if n_fires < _SHIP_FIRES_MAX then
+                n_fires = n_fires + 1;
             end
         end
     with
         // a new "shield"
-        every this.go_shield do
-            if shields < _SHIP_SHIELDS_MAX then
-                shields = shields + 1;
+        every this.go_S do
+            if n_shields < _SHIP_SHIELDS_MAX then
+                n_shields = n_shields + 1;
             end
         end
     with
         // spawn shield
         loop do
             await this.controller:ok_shield
-            until (shields > 0);
+            until (n_shields > 0);
 
-            shields = shields - 1;
+            n_shields = n_shields - 1;
             hasShield? = 1;
             finalize with
                 this.rect.w = dim;
@@ -246,20 +251,27 @@ do
     with
         // spawn a "Fire" every "ok_fired"
         do
-            every this.controller:ok_fired do
-                if fires == 0 then
-                    continue;
+            var int fire_w = 0;
+            par do
+                every this.go_F do
+                    fire_w = fire_w + 1;
                 end
-                fires = fires - 1;
-                var int ok? = spawn[_OBJ_FIRE_N] Fire with
-                    this.id   = id + 2;
-                    this.dir  = dir;
-                    this.vy   = vy;
-                    this.rect = rect;
-                    this.w    = fire_w;
-                end;
-                if ok? then
-                    _Mix_PlayChannel(-1, _SND_FIRE, 0);
+            with
+                every this.controller:ok_fired do
+                    if n_fires == 0 then
+                        continue;
+                    end
+                    n_fires = n_fires - 1;
+                    var int ok? = spawn[_OBJ_FIRE_N] Fire with
+                        this.id   = id + 2;
+                        this.dir  = dir;
+                        this.vy   = vy;
+                        this.rect = rect;
+                        this.w    = fire_w;
+                    end;
+                    if ok? then
+                        _Mix_PlayChannel(-1, _SND_FIRE, 0);
+                    end
                 end
             end
         end
@@ -302,7 +314,7 @@ do
     with
         every SDL_REDRAW do
             // draw hits
-            hits_r.h = hits * _REN_H/20;
+            hits_r.h = n_hits * _REN_H/20;
             _boxRGBA(_REN, hits_r.x, hits_r.y,
                            hits_r.x+hits_r.w, hits_r.y+hits_r.h,
                            0x00,0xFF,0x00,0x77);
@@ -312,7 +324,7 @@ do
                                  0x77,0x77,0x77,0xFF);
 
             // draw fires
-            fires_r.h = fires * _REN_H/33;
+            fires_r.h = n_fires * _REN_H/33;
             _boxRGBA(_REN, fires_r.x, fires_r.y,
                            fires_r.x+fires_r.w, fires_r.y+fires_r.h,
                            0xFF,0x00,0x00,0x77);
@@ -322,7 +334,7 @@ do
                                  0x77,0x77,0x77,0xFF);
 
             // draw shields
-            shields_r.h = shields * _REN_H/33;
+            shields_r.h = n_shields * _REN_H/33;
             _boxRGBA(_REN, shields_r.x, shields_r.y,
                            shields_r.x+shields_r.w, shields_r.y+shields_r.h,
                            0x00,0x00,0xFF,0xDD);

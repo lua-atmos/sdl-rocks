@@ -216,8 +216,8 @@ do
     with
         /*
          * To toggle between mortal<->immortal mode, the player has to start 
-         * touching from "fire_r" and cross to "move_r" back-and-forth 4 times 
-         * in less than 1 second:
+         * with a touch from "fire_r" and cross to "move_r" back-and-forth 4 
+         * times in less than 1 second:
          */
         loop do
             // Start from "fire_r":
@@ -243,14 +243,26 @@ do
                     var int dy = pt1.y - pt2.y;
                     if (dy > _REN_H/2) or (dy < -_REN_H/2) then
                         pt1 := pt2;
-                            // copy not reference
+                            /*
+                             * The Ceu compiler thinks we are copying a
+                             * reference, not a value, and complains about this 
+                             * assignment (it doesn't know anything about C 
+                             * types like _SDL_Point).
+                             * By using `:=´, the assignment is marked as 
+                             * "safe" and the compiler does not complain.
+                             */
+
+                        /*
+                         * Increment and check if the player completed the 4x 
+                         * movements.
+                         */
                         count = count + 1;
                         if count == 4 then
                             break;
                         end
                     end
                 end
-                // finally
+                // Finally the control is in immortal mode.
                 this.isImmortal? = not this.isImmortal?;
             end
         end

@@ -1,11 +1,29 @@
+/*
+ * Global references to the fonts so that they can be used from anywhere in the 
+ * game.
+ */
 native do
-    TTF_Font* FONT_BIG;
-    TTF_Font* FONT_SMALL;
+    TTF_Font* FONT_BIG;     // bigger font (e.g. "= TAP TO START =" message)
+    TTF_Font* FONT_SMALL;   // smaller font (e.g. text inside bonuses)
 end
+
+/*
+ * Initialize (and quit) the "TTF" library.
+ * The "finalize" clause if attached to the global scope of the program (which 
+ * contains #include "fnts.ceu").
+ * Once the glocal scope terminates (in the end of the program), "_TTF_Quit" is 
+ * called from the "finalize" clause.
+ */
 _TTF_Init();
     finalize with
         _TTF_Quit();
     end
+
+/*
+ * Open (and close) each font used in the program.
+ * The "finalize" clause ensures that each font is properly closed on program 
+ * termination.
+ */
 _FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
     finalize with
         _TTF_CloseFont(_FONT_BIG);

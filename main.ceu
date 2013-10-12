@@ -36,7 +36,7 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
  * active at a time.
  */
 #define _OBJ_SHIP_N     1       // x2       // spaceship
-#define _OBJ_FIRE_N     3       // x2       // spaceship shoots
+#define _OBJ_FIRE_N     3       // x2       // spaceship simultaneous shots
 #define _OBJ_ROCK_N     40                  // big meteors
 #define _OBJ_rock_N     40                  // small meteors
 #define _OBJ_BONUS_N    10                  // bonus items
@@ -65,8 +65,8 @@ native do
         OBJ_NULL = 0,       // not used
         OBJ_SHIP1,          // 1st player's ship
         OBJ_SHIP2,          // 2nd player's ship
-        OBJ_FIRE1,          // shoots from SHIP1
-        OBJ_FIRE2,          // shoots from SHIP2
+        OBJ_FIRE1,          // shots from SHIP1
+        OBJ_FIRE2,          // shots from SHIP2
         OBJ_ROCK,           // big meteor
         OBJ_rock,           // small meteor
         OBJ_BONUS_LIFE,     // bonus that increments the player's points
@@ -352,7 +352,7 @@ with
 
         /*
          * The "battle block" holds the spaceships, controllers, and all 
-         * dynamic objects, such as meteors, bonuses, and space shoots.
+         * dynamic objects, such as meteors, bonuses, and space shots.
          * This means that they are all re-allocated/re-initialized on each
          * battle.
          */
@@ -688,12 +688,12 @@ with
                                 end
                             end
 
-                            // BonusShield vs Ship: go_shield
+                            // BonusShield vs Ship: go_S
                             if _getVS(_OBJ_BONUS_SHIELD, &oo1, &oo2) then
                                 if oo2:id == _OBJ_SHIP1 or
                                    oo2:id == _OBJ_SHIP2 then
                                     var Ship* ship = (Ship*) oo2;
-                                    emit ship:go_shield;
+                                    emit ship:go_S;
                                 end
                             end
 
@@ -702,7 +702,7 @@ with
                                 if oo2:id == _OBJ_SHIP1 or
                                    oo2:id == _OBJ_SHIP2 then
                                     var Ship* ship = (Ship*) oo2;
-                                    ship:fire_w = ship:fire_w + 1;
+                                    emit ship:go_F;
                                 end
                             end
 

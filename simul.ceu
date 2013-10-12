@@ -1,10 +1,23 @@
+/*
+ * Simulate input from the players.
+ */
+
 _srand(_time(null));
 
+// Simulate forever.
 loop do
+    // To emit external events, we need to be inside an "async" block.
     async do
-        var int dt;
+        /*
+         * 1. make some time elapse (0->99)ms
+         */
+        var int dt = _rand() % 100;
+        emit (dt)ms;
+        emit SDL_DT => dt;
 
-        // keys
+        /*
+         * 2. Choose a random key from those used in the game and emit it.
+         */
         var _SDL_KeyboardEvent e_key;
         var int pct = _rand() % 100;
         var int key;
@@ -33,17 +46,18 @@ loop do
         else
             e_key.keysym.sym = _SDLK_PERIOD;
         end
-
-        dt = _rand() % 100;
-        emit (dt)ms;
-        emit SDL_REDRAW;
-        emit SDL_DT => dt;
-        emit SDL_REDRAW;
-
         e_key.type = _SDL_KEYDOWN;
         emit SDL_KEYDOWN => &e_key;
+
+        /*
+         * 3. Redraw the screen.
+         */
         emit SDL_REDRAW;
 
-        //_SDL_Delay(10);
+        /*
+         * 4. Await the exact time simulated.
+         *    (Or make it as fast as possible commenting it.)
+         */
+        _SDL_Delay(dt);
     end
 end

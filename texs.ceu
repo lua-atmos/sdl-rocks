@@ -1,16 +1,26 @@
+/*
+ * Global references to the images so that they can be used from anywhere in 
+ * the game.
+ */
 native do
-    SDL_Texture* TEX_BG         = NULL;
-    SDL_Texture* TEX_TAP        = NULL;
-    SDL_Texture* TEX_SHIP1      = NULL;
-    SDL_Texture* TEX_SHIP2      = NULL;
-    SDL_Texture* TEX_ROCK       = NULL;
-    SDL_Texture* TEX_rock       = NULL;
-    SDL_Texture* TEX_BONUS_LIFE = NULL;
-    SDL_Texture* TEX_BONUS_SHIELD = NULL;
-    SDL_Texture* TEX_BONUS_HITS = NULL;
-    SDL_Texture* TEX_BONUS_FIRE = NULL;
-    SDL_Texture* TEX_BOMB[3];
+    SDL_Texture* TEX_BG         = NULL;     // game background
+    SDL_Texture* TEX_TAP        = NULL;     // "= TAP TO START ="
+    SDL_Texture* TEX_SHIP1      = NULL;     // ship in the left
+    SDL_Texture* TEX_SHIP2      = NULL;     // ship in the right
+    SDL_Texture* TEX_ROCK       = NULL;     // big meteor
+    SDL_Texture* TEX_rock       = NULL;     // small meteor
+    SDL_Texture* TEX_BONUS_LIFE = NULL;     // life bonus (+1)
+    SDL_Texture* TEX_BONUS_SHIELD = NULL;   // shield bonus (S)
+    SDL_Texture* TEX_BONUS_HITS = NULL;     // hit-points bonus (H)
+    SDL_Texture* TEX_BONUS_FIRE = NULL;     // space fire bonus (F)
+    SDL_Texture* TEX_BOMB[3];               // 3-2-1 bomb
 end
+
+/*
+ * Load (and destroy) each image used in the program.
+ * The "finalize" clause ensures that each image is properly destroyed on 
+ * program termination.
+ */
 
 _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
     finalize with
