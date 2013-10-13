@@ -11,7 +11,8 @@ class ObjectMove with
 do
     _assert(this.obj != null);
 
-    // Convert the current position of the object to "float".
+    // Convert the current position of the object to "float" to keep precision
+    // in animations:
     var float sx = obj:rect.x;
     var float sy = obj:rect.y;
 
@@ -108,6 +109,17 @@ end
 #define _SHIP_FIRES_MAX     5   // maximum number of shots a ship can fire
 #define _SHIP_SHIELDS_MAX   3   // maximum number of shields a ship can hold
 
+/*
+ * The spaceship class.
+ * One instance for each of the two players.
+ * Each ship has a controller, orientation (left/right), image (left/right
+ * oriented), and screen limits (they cannot cross the half of the screen).
+ * A ship moves, shoots, and spawns a "shield" through its controller
+ * passed in the constructor.
+ * A ship remains alive until its number of hit points reach zero.
+ * Each collision decrements the hit points.
+ * Before dying, the ship explodes in an animation.
+ */
 class Ship with
     interface Object;
     var _SDL_Texture* tex = null;   // left/right oriented image
@@ -215,7 +227,7 @@ do
 
     /*
      * Set the ship initial position and speed.
-     * Uses "float" for precision in the move animations.
+     * Uses "float" for precision in the moving animations.
      */
     var float sx = this.rect.x;
     var float vx = 0;
@@ -322,34 +334,44 @@ do
                  */
         end
     with
-        // a new "fires" every 2s
+        // Increment "n_fires" every 2s:
         every 2s do
             if n_fires < _SHIP_FIRES_MAX then
                 n_fires = n_fires + 1;
             end
         end
     with
-        // spawn a "Fire" every "ok_fired"
+        /*
+         * Handle fire shoots:
+         * Ignore if "isImmortal?" or "hasShield?".
+         * Blink during 2s.
+         * Terminate when "n_hits=0".
+         */
         do
-            var int fire_w = 0;
+            var int fire_w = 0;     // fire width offset
             par do
+                // Increment fire width on every "F" bonus:
                 every this.go_F do
                     fire_w = fire_w + 1;
                 end
             with
+                // Spawn a fire shot on every "ok_fired" controller request:
                 every this.controller:ok_fired do
                     if n_fires == 0 then
                         continue;
                     end
                     n_fires = n_fires - 1;
+                    
+                    // Spawn the shot (limited to _OBJ_FIRE_N instances):
                     var int ok? = spawn[_OBJ_FIRE_N] Fire with
-                        this.id   = id + 2;
-                        this.dir  = dir;
-                        this.vy   = vy;
-                        this.rect = rect;
-                        this.w    = fire_w;
+                        this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
+                        this.dir  = dir;        // same orientation
+                        this.vy   = vy;         // same speed
+                        this.rect = rect;       // same position
+                        this.w    = fire_w;     // current ship's fire width offset
                     end;
                     if ok? then
+                        // Play shoot sound effect if spawn was successful:
                         _Mix_PlayChannel(-1, _SND_FIRE, 0);
                     end
                 end
