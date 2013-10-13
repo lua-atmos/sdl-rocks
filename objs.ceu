@@ -64,30 +64,40 @@ do
     emit this.ok;
 end
 
+/*
+ * A spaceship fire shot.
+ * Moves with the same "dir" and "vy" as the shooting ship.
+ * The fire width depends on the number of the ship's "F" bonuses.
+ * It moves until it leaves the screen ("ObjectMove") or collides ("go_hit").
+ */
 class Fire with
     interface Object;
-    var int dir;
-    var int vy;
-    var int w = 0;  // fire width (may increase with bonus)
+    var int dir;        // fire orientation (left=1/right=-1)
+    var int vy;         // inherit "vy" from the shooting ship
+    var int w;          // fire width (may increase with "F" bonus)
 do
+    // Set width & height.
     this.rect.w = _REN_W/50 + _REN_W*this.w/100;
     this.rect.h = 3;
 
+    /*
+     * Move the ship, redraw it, await getting hit.
+     */
     par/or do
         var Object* obj = &this;
         var ObjectMove move with
             this.obj = obj;
-            this.vx  = _REN_W/3 * dir;
+            this.vx  = _REN_W/3 * this.dir;
             this.vy  = vy;
         end;
-        await move.ok;
+        await move.ok;      // terminates the "par/or" when leaves the screen
     with
         every SDL_REDRAW do
             _boxRGBA(_REN, rect.x,rect.y, rect.x+rect.w,rect.y+rect.h,
                            0xFF,0xFF,0x88,0xFF);
         end
     with
-        await go_hit;
+        await go_hit;       // terminates the "par/or" when gets hit
     end
 end
 
@@ -100,112 +110,159 @@ end
 
 class Ship with
     interface Object;
-    var _SDL_Texture* tex = null;           // left or right oriented image
+    var _SDL_Texture* tex = null;   // left/right oriented image
 
-    var int lim_x1, lim_x2, lim_y1, lim_y2; // physical screen limits that the 
-                                            // ship can move
+    var int lim_x1, lim_x2,         // physical screen limits that the 
+            lim_y1, lim_y2;         // ship can move
 
-    var int dir;                            // ship orientation (left=1/right=-1)
-    var Controller* controller;             // reference the ship controller
+    var int dir;                    // ship orientation (left=1/right=-1)
+    var Controller* controller;     // reference the ship controller
 
-    event void go_F;                        // inc. ship number of shots
-    event void go_H;                        // inc. ship number of hit points
-    event void go_S;                        // inc. ship number of shields
-    event void ok_killed;                   // .
+    event void go_F;                // inc. ship number of shots
+    event void go_H;                // inc. ship number of hit points
+    event void go_S;                // inc. ship number of shields
+    
+    event void ok_killed;           // emitted om ship's death (hits=0)
 do
+    /*
+     * Take the ship image width (it has a squared dimension).
+     * Sets w/h from it.
+     */
     _assert(this.tex != null);
-
     var int dim;    // dim = w
         _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
     this.rect.w = dim;
     this.rect.h = dim;
 
+    /*
+     * The image has 6 frames through its Y-axis.
+     * Initialize the clipping rectangle from the frame 0->dim.
+     */
     var _SDL_Rect clip_r;
         clip_r.x =  0;
         clip_r.w = dim;
         clip_r.h = dim;
 
-    // hits
-    var int n_hits = _SHIP_HITS_MAX;      // number of hit points
-    var int blink? = 0;
+    /*
+     * HIT POINTS: start with the maximum number of hit points.
+     * The hit points rectangle bar appears in the top of the screen in the
+     * left/right (depending on "dir"):
+     * - x: left/right
+     * - y: top
+     * - w: thin
+     * - h: depends on "n_hits" (not set)
+     */
+    var int n_hits = _SHIP_HITS_MAX;
     var _SDL_Rect hits_r;
         if this.dir > 0 then
-            hits_r.x = this.lim_x1 + _REN_W/100;
+            hits_r.x = this.lim_x1 + _REN_W/100;    // left side
         else
-            hits_r.x = this.lim_x2 - _REN_W/100;
+            hits_r.x = this.lim_x2 - _REN_W/100;    // right side
         end
-        hits_r.w = _REN_W/100;
-        hits_r.y = this.lim_y1 + _REN_H/100;
+        hits_r.w = _REN_W/100;                      // very thin
+        hits_r.y = this.lim_y1 + _REN_H/100;        // top of screen
 
-    // fires
-    var int n_fires = _SHIP_FIRES_MAX;    // number of fires
+    /*
+     * FIRES: start with the maximum number of fire shots (ammo).
+     * Each ship gets a new shot every 2 seconds, no more than 3 shots can be
+     * active at the same time.
+     * The ammo rectangle bar appears in the top of the screen in the
+     * left/right (depending on "dir"):
+     * - x: left/right
+     * - y: top
+     * - w: thin
+     * - h: depends on "n_hits" (not set)
+     */
+    var int n_fires = _SHIP_FIRES_MAX;
     var _SDL_Rect fires_r;
         if this.dir > 0 then
-            fires_r.x = this.lim_x1 + 2*_REN_W/100;
+            fires_r.x = this.lim_x1 + 2*_REN_W/100; // left side
         else
-            fires_r.x = this.lim_x2 - 2*_REN_W/100;
+            fires_r.x = this.lim_x2 - 2*_REN_W/100; // right side
         end
-        fires_r.w = _REN_W/100;
-        fires_r.y = this.lim_y1 + _REN_H/100;
+        fires_r.w = _REN_W/100;                     // very thin
+        fires_r.y = this.lim_y1 + _REN_H/100;       // top of screen
 
-    // shields
-    var int n_shields = 0;              // number of shields
-    var int hasShield? = 0;             // is it active now?
+    /*
+     * SHIELDS: start with 0.
+     * Each ship gets a new shield with the "S" bonus.
+     * The shields rectangle bar appears in the top of the screen in the
+     * left/right (depending on "dir"):
+     * - x: left/right
+     * - y: top
+     * - w: thin
+     * - h: depends on "n_hits" (not set)
+     */
+    var int n_shields = 0;
     var _SDL_Rect shields_r;
         if this.dir > 0 then
-            shields_r.x = this.lim_x1 + 3*_REN_W/100;
+            shields_r.x = this.lim_x1 + 3*_REN_W/100;   // left side
         else
-            shields_r.x = this.lim_x2 - 3*_REN_W/100;
+            shields_r.x = this.lim_x2 - 3*_REN_W/100;   // right side
         end
-        shields_r.w = _REN_W/100;
-        shields_r.y = this.lim_y1 + _REN_H/100;
+        shields_r.w = _REN_W/100;                       // very thin
+        shields_r.y = this.lim_y1 + _REN_H/100;         // top of screen
 
+    /*
+     * Temporary ship states:
+     * - blink?     : if the ship lost a hit point.
+     *                  It blinks and becomes immortal for 2s.
+     * - hasShield? : if the ship activated a shield.
+     *                  It spawns a blue circle and becomes immortal.
+     */
+    var int blink?     = 0;
+    var int hasShield? = 0;
+
+    /*
+     * Set the ship initial position and speed.
+     * Uses "float" for precision in the move animations.
+     */
     var float sx = this.rect.x;
     var float vx = 0;
     var float sy = this.rect.y;
     var float vy = 0;
 
+    /*
+     * Await and react to multiple events in parallel.
+     * The only way to terminate it is when n_hits=0.
+     */
     par/or do
+        // Increment "n_hits" on every "H" bonus:
         every this.go_H do
-            // don't go over the MAX
             n_hits = n_hits + 1;
             if n_hits > _SHIP_HITS_MAX then
-                n_hits = _SHIP_HITS_MAX;
+                n_hits = _SHIP_HITS_MAX;    // don't go over MAX
             end
         end
     with
-
-        // add/sub hit points on "go_hit" (unless "isImmortal?")
-        // "go_hit" if == 0
-
-#ifdef SDL_SIMUL
-        await 10min;
-#endif
+        /*
+         * Decrement "n_hits" on every "go_hit" (collision).
+         * Ignore if "isImmortal?" or "hasShield?".
+         * Blink during 2s.
+         * Terminate when "n_hits=0".
+         */
         loop do
             await this.go_hit until not (this.controller:isImmortal? or
                                          hasShield?);
             n_hits = n_hits - 1;
 
             if n_hits <= 0 then
-                break;
+                break;  // escapes the "loop" and consequently the "par/or"
             end
 
-            // stay immortal for 2s and blink
+            // Play the "hit" sound effect:
             _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
+
             par/or do
                 every 100ms do
-                    blink? = not blink?;
+                    blink? = not blink?;    // blink every 100ms
                 end
             with
-                await 2s;
+                await 2s;                   // during 2s
             end
-        end
-    with
-        // a new "fires" every 2s
-        every 2s do
-            if n_fires < _SHIP_FIRES_MAX then
-                n_fires = n_fires + 1;
-            end
+                /* While blinking, the body is not awaiting "go_hit", hence,
+                 * the ship is immortal during this period.
+                 */
         end
     with
         // a new "shield"
@@ -246,6 +303,13 @@ do
                     _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
                                             0x00,0x00,0xFF,0xDD);
                 end
+            end
+        end
+    with
+        // a new "fires" every 2s
+        every 2s do
+            if n_fires < _SHIP_FIRES_MAX then
+                n_fires = n_fires + 1;
             end
         end
     with
