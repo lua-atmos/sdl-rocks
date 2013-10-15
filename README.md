@@ -1,4 +1,7 @@
-(THE CODE IS COMMENTED: START FROM "main.ceu")
+(THE CODE IS COMMENTED)
+(Start from "main.ceu")
+(Implementation in Céu: http://www.ceu-lang.org/)
+
 
 # The "Rocks!" game
 
@@ -9,6 +12,9 @@ http://www.youtube.com/watch?v=dIO_19lunT0
 
 Screenshots:
 https://github.com/droid-in-the-sky/rocks/tree/master/screenshots
+
+Free download for Android:
+https://play.google.com/store/apps/details?id=org.droid_in_the_sky.rocks
 
 ## Objectives
 
@@ -52,7 +58,7 @@ https://github.com/droid-in-the-sky/rocks
 Implementation in Céu:
 http://www.ceu-lang.org/
 
-Using the SDL library:
+Uses the SDL library:
 http://www.libsdl.org/
 
 keywords: 2-players, 2-person, shooter, shoot'em up, space, games
