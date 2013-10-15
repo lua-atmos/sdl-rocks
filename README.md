@@ -1,6 +1,4 @@
-(THE CODE IS COMMENTED)
-(Start from "main.ceu")
-(Implementation in Céu: http://www.ceu-lang.org/)
+(THE CODE IS COMMENTED :: implementation in Céu :: start from "main.ceu" :: http://www.ceu-lang.org/)
 
 
 # The "Rocks!" game
