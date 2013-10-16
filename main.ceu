@@ -162,8 +162,6 @@ end
  * Each player has a controller to control the ship.
  * The Controller interface is as follows:
  * The objects know how to react to input themselves.
- * We provide two implementations in "controllers.ceu": TouchController (for 
- * tablets and phones) and KeyController (for desktops).
  */
 interface Controller with
     var   float ax, ay;       // The current acceleration imposed to the ship.
@@ -171,6 +169,12 @@ interface Controller with
     event void  ok_fired;     // Emitted when the controller shoots a fire.
     event void  ok_shield;    // Emitted when the controller invokes a shield.
 end
+
+/*
+ * We provide two implementations in "controllers.ceu":
+ * - TouchController (for tablets and phones).
+ * - KeyController   (for desktops).
+ */
 #include "controllers.ceu"    // (Ignore it for now.)
 
 /*
@@ -204,6 +208,8 @@ interface Object with
         }
     end
 end
+
+// Implementations for all game objects: ships, shots, meteors, etc.
 #include "objs.ceu"    // (Ignore it for now.)
 
 /*
@@ -214,11 +220,16 @@ _srand(_time(null));    // initialize the game "randomizer"
 
 /*
  * Create the game window and renderer.
- * Both allocations relies on Céu's finalization clause to safely relese them.
+ * Both allocations relies on Céu's finalization mechanism to safely relese 
+ * them.
  * For instance, "_SDL_CreateWindow" allocates a new window and returns a 
  * reference to it. The finalization clause is saying that when the variable 
  * "win" goes out of scope (in the end of the program), it will call 
  * "_SDL_DestroyWindow(win)" and safely release the allocated window.
+ * This mechanism has two advantages:
+ * 1. The programmer cannot forget to finalize a resource (the compiler gives
+ *    an error).
+ * 2. The initialization and finalization stay close together in the code.
  */
 
 var _SDL_Window* win;
@@ -237,7 +248,8 @@ _REN = _SDL_CreateRenderer(win, -1, 0);
 
 /*
  * Allocate all fonts, textures and sounds used in the game.
- * The code is similar to the previous for window and renderer.
+ * The code is similar to the previous one that initializes the window and 
+ * renderer.
  * (Ignore them for now.)
  */
 #include "fnts.ceu"
@@ -276,27 +288,27 @@ with
      */
 
     /*
-     * Instantiate the players' points (p1, p2) and place them in the bottom of 
-     * the screen, in opposite sides:
+     * Instantiate the players' points (points1, points2) and place them in the 
+     * bottom of the screen, in opposite sides (p1, p2):
      * +------------------------+
      * |                        |
      * |                        |
      * | p1                  p2 |
      * +------------------------+
-     * The player's points are incremented when the opponent ship is destroyed.
+     * Each player's points is incremented when the ship of the opponent is 
+     * destroyed.
      */
     var _SDL_Point p1;
         p1.x = _REN_W/15;
         p1.y = _REN_H - _REN_H/10;
     var TextPoints points1 with
-        this.pos = p1;
+        this.pos = p1;      // fixed position
     end;
-
     var _SDL_Point p2;
         p2.x = _REN_W - _REN_W/15;
         p2.y = _REN_H - _REN_H/10;
     var TextPoints points2 with
-        this.pos = p2;
+        this.pos = p2;      // fixed position
     end;
 
     /*
@@ -314,9 +326,17 @@ with
         do
             var _SDL_Rect r;
             _SDL_QueryTexture(_TEX_TAP, null, null, &r.w, &r.h);
-                r.x = _REN_W/2 - r.w/2;
-                r.y = _REN_H/2 - r.h/2;
+                r.x = _REN_W/2 - r.w/2;     // center on screen
+                r.y = _REN_H/2 - r.h/2;     // center on screen
+
+            /*
+             * We use three trails in the "par/or" for the blinking message:
+             * 1. Await the user interaction and terminate the "par/or".
+             * 2. Toggle between on/off every 500ms.
+             * 3. Draw (or hide) the message every frame.
+             */
             var int on? = 1;    // start showing the message
+                                // (Céu supports "?" in identifiers)
             par/or do
                 // Await the user interaction to proceed to the battle.
                 await 1s; // delay 1 second to prevent a lazy player to 
@@ -344,36 +364,42 @@ with
             // (_SND_START, loaded in "snds.ceu").
             _Mix_PlayChannel(-1, _SND_START, 0);
         end
-        /*
-         * The block termination makes all memory needed for data (e.g. r, on?) 
-         * and control (runtime flags for the awaits and par's) available for 
-         * use in susequent blocks.
-         */
+            /*
+             * The "do-end" termination makes all memory needed for data (e.g.  
+             * r, on?) and control (runtime flags for the awaits and par's) 
+             * available for use in susequent blocks.
+             */
 
         /*
          * The "battle block" holds the spaceships, controllers, and all 
-         * dynamic objects, such as meteors, bonuses, and space shots.
-         * This means that they are all re-allocated/re-initialized on each
+         * dynamic objects, such as meteors, bonuses, and ship shots.
+         * This means that they are all properly released/reallocated on each
          * battle.
          */
         do
             /*
-             * We provide different controllers for android and desktop 
+             * We provide different controllers for the Android and Desktop 
              * versions of the game.
              */
 #if defined(__ANDROID__) && !defined(SIMUL)
             /*
              * The touch controller needs to know the area in which it should 
-             * respond to user input:
+             * respond to user input in the tablet:
              *        +------------------------------------+
              *      P |                  |                 | P
              *      L |     move_1       |     fire_2      | L
              *      A |                  |                 | A
              *      Y |------------------|------------------ Y
              *      E |                  |                 | E
-             *      R |     fire_1       |     move_1      | R
+             *      R |     fire_1       |     move_2      | R
              *      1 |                  |                 | 2
              *        +------------------------------------+
+             * Each quadrant in the tablet is responsive for one of the four 
+             * activities in the game:
+             * - move_1: Move the 1st player's ship.
+             * - fire_1: Fire the 1st player's ship shots.
+             * - move_2: Move the 2nd player's ship.
+             * - fire_2: Fire the 2nd player's ship shots.
              */
             var TouchController controller1 with
                 this.move_r.x = 0;
@@ -474,9 +500,12 @@ with
                 /*
                  * Period to create a new meteor in the game.
                  * It starts with 2s but goes down continuously.
-                 * The "spawn" creates a dynamic instance of "RockBig", which 
-                 * is scoped to its outer do-end block (the "battle block"), 
-                 * i.e., when the block terminates, all instances are 
+                 * The "spawn" creates a dynamic instance of "RockBig".
+                 * All instances are limited to the closest outer "do-end" 
+                 * block (in this case, the "battle block").
+                 * When the block terminates, all instances are automatically 
+                 * destroyed, i.e., when one of the ships is destroyed, the 
+                 * "battle block" will restart and all meteors will be 
                  * automatically destroyed.
                  */
                 var int period = 2000;
@@ -506,17 +535,17 @@ with
                     end
 
                     /*
-                     * Outer loop: "o1" ranges in [0, _OBJS_N[
+                     * Outer loop: "o1" iterates through [0, _OBJS_N[
                      */
                     loop i, _OBJS_N do
                         var Object* o1 = (Object*) _OBJS[i];
                         _assert(o1 != null);
 
                         /*
-                         * Inner loop: "o2" ranges in [nxt, _OBJS_N[
+                         * Inner loop: "o2" iterates through [nxt, _OBJS_N[
                          * "nxt" is the index for the next object after "o1".
                          * These two loops make all possible combinations for 
-                         * any two alive objects.
+                         * any two objects alive.
                          */
                         loop j, _OBJS_N-i-1 do
                             var Object* o2 = (Object*) _OBJS[i+1+j];
@@ -537,7 +566,8 @@ with
                                 r2.y = r2.y - r2.h/2;
 
                             /*
-                             * Check if the two rectangles have intersection.
+                             * Check if the two rectangles have an 
+                             * intersection.
                              * (Otherwise, go to the next pair of objects).
                              */
                             if not _SDL_HasIntersection(&r1, &r2) then
@@ -545,8 +575,8 @@ with
                             end
 
                             /*
-                             * "o1" and "o2" collide, now, based on their "id", 
-                             * take the proper actions.
+                             * "o1" and "o2" collide, now, based on their "id" 
+                             * fields, take the proper actions.
                              */
 
                             /*
@@ -584,8 +614,10 @@ with
                              *  - 15%: spawn (S, shield)
                              *  - 15%: spawn (F, fire width)
                              *  - 15%: spawn (B, bomb)
-                             * Here we only spawn the items, we destroy the hit 
-                             * ROCK elsewhere.
+                             * Here we only spawn the items.
+                             * (All items that should be destroyed in 
+                             * collisions are handled together below, after 
+                             * handling extra effects.)
                              */
                             if _getVS(_OBJ_ROCK, &oo1, &oo2) and
                                (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
@@ -601,6 +633,8 @@ with
                                      * Spawn two smaller rocks.
                                      * They go in the opposite direction of the 
                                      * ship that hit the rock.
+                                     * (All instances are also scoped to the 
+                                     * "battle block".)
                                      */
                                     loop i,2 do
                                         spawn RockSmall with
@@ -615,6 +649,8 @@ with
                                      * They go in the same direction of the 
                                      * ship that hit the rock.
                                      * They differ in "id" and "tex".
+                                     * (All instances are also scoped to the 
+                                     * "battle block".)
                                      */
                                 else/if pct < 40 then
                                     spawn Bonus with
@@ -653,6 +689,8 @@ with
                                      * Spawn a bomb.
                                      * It goes in the opposite direction of the 
                                      * ship that hit the rock.
+                                     * (All instances are also scoped to the 
+                                     * "battle block".)
                                      */
                                     spawn Bomb with
                                         this.rect.x = (int) oo2:rect.x;
@@ -665,7 +703,6 @@ with
                             /*
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.
-                             * (Again, we destroy the bonus elsewhere.)
                              */
                             if _getVS(_OBJ_BONUS_LIFE, &oo1, &oo2) then
                                 if oo2:id == _OBJ_SHIP1 then
@@ -678,7 +715,6 @@ with
                             /*
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.
-                             * (Again, we destroy the bonus elsewhere.)
                              */
                             if _getVS(_OBJ_BONUS_HITS, &oo1, &oo2) then
                                 if (oo2:id == _OBJ_SHIP1) or
@@ -725,7 +761,7 @@ with
                             end
                             /*
                              * Note that the "emit go_hit" must happen after 
-                             * the previous effects becuase it may destroy the 
+                             * the previous effects, because it may release the 
                              * object from the memory.
                              */
                         end // o2 iteration
@@ -744,8 +780,9 @@ with
         /*
          * The "battle block" terminated, the ships, controllers, and all 
          * dynamic items are destroyed.
-         * Restart the "main loop" to show the "= TAP TO START =" message.
-         * The points are kept.
+         * Restart the "main loop" and show the "= TAP TO START =" message 
+         * again.
+         * The points are kept (they are declated in the outer scope).
          */
     end // the "main loop"
     /*
