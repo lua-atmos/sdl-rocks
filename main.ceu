@@ -129,8 +129,27 @@ native do
         return tex;
     }
 end
-native nohold _getVS();
 native nohold _SDL_text2texture();
+
+/*
+ * Helper function.
+ *  (Ignore it for now.)
+ */
+function (int id, Object** o1, Object** o2)=>int getVS do
+    if (*o1):id == id then
+        return 1;
+    else/if (*o2):id == id then
+        var Object* tmp = *o1;
+        *o1 = *o2;
+        *o2 := tmp;
+            // tmp is an alias to "o1"
+        return 1;
+    else
+        //*o1 = NULL;
+        //*o2 = NULL;
+        return 0;
+    end
+end
 
 /*
  * "Points" interface.
@@ -186,27 +205,6 @@ interface Object with
     var   int       id;       // Object type identifier (e.g. _OBJ_SHIP1)
     var   _SDL_Rect rect;     // Position (x,y) and dimension (w,h).
     event void      go_hit;   // Signal that the object has collided.
-
-    /*
-     * Helper function.
-     *  (Ignore it for now.)
-     */
-    native do
-        int getVS (int id, CEU_Object** o1, CEU_Object** o2) {
-            if (*_CEU_Object_id(*o1) == id) {
-                return 1;
-            } else if (*_CEU_Object_id(*o2) == id) {
-                CEU_Object* tmp = *o1;
-                *o1 = *o2;
-                *o2 = tmp;
-                return 1;
-            } else {
-                //*o1 = NULL;
-                //*o2 = NULL;
-                return 0;
-            }
-        }
-    end
 end
 
 // Implementations for all game objects: ships, shots, meteors, etc.
@@ -216,6 +214,9 @@ end
  * GAME EXECUTION STARTS HERE
  */
 
+native do
+    ##include <time.h>
+end
 _srand(_time(null));    // initialize the game "randomizer"
 
 /*
@@ -580,7 +581,7 @@ with
                              */
 
                             /*
-                             * We use "_getVS(id,...)" to make "oo1" point to 
+                             * We use "getVS(id,...)" to make "oo1" point to 
                              * the object matching "id" and "oo2" to the other 
                              * one.
                              */
@@ -592,14 +593,14 @@ with
                              *  FIRE vs ROCKS/BONUSES: play _SND_ROCK
                              *  SHIP vs BONUSES:       play _SND_BONUS
                              */
-                            if _getVS(_OBJ_FIRE1, &oo1, &oo2) or
-                               _getVS(_OBJ_FIRE2, &oo1, &oo2) then
+                            if getVS(_OBJ_FIRE1, &oo1, &oo2) or
+                               getVS(_OBJ_FIRE2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_ROCK) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
                                     _Mix_PlayChannel(-1, _SND_ROCK, 0);
                                 end
-                            else/if _getVS(_OBJ_SHIP1, &oo1, &oo2) or
-                                    _getVS(_OBJ_SHIP2, &oo1, &oo2) then
+                            else/if getVS(_OBJ_SHIP1, &oo1, &oo2) or
+                                    getVS(_OBJ_SHIP2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_BONUS_LIFE) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
                                     _Mix_PlayChannel(-1, _SND_BONUS, 0);
@@ -619,7 +620,7 @@ with
                              * collisions are handled together below, after 
                              * handling extra effects.)
                              */
-                            if _getVS(_OBJ_ROCK, &oo1, &oo2) and
+                            if getVS(_OBJ_ROCK, &oo1, &oo2) and
                                (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
                                 var int dir;    // which direction to spawn?
                                 if oo2:id == _OBJ_FIRE1 then
@@ -704,7 +705,7 @@ with
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.
                              */
-                            if _getVS(_OBJ_BONUS_LIFE, &oo1, &oo2) then
+                            if getVS(_OBJ_BONUS_LIFE, &oo1, &oo2) then
                                 if oo2:id == _OBJ_SHIP1 then
                                     emit points1.go_inc;
                                 else/if oo2:id == _OBJ_SHIP2 then
@@ -716,7 +717,7 @@ with
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.
                              */
-                            if _getVS(_OBJ_BONUS_HITS, &oo1, &oo2) then
+                            if getVS(_OBJ_BONUS_HITS, &oo1, &oo2) then
                                 if (oo2:id == _OBJ_SHIP1) or
                                    (oo2:id == _OBJ_SHIP2) then
                                     var Ship* ship = (Ship*) oo2;
@@ -725,7 +726,7 @@ with
                             end
 
                             // BonusShield vs Ship: go_S
-                            if _getVS(_OBJ_BONUS_SHIELD, &oo1, &oo2) then
+                            if getVS(_OBJ_BONUS_SHIELD, &oo1, &oo2) then
                                 if oo2:id == _OBJ_SHIP1 or
                                    oo2:id == _OBJ_SHIP2 then
                                     var Ship* ship = (Ship*) oo2;
@@ -734,7 +735,7 @@ with
                             end
 
                             // BonusFire vs Ship: fire.rect.w++
-                            if _getVS(_OBJ_BONUS_FIRE, &oo1, &oo2) then
+                            if getVS(_OBJ_BONUS_FIRE, &oo1, &oo2) then
                                 if oo2:id == _OBJ_SHIP1 or
                                    oo2:id == _OBJ_SHIP2 then
                                     var Ship* ship = (Ship*) oo2;
@@ -855,7 +856,7 @@ with
     end
 end
 
-return 0;
+escape 0;
 
 /* TODO:
  * - PAUSE/IF salva img emostra pause em cima

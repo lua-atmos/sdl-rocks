@@ -21,9 +21,9 @@ class KeyController with
     /*
      * Interface fields can be redeclared to define default values:
      */
-    var int ax = 0;             // no acceleration by default
-    var int ay = 0;             // no acceleration by default
-    var int isImmortal? = 0;    // ship starts in normal mode
+    var float ax = 0;             // no acceleration by default
+    var float ay = 0;             // no acceleration by default
+    var int isImmortal? = 0;      // ship starts in normal mode
 do
     /*
      * No trails in parallel terminate, so we use a "par" here.
