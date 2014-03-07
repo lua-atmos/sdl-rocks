@@ -30,7 +30,7 @@
 
 s32 WCLOCK_nxt;
 #ifndef CEU_IN_SDL_DT
-#define ceu_out_wclock(us) WCLOCK_nxt = us;
+#define ceu_out_wclock_set(us) WCLOCK_nxt = us;
 #endif
 
 #ifdef CEU_ASYNCS
@@ -78,19 +78,25 @@ int main (int argc, char *argv[])
         app.init = &ceu_app_init;
 
     app.init(&app);    /* calls CEU_THREADS_MUTEX_LOCK() */
-    if (! app.isAlive)
-        goto END;
-
-#ifdef CEU_IN_OS_START
-    ceu_sys_go(&app, CEU_IN_OS_START, (tceu_evtp)NULL);
+#ifdef CEU_RET
     if (! app.isAlive)
         goto END;
 #endif
 
-#ifdef CEU_IN_SDL_REDRAW
-    ceu_sys_go(&app, CEU_IN_SDL_REDRAW, (tceu_evtp)NULL);
+#ifdef CEU_IN_OS_START
+    ceu_sys_go(&app, CEU_IN_OS_START, (tceu_evtp)NULL);
+#ifdef CEU_RET
     if (! app.isAlive)
         goto END;
+#endif
+#endif
+
+#ifdef CEU_IN_SDL_REDRAW
+    ceu_sys_go(&app, CEU_IN_SDL_REDRAW, (tceu_evtp)NULL);
+#ifdef CEU_RET
+    if (! app.isAlive)
+        goto END;
+#endif
 #endif
 
     SDL_Event evt;
@@ -163,13 +169,17 @@ int main (int argc, char *argv[])
                 redraw = WCLOCK_nxt <= 1000*dt;
 #endif
                 ceu_sys_go(&app, CEU_IN__WCLOCK, (tceu_evtp)(1000*dt));
+#ifdef CEU_RET
                 if (! app.isAlive)
                     goto END;
+#endif
 
                 while (WCLOCK_nxt <= 0) {
-                    ceu_sys_go(&app, CEU_IN__WCLOCK, (tceu_evtp)(1000*dt));
+                    ceu_sys_go(&app, CEU_IN__WCLOCK, (tceu_evtp)0);
+#ifdef CEU_RET
                     if (! app.isAlive)
                         goto END;
+#endif
                 }
 #ifndef CEU_IN_SDL_DT
             }
@@ -177,8 +187,10 @@ int main (int argc, char *argv[])
 #endif
 #ifdef CEU_IN_SDL_DT
             ceu_sys_go(&app, CEU_IN_SDL_DT, (tceu_evtp)dt);
+#ifdef CEU_RET
             if (! app.isAlive)
                 goto END;
+#endif
             redraw = 1;
 #endif
         }
@@ -283,15 +295,19 @@ int main (int argc, char *argv[])
                 default:
                     handled = 0;    // undefined event
             }
+#ifdef CEU_RET
             if (! app.isAlive) goto END;
+#endif
             redraw = redraw || handled;
         }
 
 #ifdef CEU_IN_SDL_REDRAW
         if (redraw) {
             ceu_sys_go(&app, CEU_IN_SDL_REDRAW, (tceu_evtp)NULL);
+#ifdef CEU_RET
             if (! app.isAlive)
                 goto END;
+#endif
         }
 #endif
 
@@ -300,8 +316,10 @@ int main (int argc, char *argv[])
 #ifdef CEU_ASYNCS
         if (ASYNC_nxt) {
             ceu_sys_go(&app, CEU_IN__ASYNC, (tceu_evtp)NULL);
+#ifdef CEU_RET
             if (! app.isAlive)
                 goto END;
+#endif
         }
 #endif
     }
@@ -311,6 +329,10 @@ END:
     CEU_THREADS_MUTEX_UNLOCK(&CEU.threads_mutex);
 #endif
     SDL_Quit();         // TODO: slow
+#ifdef CEU_RET
     return app.ret;
+#else
+    return 0;
+#endif
 }
 
