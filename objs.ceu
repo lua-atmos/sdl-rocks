@@ -161,8 +161,8 @@ do
      * - hasShield? : if the ship activated a shield.
      *                  It spawns a blue circle and becomes immortal.
      */
-    var int blink?     = 0;
-    var int hasShield? = 0;
+    var bool blink?     = false;
+    var bool hasShield? = false;
 
     /*
      * The "vy" ship speed is inherited by all fire shots.
@@ -292,11 +292,11 @@ do
                 until (n_shields > 0);
 
                 n_shields = n_shields - 1;      // decrement "n_shields"
-                hasShield? = 1;                 // set hasShield?
+                hasShield? = true;              // set hasShield?
                 finalize with
                     this.rect.w = dim;          // on termination
                     this.rect.h = dim;          //   restore w/h
-                    hasShield? = 0;             //   unset hasShield?
+                    hasShield? = false;         //   unset hasShield?
                 end
 
                 // Play the explosion sound effect:
@@ -395,7 +395,7 @@ do
                     n_fires = n_fires - 1;
                     
                     // Spawn the shot (limited to _OBJ_FIRE_N instances):
-                    var int ok? = spawn[_OBJ_FIRE_N] Fire with
+                    var bool ok? = spawn[_OBJ_FIRE_N] Fire with
                         this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
                         this.dir  = dir;        // same orientation
                         this.vy   = vy;         // same speed
