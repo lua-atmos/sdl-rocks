@@ -1,8 +1,9 @@
 #CFLAGS = -DCEU_RUNTESTS -DCEU_DEBUG #-DSIMUL #-DCEU_DEBUG_TRAILS
+CFLAGS = -DSIMUL
 
 all:
 	ceu --cpp-args "-I . $(CFLAGS)" main.ceu
-	gcc -g -Os main.c $(CFLAGS) -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lSDL2_net -lSDL2_gfx -lpthread -lm \
+	gcc -g -Os $(CFLAGS) main.c -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lSDL2_net -lSDL2_gfx -lpthread -lm \
 		-o rocks.exe
 
 clean:

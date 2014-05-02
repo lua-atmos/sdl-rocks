@@ -34,7 +34,7 @@ do
          * acceleration.
          */
         var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYDOWN do
+        every key in SDL_KEYDOWN do
             if key:keysym.sym == this.k_up then
                 this.ay = -(float)_REN_H/5000;
             else/if key:keysym.sym == this.k_down then
@@ -55,7 +55,7 @@ do
          * acceleration.
          */
         var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYUP do
+        every key in SDL_KEYUP do
             if key:keysym.sym == this.k_up
             or key:keysym.sym == this.k_down then
                 this.ay = 0;
@@ -70,7 +70,7 @@ do
          * "isImmortal?" mode.
          */
         var _SDL_KeyboardEvent* key;
-        every key = SDL_KEYDOWN do
+        every key in SDL_KEYDOWN do
             if key:keysym.sym == this.k_immortal then
                 this.isImmortal? = not this.isImmortal?;
             end
@@ -230,9 +230,7 @@ do
             var int id = e1:fingerId;   // hold the finger id
 
             // Limit the movement to 1 second, otherwise restart.
-            par/or do
-                await 1s;
-            with
+            watching 1s do
                 // 4x H/2 movement with same finger
                 var int count = 0;
                 loop do

@@ -38,6 +38,7 @@ native nohold _SDL_GL_BindTexture(),
               _SDL_SetWindowFullscreen(),
               _SDL_SetRenderDrawColor(),
               _SDL_RenderClear(),
+              _SDL_RenderDrawLine(),
               _SDL_RenderDrawRect(),
               _SDL_RenderFillRect(),
               _SDL_RenderCopy(),
@@ -76,6 +77,8 @@ native nohold _SDL_GL_BindTexture(),
 
 native nohold _SDL_Rect_vs_Mouse(),
               _SDL_Rect_vs_Point(),
+              _SDL_Rect2Point(),
+              _SDL_Point2Rect(),
               _SDL_Touch2Point();
 
 native do
@@ -91,6 +94,15 @@ native do
         pt->x = e->x * w;
         pt->y = e->y * h;
         return pt;
+    }
+
+    SDL_Point SDL_Rect2Point (SDL_Rect* r) {
+        SDL_Point pt = { r->x+r->w/2, r->y+r->h/2 };
+        return pt;
+    }
+    SDL_Rect SDL_Point2Rect (SDL_Point* pt, int radix) {
+        SDL_Rect r = { pt->x-radix, pt->y-radix, radix*2, radix*2 };
+        return r;
     }
 end
 

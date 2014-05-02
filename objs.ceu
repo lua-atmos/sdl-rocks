@@ -22,7 +22,7 @@ do
      * loop and terminate this body.
      */
     var int dt;
-    every dt=SDL_DT do
+    every dt in SDL_DT do
         sx = sx + this.vx*dt/1000;  // Sx = Sx + vx*dt
         obj:rect.x = sx;
         if obj:rect.x < 0
@@ -216,12 +216,10 @@ do
                 // Play the "hit" sound effect:
                 _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
 
-                par/or do
+                watching 2s do
                     every 100ms do
                         blink? = not blink?;    // blink every 100ms
                     end
-                with
-                    await 2s;                   // during 2s
                 end
                     /*
                      * While blinking, the body is not awaiting "go_hit", 
@@ -307,21 +305,22 @@ do
                  * During 100ms, increase the ship w/h with speed 40w/s.
                  * Draw a blue circle with that radius meanwhile.
                  */
-                par/or do
-                    await 100ms;
-                with
-                    var float d = this.rect.w;
-                    var float v = 40 * this.rect.w;
-                    var int dt;
-                    every dt = SDL_DT do
-                        d = d + v*dt/1000;
-                        this.rect.w = (int)d;
-                        this.rect.h = (int)d;
-                    end
-                with
-                    every SDL_REDRAW do
-                        _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
-                                                0x00,0x00,0xFF,0xDD);
+                watching 100ms do
+                    par do
+                        var float d = this.rect.w;
+                        var float v = 40 * this.rect.w;
+                        var int dt;
+                        every dt in SDL_DT do
+                            d = d + v*dt/1000;
+                            this.rect.w = (int)d;
+                            this.rect.h = (int)d;
+                        end
+                    with
+                        every SDL_REDRAW do
+                            _filledCircleRGBA(_REN,
+                                this.rect.x,this.rect.y,this.rect.w,
+                                0x00,0x00,0xFF,0xDD);
+                        end
                     end
                 end
                     /*
@@ -385,27 +384,28 @@ do
                 fire_w = fire_w + 1;
             end
         with
-            // "do-end" holds all fire shoots:
-            do
-                // Spawn a fire shot on every "ok_fired" request:
-                every this.controller:ok_fired do
-                    if n_fires == 0 then
-                        continue;               // ignore if no ammo
-                    end
-                    n_fires = n_fires - 1;
-                    
-                    // Spawn the shot (limited to _OBJ_FIRE_N instances):
-                    var bool ok? = spawn[_OBJ_FIRE_N] Fire with
-                        this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
-                        this.dir  = dir;        // same orientation
-                        this.vy   = vy;         // same speed
-                        this.rect = rect;       // same position
-                        this.w    = fire_w;     // current ship's fire width offset
-                    end;
-                    if ok? then
-                        // Play shoot sound effect if spawn was successful:
-                        _Mix_PlayChannel(-1, _SND_FIRE, 0);
-                    end
+            // Spawn a fire shot on every "ok_fired" request:
+
+            // holds all fire shoots:
+            pool Fire[_OBJ_FIRE_N] fires;
+
+            every this.controller:ok_fired do
+                if n_fires == 0 then
+                    continue;               // ignore if no ammo
+                end
+                n_fires = n_fires - 1;
+
+                // Spawn the shot (limited to _OBJ_FIRE_N instances):
+                var bool ok? = spawn Fire in fires with
+                    this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
+                    this.dir  = dir;        // same orientation
+                    this.vy   = vy;         // same speed
+                    this.rect = rect;       // same position
+                    this.w    = fire_w;     // current ship's fire width offset
+                end;
+                if ok? then
+                    // Play shoot sound effect if spawn was successful:
+                    _Mix_PlayChannel(-1, _SND_FIRE, 0);
                 end
             end
         with
@@ -439,7 +439,7 @@ do
         var float sy = this.rect.y;
 
         var int dt;
-        every dt=SDL_DT do
+        every dt in SDL_DT do
             // Speeds are limited to a maximum:
             vx = vx + this.controller:ax*dt;
             vy = vy + this.controller:ay*dt;
@@ -502,28 +502,28 @@ do
 
     // explode 40w/s
     _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
-    par/or do
-        await 100ms;
-    with
-        var float d = dim;
-        var float v = 40 * dim;
-        var int dt;
-        every dt = SDL_DT do
-            d = d + v*dt/1000;
-            this.rect.w = (int)d;
-            this.rect.h = (int)d;
-        end
-    with
-        every SDL_REDRAW do
-            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
-                                    0xFF,0x00,0x00,0xFF);
+    watching 100ms do
+        par do
+            var float d = dim;
+            var float v = 40 * dim;
+            var int dt;
+            every dt in SDL_DT do
+                d = d + v*dt/1000;
+                this.rect.w = (int)d;
+                this.rect.h = (int)d;
+            end
+        with
+            every SDL_REDRAW do
+                _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w,
+                                        0xFF,0x00,0x00,0xFF);
+            end
         end
     end
 
     emit ok_killed;
 end
 
-class [_OBJ_ROCK_N] RockBig with
+class RockBig with
     interface Object;
     var int id = _OBJ_ROCK;
 do
@@ -565,7 +565,7 @@ do
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
         var int dt;
-        every dt = SDL_DT do
+        every dt in SDL_DT do
             x = x + v*dt/1000;
             clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
@@ -583,7 +583,7 @@ do
     end
 end
 
-class [_OBJ_rock_N] RockSmall with
+class RockSmall with
     interface Object;
     var int id = _OBJ_rock;
     var int dir = 0;
@@ -619,7 +619,7 @@ do
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
         var int dt;
-        every dt = SDL_DT do
+        every dt in SDL_DT do
             x = x + v*dt/1000;
             clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
         end
@@ -637,7 +637,7 @@ do
     end
 end
 
-class [_OBJ_BONUS_N] Bonus with
+class Bonus with
     interface Object;
     var int id  = 0;
     var int dir = 0;
@@ -680,7 +680,7 @@ do
     end
 end
 
-class [_OBJ_BOMB_N] Bomb with
+class Bomb with
     interface Object;
     var int id = _OBJ_BOMB;
     var int dir = 0;
@@ -709,14 +709,12 @@ do
     with
         // countdown 3-2-1-0
         // (or kill)
-        par/or do
+        watching go_hit do
             var int dt = 500 + _rand() % 2000;
-            loop i, 3 do
+            loop i in 3 do
                 await (dt) ms;
                 timer = timer - 1;
             end
-        with
-            await go_hit;
         end
 
         // collide with ROCK => MAX
@@ -724,13 +722,11 @@ do
 
         // explode 40w/s
         _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
-        par/or do
-            await 200ms;
-        with
+        watching 200ms do
             var float d = this.rect.w;
             var float v = 40 * this.rect.w;
             var int dt;
-            every dt = SDL_DT do
+            every dt in SDL_DT do
                 d = d + v*dt/1000;
                 this.rect.w = (int)d;
                 this.rect.h = (int)d;

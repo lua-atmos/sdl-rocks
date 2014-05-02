@@ -510,11 +510,12 @@ with
                  * automatically destroyed.
                  */
                 var int period = 2000;
+                pool RockBig[_OBJ_ROCK_N] rocks;
                 every (_rand() % period)ms do
                     if period > 50 then
                         period = period - 10;
                     end
-                    spawn RockBig;
+                    spawn RockBig in rocks;
                 end
             with
                 /*
@@ -526,6 +527,9 @@ with
                  * Then, we check each "id" in the collisions to take the 
                  * proper action.
                  */
+                pool RockSmall[_OBJ_rock_N]  rocks;
+                pool Bonus    [_OBJ_BONUS_N] bonuses;
+                pool Bomb     [_OBJ_BOMB_N]  bombs;
                 every SDL_DT do
                     /*
                      * Properly reset _OBJS_N regardless of how this block 
@@ -538,7 +542,7 @@ with
                     /*
                      * Outer loop: "o1" iterates through [0, _OBJS_N[
                      */
-                    loop i, _OBJS_N do
+                    loop i in _OBJS_N do
                         var Object* o1 = (Object*) _OBJS[i];
                         _assert(o1 != null);
 
@@ -548,7 +552,7 @@ with
                          * These two loops make all possible combinations for 
                          * any two objects alive.
                          */
-                        loop j, _OBJS_N-i-1 do
+                        loop j in _OBJS_N-i-1 do
                             var Object* o2 = (Object*) _OBJS[i+1+j];
                             _assert(o2 != null);
 
@@ -637,8 +641,8 @@ with
                                      * (All instances are also scoped to the 
                                      * "battle block".)
                                      */
-                                    loop i,2 do
-                                        spawn RockSmall with
+                                    loop i in 2 do
+                                        spawn RockSmall in rocks with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.dir    = dir;
@@ -654,7 +658,7 @@ with
                                      * "battle block".)
                                      */
                                 else/if pct < 40 then
-                                    spawn Bonus with
+                                    spawn Bonus in bonuses with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_LIFE;
@@ -662,7 +666,7 @@ with
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 55 then
-                                    spawn Bonus with
+                                    spawn Bonus in bonuses with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_HITS;
@@ -670,7 +674,7 @@ with
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
-                                    spawn Bonus with
+                                    spawn Bonus in bonuses with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_SHIELD;
@@ -678,7 +682,7 @@ with
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
-                                    spawn Bonus with
+                                    spawn Bonus in bonuses with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_FIRE;
@@ -693,7 +697,7 @@ with
                                      * (All instances are also scoped to the 
                                      * "battle block".)
                                      */
-                                    spawn Bomb with
+                                    spawn Bomb in bombs with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.dir    = dir;
@@ -824,9 +828,7 @@ with
          * After 1 second, set "fps" to the current "c" and restart the 
          * process.
          */
-        par/or do
-            await 1s;
-        with
+        watching 1s do
             every SDL_REDRAW do
                 c = c + 1;
                 _SDL_RenderCopy(_REN, tex, null, &r);
