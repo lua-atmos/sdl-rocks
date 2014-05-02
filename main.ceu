@@ -41,12 +41,14 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #define _OBJ_rock_N     40                  // small meteors
 #define _OBJ_BONUS_N    10                  // bonus items
 #define _OBJ_BOMB_N     5                   // bomb items
-#define _OBJ_N + 2*_OBJ_SHIP_N  \
+#define __OBJ_N + 2*_OBJ_SHIP_N  \
                + 2*_OBJ_FIRE_N  \
                +   _OBJ_ROCK_N  \
                +   _OBJ_rock_N  \
                +   _OBJ_BONUS_N \
                +   _OBJ_BOMB_N
+#define _OBJ_N 101
+    // TODO: sval error in ceu?
 
 /*
  * Céu relies on C to declare globals, enums, and functions.
@@ -77,12 +79,6 @@ native do
         OBJ_EXPLOSION,      // OBJ_BOMB becomes OBJ_EXPLOSION when exploding
         OBJ_MAX             // not used
     };
-
-    /*
-     * Active objects in the scene, used for collistion detection.
-     */
-    void* OBJS[_OBJ_N];
-    int   OBJS_N = 0;
 
     /*
      * An NxN matix with collision information, e.g.:
@@ -486,6 +482,8 @@ with
                 this.lim_y2 = _REN_H - dim/2;
             end;
 
+            pool RockBig[_OBJ_ROCK_N] rocks_big;
+
             /*
              * The game innermost "par/or" only terminates when one of the 
              * ships is destroyed. It is responsible for spawning new meteors 
@@ -510,50 +508,74 @@ with
                  * automatically destroyed.
                  */
                 var int period = 2000;
-                pool RockBig[_OBJ_ROCK_N] rocks;
                 every (_rand() % period)ms do
                     if period > 50 then
                         period = period - 10;
                     end
-                    spawn RockBig in rocks;
+                    spawn RockBig in rocks_big;
                 end
             with
                 /*
                  * Collision detection loop:
-                 *      - "_OBJS_N" is the number of alive objects.
-                 *      - "_OBJS"   contains references to them.
-                 * We iterate over "_OBJS" to check for collisions between "o1" 
+                 *      - "objs_n" is the number of alive objects.
+                 *      - "objs"   contains references to them.
+                 * We iterate over "objs" to check for collisions between "o1" 
                  * vs "o2" for every possible pairs of objects.
                  * Then, we check each "id" in the collisions to take the 
                  * proper action.
                  */
-                pool RockSmall[_OBJ_rock_N]  rocks;
+                pool RockSmall[_OBJ_rock_N]  rocks_small;
                 pool Bonus    [_OBJ_BONUS_N] bonuses;
                 pool Bomb     [_OBJ_BOMB_N]  bombs;
                 every SDL_DT do
-                    /*
-                     * Properly reset _OBJS_N regardless of how this block 
-                     * terminates:
-                     */
-                    finalize with
-                        _OBJS_N = 0;
+
+// TODO: smart pools iterator
+                    var Object*[_OBJ_N] objs;
+                    var int     objs_n = 0;
+                    objs[objs_n] = &ship1;
+                    objs_n = objs_n + 1;
+                    objs[objs_n] = &ship2;
+                    objs_n = objs_n + 1;
+                    loop (Object*)o in ship1.fires do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
+                    end
+                    loop (Object*)o in ship2.fires do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
+                    end
+                    loop (Object*)o in rocks_big do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
+                    end
+                    loop (Object*)o in rocks_small do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
+                    end
+                    loop (Object*)o in bonuses do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
+                    end
+                    loop (Object*)o in bombs do
+                        objs[objs_n] := o;
+                        objs_n = objs_n + 1;
                     end
 
                     /*
-                     * Outer loop: "o1" iterates through [0, _OBJS_N[
+                     * Outer loop: "o1" iterates through [0, objs_n[
                      */
-                    loop i in _OBJS_N do
-                        var Object* o1 = (Object*) _OBJS[i];
+                    loop i in objs_n do
+                        var Object* o1 = (Object*) objs[i];
                         _assert(o1 != null);
 
                         /*
-                         * Inner loop: "o2" iterates through [nxt, _OBJS_N[
+                         * Inner loop: "o2" iterates through [nxt, objs_n[
                          * "nxt" is the index for the next object after "o1".
                          * These two loops make all possible combinations for 
                          * any two objects alive.
                          */
-                        loop j in _OBJS_N-i-1 do
-                            var Object* o2 = (Object*) _OBJS[i+1+j];
+                        loop j in objs_n-i-1 do
+                            var Object* o2 = (Object*) objs[i+1+j];
                             _assert(o2 != null);
 
                             /*
@@ -642,7 +664,7 @@ with
                                      * "battle block".)
                                      */
                                     loop i in 2 do
-                                        spawn RockSmall in rocks with
+                                        spawn RockSmall in rocks_small with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.dir    = dir;
