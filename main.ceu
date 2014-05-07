@@ -41,14 +41,12 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #define _OBJ_rock_N     40                  // small meteors
 #define _OBJ_BONUS_N    10                  // bonus items
 #define _OBJ_BOMB_N     5                   // bomb items
-#define __OBJ_N + 2*_OBJ_SHIP_N  \
+#define _OBJ_N + 2*_OBJ_SHIP_N  \
                + 2*_OBJ_FIRE_N  \
                +   _OBJ_ROCK_N  \
                +   _OBJ_rock_N  \
                +   _OBJ_BONUS_N \
                +   _OBJ_BOMB_N
-#define _OBJ_N 101
-    // TODO: sval error in ceu?
 
 /*
  * Céu relies on C to declare globals, enums, and functions.
@@ -136,7 +134,7 @@ function (int id, Object** o1, Object** o2)=>int getVS do
         return 1;
     else/if (*o2):id == id then
         var Object* tmp = *o1;
-        *o1 = *o2;
+        *o1 := *o2;
         *o2 := tmp;
             // tmp is an alias to "o1"
         return 1;
@@ -238,10 +236,11 @@ var _SDL_Window* win;
     end
 _SDL_GetWindowSize(win, &_REN_W, &_REN_H);
 
-_REN = _SDL_CreateRenderer(win, -1, 0);
-    finalize with
-        _SDL_DestroyRenderer(_REN);
-    end
+finalize
+    _REN = _SDL_CreateRenderer(win, -1, 0);
+with
+    _SDL_DestroyRenderer(_REN);
+end
 
 /*
  * Allocate all fonts, textures and sounds used in the game.
@@ -299,13 +298,13 @@ with
         p1.x = _REN_W/15;
         p1.y = _REN_H - _REN_H/10;
     var TextPoints points1 with
-        this.pos = p1;      // fixed position
+        _.pos = p1;      // fixed position
     end;
     var _SDL_Point p2;
         p2.x = _REN_W - _REN_W/15;
         p2.y = _REN_H - _REN_H/10;
     var TextPoints points2 with
-        this.pos = p2;      // fixed position
+        _.pos = p2;      // fixed position
     end;
 
     /*
@@ -399,24 +398,24 @@ with
              * - fire_2: Fire the 2nd player's ship shots.
              */
             var TouchController controller1 with
-                this.move_r.x = 0;
-                this.move_r.y = 0;
-                this.move_r.w = _REN_W/2;
-                this.move_r.h = _REN_H/2;
-                this.fire_r.x = 0;
-                this.fire_r.y = _REN_H/2;
-                this.fire_r.w = _REN_W/2;
-                this.fire_r.h = _REN_H/2;
+                _.move_r.x = 0;
+                _.move_r.y = 0;
+                _.move_r.w = _REN_W/2;
+                _.move_r.h = _REN_H/2;
+                _.fire_r.x = 0;
+                _.fire_r.y = _REN_H/2;
+                _.fire_r.w = _REN_W/2;
+                _.fire_r.h = _REN_H/2;
             end;
             var TouchController controller2 with
-                this.move_r.x = _REN_W/2;
-                this.move_r.y = _REN_H/2;
-                this.move_r.w = _REN_W/2;
-                this.move_r.h = _REN_H/2;
-                this.fire_r.x = _REN_W/2;
-                this.fire_r.y = 0;
-                this.fire_r.w = _REN_W/2;
-                this.fire_r.h = _REN_H/2;
+                _.move_r.x = _REN_W/2;
+                _.move_r.y = _REN_H/2;
+                _.move_r.w = _REN_W/2;
+                _.move_r.h = _REN_H/2;
+                _.fire_r.x = _REN_W/2;
+                _.fire_r.y = 0;
+                _.fire_r.w = _REN_W/2;
+                _.fire_r.h = _REN_H/2;
             end;
 #else
             /*
@@ -424,22 +423,22 @@ with
              * of action:
              */
             var KeyController controller1 with
-                this.k_up       = _SDLK_w;
-                this.k_down     = _SDLK_s;
-                this.k_left     = _SDLK_a;
-                this.k_right    = _SDLK_d;
-                this.k_fire     = _SDLK_z;
-                this.k_shield   = _SDLK_x;
-                this.k_immortal = _SDLK_1;
+                _.k_up       = _SDLK_w;
+                _.k_down     = _SDLK_s;
+                _.k_left     = _SDLK_a;
+                _.k_right    = _SDLK_d;
+                _.k_fire     = _SDLK_z;
+                _.k_shield   = _SDLK_x;
+                _.k_immortal = _SDLK_1;
             end;
             var KeyController controller2 with
-                this.k_up       = _SDLK_UP;
-                this.k_down     = _SDLK_DOWN;
-                this.k_left     = _SDLK_LEFT;
-                this.k_right    = _SDLK_RIGHT;
-                this.k_fire     = _SDLK_SEMICOLON;
-                this.k_shield   = _SDLK_PERIOD;
-                this.k_immortal = _SDLK_0;
+                _.k_up       = _SDLK_UP;
+                _.k_down     = _SDLK_DOWN;
+                _.k_left     = _SDLK_LEFT;
+                _.k_right    = _SDLK_RIGHT;
+                _.k_fire     = _SDLK_SEMICOLON;
+                _.k_shield   = _SDLK_PERIOD;
+                _.k_immortal = _SDLK_0;
             end;
 #endif
 
@@ -453,33 +452,33 @@ with
                 _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
 
             var Ship ship1 with
-                this.id     = _OBJ_SHIP1;
-                this.tex    = _TEX_SHIP1;
-                this.dir    = 1;            // positive increase (on X-axis)
-                this.rect.x = dim;          // starting X position
-                this.rect.y = _REN_H/2;     // starting Y position
-                this.controller = &controller1;
+                _.id     = _OBJ_SHIP1;
+                _.tex    := _TEX_SHIP1;
+                _.dir    = 1;            // positive increase (on X-axis)
+                _.rect.x = dim;          // starting X position
+                _.rect.y = _REN_H/2;     // starting Y position
+                _.controller = &controller1;
 
                 // ship1 cannot cross the left-half screen boundaries:
-                this.lim_x1 = dim/2;
-                this.lim_x2 = _REN_W/2 - dim/2;
-                this.lim_y1 = dim/2;
-                this.lim_y2 = _REN_H - dim/2;
+                _.lim_x1 = dim/2;
+                _.lim_x2 = _REN_W/2 - dim/2;
+                _.lim_y1 = dim/2;
+                _.lim_y2 = _REN_H - dim/2;
             end;
 
             var Ship ship2 with
-                this.id     = _OBJ_SHIP2;
-                this.tex    = _TEX_SHIP2;
-                this.dir    = -1;            // positive increase (on X-axis)
-                this.rect.x = _REN_W - dim;  // starting X postion
-                this.rect.y = _REN_H/2;      // starting Y postion
-                this.controller = &controller2;
+                _.id     = _OBJ_SHIP2;
+                _.tex    := _TEX_SHIP2;
+                _.dir    = -1;            // positive increase (on X-axis)
+                _.rect.x = _REN_W - dim;  // starting X postion
+                _.rect.y = _REN_H/2;      // starting Y postion
+                _.controller = &controller2;
 
                 // ship2 cannot cross the right-half screen boundaries:
-                this.lim_x1 = _REN_W/2 + dim/2;
-                this.lim_x2 = _REN_W - dim/2;
-                this.lim_y1 = dim/2;
-                this.lim_y2 = _REN_H - dim/2;
+                _.lim_x1 = _REN_W/2 + dim/2;
+                _.lim_x2 = _REN_W - dim/2;
+                _.lim_y1 = dim/2;
+                _.lim_y2 = _REN_H - dim/2;
             end;
 
             pool RockBig[_OBJ_ROCK_N] rocks_big;
@@ -565,7 +564,7 @@ with
                      * Outer loop: "o1" iterates through [0, objs_n[
                      */
                     loop i in objs_n do
-                        var Object* o1 = (Object*) objs[i];
+                        var Object* o1 = objs[i];
                         _assert(o1 != null);
 
                         /*
@@ -575,7 +574,7 @@ with
                          * any two objects alive.
                          */
                         loop j in objs_n-i-1 do
-                            var Object* o2 = (Object*) objs[i+1+j];
+                            var Object* o2 = objs[i+1+j];
                             _assert(o2 != null);
 
                             /*
@@ -665,9 +664,9 @@ with
                                      */
                                     loop i in 2 do
                                         spawn RockSmall in rocks_small with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
-                                            this.dir    = dir;
+                                            _.rect.x = (int) oo2:rect.x;
+                                            _.rect.y = (int) oo2:rect.y;
+                                            _.dir    = dir;
                                         end;
                                     end
 
@@ -681,35 +680,35 @@ with
                                      */
                                 else/if pct < 40 then
                                     spawn Bonus in bonuses with
-                                        this.rect.x = (int) oo2:rect.x;
-                                        this.rect.y = (int) oo2:rect.y;
-                                        this.id     = _OBJ_BONUS_LIFE;
-                                        this.tex    = _TEX_BONUS_LIFE;
-                                        this.dir    = -dir;
+                                        _.rect.x = (int) oo2:rect.x;
+                                        _.rect.y = (int) oo2:rect.y;
+                                        _.id     = _OBJ_BONUS_LIFE;
+                                        _.tex    := _TEX_BONUS_LIFE;
+                                        _.dir    = -dir;
                                     end;
                                 else/if pct < 55 then
                                     spawn Bonus in bonuses with
-                                        this.rect.x = (int) oo2:rect.x;
-                                        this.rect.y = (int) oo2:rect.y;
-                                        this.id     = _OBJ_BONUS_HITS;
-                                        this.tex    = _TEX_BONUS_HITS;
-                                        this.dir    = -dir;
+                                        _.rect.x = (int) oo2:rect.x;
+                                        _.rect.y = (int) oo2:rect.y;
+                                        _.id     = _OBJ_BONUS_HITS;
+                                        _.tex    := _TEX_BONUS_HITS;
+                                        _.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
                                     spawn Bonus in bonuses with
-                                        this.rect.x = (int) oo2:rect.x;
-                                        this.rect.y = (int) oo2:rect.y;
-                                        this.id     = _OBJ_BONUS_SHIELD;
-                                        this.tex    = _TEX_BONUS_SHIELD;
-                                        this.dir    = -dir;
+                                        _.rect.x = (int) oo2:rect.x;
+                                        _.rect.y = (int) oo2:rect.y;
+                                        _.id     = _OBJ_BONUS_SHIELD;
+                                        _.tex    := _TEX_BONUS_SHIELD;
+                                        _.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
                                     spawn Bonus in bonuses with
-                                        this.rect.x = (int) oo2:rect.x;
-                                        this.rect.y = (int) oo2:rect.y;
-                                        this.id     = _OBJ_BONUS_FIRE;
-                                        this.tex    = _TEX_BONUS_FIRE;
-                                        this.dir    = -dir;
+                                        _.rect.x = (int) oo2:rect.x;
+                                        _.rect.y = (int) oo2:rect.y;
+                                        _.id     = _OBJ_BONUS_FIRE;
+                                        _.tex    := _TEX_BONUS_FIRE;
+                                        _.dir    = -dir;
                                     end;
                                 else
                                     /*
@@ -720,9 +719,9 @@ with
                                      * "battle block".)
                                      */
                                     spawn Bomb in bombs with
-                                        this.rect.x = (int) oo2:rect.x;
-                                        this.rect.y = (int) oo2:rect.y;
-                                        this.dir    = dir;
+                                        _.rect.x = (int) oo2:rect.x;
+                                        _.rect.y = (int) oo2:rect.y;
+                                        _.dir    = dir;
                                     end;
                                 end
                             end

@@ -24,13 +24,16 @@ _TTF_Init();
  * The "finalize" clause ensures that each font is properly closed on program 
  * termination.
  */
-_FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
-    finalize with
-        _TTF_CloseFont(_FONT_BIG);
-    end
+finalize
+    _FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
+with
+    _TTF_CloseFont(_FONT_BIG);
+end
 _assert(_FONT_BIG != null);
-_FONT_SMALL = _TTF_OpenFont("fnts/vera.ttf", _REN_H/40);
-    finalize with
-        _TTF_CloseFont(_FONT_SMALL);
-    end
+
+finalize
+    _FONT_SMALL = _TTF_OpenFont("fnts/vera.ttf", _REN_H/40);
+with
+    _TTF_CloseFont(_FONT_SMALL);
+end
 _assert(_FONT_SMALL != null);

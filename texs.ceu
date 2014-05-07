@@ -22,66 +22,77 @@ end
  * program termination.
  */
 
-_TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
-    finalize with
-        _SDL_DestroyTexture(_TEX_BG);
-    end
+finalize
+    _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
+with
+    _SDL_DestroyTexture(_TEX_BG);
+end
 
-_TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
+finalize
+    _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
                              &_colors.white, null);
-    finalize with
-        _SDL_DestroyTexture(_TEX_TAP);
-    end
+with
+    _SDL_DestroyTexture(_TEX_TAP);
+end
 
-_TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_SHIP1);
-    end
+finalize
+    _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
+with
+    _SDL_DestroyTexture(_TEX_SHIP1);
+end
 
-_TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_SHIP2);
-    end
+finalize
+    _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
+with
+    _SDL_DestroyTexture(_TEX_SHIP2);
+end
 
-_TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_ROCK);
-    end
+finalize
+    _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
+with
+    _SDL_DestroyTexture(_TEX_ROCK);
+end
 
-_TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
-    finalize with
-        _SDL_DestroyTexture(_TEX_rock);
-    end
+finalize
+    _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
+with
+    _SDL_DestroyTexture(_TEX_rock);
+end
 
-_TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
-                                    &_colors.white, null);
-    finalize with
-        _SDL_DestroyTexture(_TEX_BONUS_LIFE);
-    end
+finalize
+    _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
+                                        &_colors.white, null);
+with
+    _SDL_DestroyTexture(_TEX_BONUS_LIFE);
+end
 
+finalize
 _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
-                                    &_colors.white, null);
-    finalize with
-        _SDL_DestroyTexture(_TEX_BONUS_SHIELD);
-    end
+                                        &_colors.white, null);
+with
+    _SDL_DestroyTexture(_TEX_BONUS_SHIELD);
+end
 
-_TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
-                                    &_colors.white, null);
-    finalize with
-        _SDL_DestroyTexture(_TEX_BONUS_HITS);
-    end
+finalize
+    _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
+                                        &_colors.white, null);
+with
+    _SDL_DestroyTexture(_TEX_BONUS_HITS);
+end
 
-_TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
-                                    &_colors.white, null);
-    finalize with
-        _SDL_DestroyTexture(_TEX_BONUS_FIRE);
-    end
+finalize
+    _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
+                                        &_colors.white, null);
+with
+    _SDL_DestroyTexture(_TEX_BONUS_FIRE);
+end
 
 loop i in 3 do
     var char[5] str;
     _sprintf(str, "%d", i+1);
-    _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                     &_colors.white, null);
+    _TEX_BOMB[i] := _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                      &_colors.white, null);
+                 // finalize below
 end
     finalize with
         loop i in 3 do

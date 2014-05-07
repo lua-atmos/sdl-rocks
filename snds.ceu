@@ -28,30 +28,36 @@ _Mix_OpenAudio(22050, _AUDIO_S16SYS, 2, 4096);
  * The "finalize" clause ensures that each sound is properly freed on program 
  * termination.
  */
-_SND_FIRE = _Mix_LoadWAV("snds/fire.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_FIRE);
-    end
-_SND_BONUS = _Mix_LoadWAV("snds/bonus.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_BONUS);
-    end
-_SND_ROCK = _Mix_LoadWAV("snds/rock.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_ROCK);
-    end
-_SND_HIT_DEC = _Mix_LoadWAV("snds/hit_dec.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_HIT_DEC);
-    end
-_SND_EXPLOSION = _Mix_LoadWAV("snds/explosion.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_EXPLOSION);
-    end
-_SND_START = _Mix_LoadWAV("snds/start.wav");
-    finalize with
-        _Mix_FreeChunk(_SND_START);
-    end
+finalize
+    _SND_FIRE = _Mix_LoadWAV("snds/fire.wav");
+with
+    _Mix_FreeChunk(_SND_FIRE);
+end
+finalize
+    _SND_BONUS = _Mix_LoadWAV("snds/bonus.wav");
+with
+    _Mix_FreeChunk(_SND_BONUS);
+end
+finalize
+    _SND_ROCK = _Mix_LoadWAV("snds/rock.wav");
+with
+    _Mix_FreeChunk(_SND_ROCK);
+end
+finalize
+    _SND_HIT_DEC = _Mix_LoadWAV("snds/hit_dec.wav");
+with
+    _Mix_FreeChunk(_SND_HIT_DEC);
+end
+finalize
+    _SND_EXPLOSION = _Mix_LoadWAV("snds/explosion.wav");
+with
+    _Mix_FreeChunk(_SND_EXPLOSION);
+end
+finalize
+    _SND_START = _Mix_LoadWAV("snds/start.wav");
+with
+    _Mix_FreeChunk(_SND_START);
+end
 
 _assert(_SND_FIRE      != null);
 _assert(_SND_BONUS     != null);

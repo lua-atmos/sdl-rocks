@@ -62,11 +62,10 @@ do
      * Move the ship, redraw it, await being hit.
      */
     par/or do
-        var Object* obj = &this;
         var ObjectMove move with
-            this.obj = obj;
-            this.vx  = _REN_W/3 * dir;
-            this.vy  = vy;
+            _.obj = &this;
+            _.vx  = _REN_W/3 * dir;
+            _.vy  = vy;
         end;
         await move.ok;      // terminates the "par/or" when leaves the screen
     with
@@ -373,11 +372,11 @@ do
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
                 var bool ok? = spawn Fire in fires with
-                    this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
-                    this.dir  = dir;        // same orientation
-                    this.vy   = vy;         // same speed
-                    this.rect = rect;       // same position
-                    this.w    = fire_w;     // current ship's fire width offset
+                    _.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
+                    _.dir  = dir;        // same orientation
+                    _.vy   = vy;         // same speed
+                    _.rect = rect;       // same position
+                    _.w    = fire_w;     // current ship's fire width offset
                 end;
                 if ok? then
                     // Play shoot sound effect if spawn was successful:
@@ -525,11 +524,10 @@ do
 
     par/or do
         await (_rand() % 5000)ms;
-        var Object* obj = &this;
         var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
+            _.obj = &this;
+            _.vx  = vx;
+            _.vy  = vy;
         end;
         await move.ok;
     with
@@ -579,11 +577,10 @@ do
     end
 
     par/or do
-        var Object* obj = &this;
         var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
+            _.obj = &this;
+            _.vx  = vx;
+            _.vy  = vy;
         end;
         await move.ok;
     with
@@ -628,11 +625,10 @@ do
     end
 
     par/or do
-        var Object* obj = &this;
         var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
+            _.obj = &this;
+            _.vx  = vx;
+            _.vy  = vy;
         end;
         await move.ok;
     with
@@ -670,11 +666,10 @@ do
     var int timer = 2;  // countdown
 
     par/or do
-        var Object* obj = &this;
         var ObjectMove move with
-            this.obj = obj;
-            this.vx  = vx;
-            this.vy  = vy;
+            _.obj = &this;
+            _.vx  = vx;
+            _.vy  = vy;
         end;
         await move.ok;
     with

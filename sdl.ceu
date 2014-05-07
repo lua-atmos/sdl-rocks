@@ -4,6 +4,8 @@
 native constant _GL_SCISSOR_TEST, _GL_TEXTURE_2D;
 native _glEnable(), _glDisable(), _glScissor();
 
+native plain _SDL_Rect, _SDL_Point;
+
 native constant _SDL_TRUE, _SDL_FALSE,
                 _SDL_BLENDMODE_NONE, _SDL_BLENDMODE_BLEND,
                 _SDL_BUTTON_LEFT,
@@ -75,7 +77,10 @@ native nohold _SDL_GL_BindTexture(),
               _Mix_CloseAudio(),
               _Mix_OpenAudio();
 
-native nohold _SDL_Rect_vs_Mouse(),
+native nohold _SDL_Circle_vs_Mouse(),
+              _SDL_Circle_vs_Point(),
+              _SDL_Circle_vs_Circle(),
+              _SDL_Rect_vs_Mouse(),
               _SDL_Rect_vs_Point(),
               _SDL_Rect2Point(),
               _SDL_Point2Rect(),
@@ -103,6 +108,20 @@ native do
     SDL_Rect SDL_Point2Rect (SDL_Point* pt, int radix) {
         SDL_Rect r = { pt->x-radix, pt->y-radix, radix*2, radix*2 };
         return r;
+    }
+
+    int SDL_Circle_vs_Mouse (SDL_Point* pos, int rad, SDL_MouseButtonEvent* but) {
+        SDL_Point pt = { but->x, but->y };
+        return SDL_Circle_vs_Point(pos, rad, &pt);
+    }
+
+    int SDL_Circle_vs_Point (SDL_Point* pos, int rad, SDL_Point* pt) {
+        return sqrt( pow(pos->x-pt->x,2) + pow(pos->y-pt->y,2) ) < rad;
+    }
+
+    int SDL_Circle_vs_Circle (SDL_Point* pos1, int rad1, SDL_Point* pos2, int rad2) {
+        return sqrt( pow(pos1->x-pos2->x,2) + pow(pos1->y-pos2->y,2) )
+                < rad1+rad2;
     }
 end
 
