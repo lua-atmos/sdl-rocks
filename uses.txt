@@ -57,6 +57,7 @@ class MoveObject
 
 ## Iterator
 
+    // collision
     loop (Object*)o in ship1.fires
     loop (Object*)o in ship2.fires
     loop (Object*)o in all
@@ -84,6 +85,11 @@ class MoveObject
         (level 8)
 
 
+    var Object* obj;
+        (MoveObject: level 0)
+    var Controller* controller;
+        (Ship: level 0)
+
     ### False positives (`:=´)
 
         objs[objs_n] := o;          (x3)
@@ -92,11 +98,6 @@ class MoveObject
         *o1 := *o2;
         *o2 := tmp;
             (getVS())
-
-    var Object* obj;
-        (MoveObject: level 0)
-    var Controller* controller;
-        (Ship: level 0)
 
 ## Watching
 
