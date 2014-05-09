@@ -240,15 +240,7 @@ do
                         _SDL_Touch2Point(&pt2, e2, _REN_W, _REN_H);
                     var int dy = pt1.y - pt2.y;
                     if (dy > _REN_H/2) or (dy < -_REN_H/2) then
-                        pt1 := pt2;
-                            /*
-                             * The Ceu compiler thinks we are copying a
-                             * reference, not a value, and complains about this 
-                             * assignment (it doesn't know anything about C 
-                             * types like _SDL_Point).
-                             * By using `:=´, the assignment is marked as 
-                             * "safe" and the compiler does not complain.
-                             */
+                        pt1 = pt2;
 
                         /*
                          * Increment and check if the player completed the 4x 

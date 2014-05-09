@@ -1,0 +1,104 @@
+# Interfaces & Classes
+
+interface Controller
+    class KeyController
+    class TouchController
+
+interface Points
+    class TextPoints
+
+interface Object
+    class Ship
+    class Fire
+    class RockBig
+    class RockSmall
+    class Bonus
+    class Bomb
+
+class MoveObject
+
+# Instances
+
+## Static
+
+    var TextPoints points1, points2;
+        (level 2)
+    var Key/TouchController controller1, controller2;
+        (level 3)
+    var Ship ship1, ship2;
+        (level 3)
+
+    var MoveObject move;
+        (Fire: level 1)
+        (RockBig: level 1)
+        (RockSmall: level 1)
+        (Bonus: level 1)
+        (Bomb: level 1)
+
+## Pool
+
+    pool Object[] all;
+        (level 3)
+    pool Fire[3]  fires;
+        (Ship: level 0 (level 3+0))
+
+## Spawn
+
+    spawn RockBig   in all;
+    spawn RockSmall in all;
+    spawn Bonus     in all; (x4)
+    spawn Bomb      in all;
+        (level 9)
+
+    spawn Fire in fires;
+        (Ship: level 3 (level 3+3))
+
+## New
+
+## Iterator
+
+    loop (Object*)o in ship1.fires
+    loop (Object*)o in ship2.fires
+    loop (Object*)o in all
+        (level 5)
+
+## Weak
+
+    ### TODO
+    ### SHOULD ALL BE STRONG REFS
+
+    var Object*[_OBJ_N] objs;
+        var Object* o1 = objs[i];
+            var Object* o2 = objs[i];
+        (level 5)
+            (level 6)
+                (level 7)
+
+    var Object* oo1 = o1;
+    var Object* oo2 = o2;
+    if getVS(_OBJ_FIRE1, &oo1, &oo2) or
+        getVS(_OBJ_FIRE2, &oo1, &oo2) then
+        (level 7)
+
+    var Ship* ship = (Ship*) oo2;   (x3)
+        (level 8)
+
+
+    ### False positives (`:=´)
+
+        objs[objs_n] := o;          (x3)
+            (level 6)
+
+        *o1 := *o2;
+        *o2 := tmp;
+            (getVS())
+
+    var Object* obj;
+        (MoveObject: level 0)
+    var Controller* controller;
+        (Ship: level 0)
+
+## Watching
+
+
+TODO: MoveObject requires "watching"
