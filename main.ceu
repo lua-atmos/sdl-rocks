@@ -481,7 +481,7 @@ with
                 _.lim_y2 = _REN_H - dim/2;
             end;
 
-            pool RockBig[_OBJ_ROCK_N] rocks_big;
+            pool Object[] all;
 
             /*
              * The game innermost "par/or" only terminates when one of the 
@@ -511,7 +511,7 @@ with
                     if period > 50 then
                         period = period - 10;
                     end
-                    spawn RockBig in rocks_big;
+                    spawn RockBig in all;
                 end
             with
                 /*
@@ -523,9 +523,6 @@ with
                  * Then, we check each "id" in the collisions to take the 
                  * proper action.
                  */
-                pool RockSmall[_OBJ_rock_N]  rocks_small;
-                pool Bonus    [_OBJ_BONUS_N] bonuses;
-                pool Bomb     [_OBJ_BOMB_N]  bombs;
                 every SDL_DT do
 
 // TODO: smart pools iterator
@@ -543,19 +540,7 @@ with
                         objs[objs_n] := o;
                         objs_n = objs_n + 1;
                     end
-                    loop (Object*)o in rocks_big do
-                        objs[objs_n] := o;
-                        objs_n = objs_n + 1;
-                    end
-                    loop (Object*)o in rocks_small do
-                        objs[objs_n] := o;
-                        objs_n = objs_n + 1;
-                    end
-                    loop (Object*)o in bonuses do
-                        objs[objs_n] := o;
-                        objs_n = objs_n + 1;
-                    end
-                    loop (Object*)o in bombs do
+                    loop (Object*)o in all do
                         objs[objs_n] := o;
                         objs_n = objs_n + 1;
                     end
@@ -662,8 +647,8 @@ with
                                      * (All instances are also scoped to the 
                                      * "battle block".)
                                      */
-                                    loop i in 2 do
-                                        spawn RockSmall in rocks_small with
+                                    loop ii in 2 do
+                                        spawn RockSmall in all with
                                             _.rect.x = (int) oo2:rect.x;
                                             _.rect.y = (int) oo2:rect.y;
                                             _.dir    = dir;
@@ -679,7 +664,7 @@ with
                                      * "battle block".)
                                      */
                                 else/if pct < 40 then
-                                    spawn Bonus in bonuses with
+                                    spawn Bonus in all with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_LIFE;
@@ -687,7 +672,7 @@ with
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 55 then
-                                    spawn Bonus in bonuses with
+                                    spawn Bonus in all with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_HITS;
@@ -695,7 +680,7 @@ with
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
-                                    spawn Bonus in bonuses with
+                                    spawn Bonus in all with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_SHIELD;
@@ -703,7 +688,7 @@ with
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
-                                    spawn Bonus in bonuses with
+                                    spawn Bonus in all with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_FIRE;
@@ -718,7 +703,7 @@ with
                                      * (All instances are also scoped to the 
                                      * "battle block".)
                                      */
-                                    spawn Bomb in bombs with
+                                    spawn Bomb in all with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.dir    = dir;

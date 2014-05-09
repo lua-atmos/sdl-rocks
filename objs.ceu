@@ -3,7 +3,7 @@
  * This auxiliary class is used to move all objects (bonuses, bomb, fire, 
  * meteros), except the spaceships.
  */
-class ObjectMove with
+class MoveObject with
     var   Object* obj = null;   // object to move
     var   float   vx = 0;       // requested speed in X
     var   float   vy = 0;       // requested speed in Y
@@ -46,7 +46,7 @@ end
  * A spaceship fire shot.
  * Moves with the same "dir" and "vy" as the shooting ship.
  * The fire width depends on the number of the ship's "F" bonuses.
- * It moves until it leaves the screen ("ObjectMove") or collides ("go_hit").
+ * It moves until it leaves the screen ("MoveObject") or collides ("go_hit").
  */
 class Fire with
     interface Object;
@@ -62,7 +62,7 @@ do
      * Move the ship, redraw it, await being hit.
      */
     par/or do
-        var ObjectMove move with
+        var MoveObject move with
             _.obj = &this;
             _.vx  = _REN_W/3 * dir;
             _.vy  = vy;
@@ -524,7 +524,7 @@ do
 
     par/or do
         await (_rand() % 5000)ms;
-        var ObjectMove move with
+        var MoveObject move with
             _.obj = &this;
             _.vx  = vx;
             _.vy  = vy;
@@ -577,7 +577,7 @@ do
     end
 
     par/or do
-        var ObjectMove move with
+        var MoveObject move with
             _.obj = &this;
             _.vx  = vx;
             _.vy  = vy;
@@ -625,7 +625,7 @@ do
     end
 
     par/or do
-        var ObjectMove move with
+        var MoveObject move with
             _.obj = &this;
             _.vx  = vx;
             _.vy  = vy;
@@ -666,7 +666,7 @@ do
     var int timer = 2;  // countdown
 
     par/or do
-        var ObjectMove move with
+        var MoveObject move with
             _.obj = &this;
             _.vx  = vx;
             _.vy  = vy;
