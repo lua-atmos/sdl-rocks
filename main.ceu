@@ -272,11 +272,11 @@ with
      * rendered first.
      */
     var _SDL_Rect r;
-        _SDL_QueryTexture(_TEX_BG, null, null, &r.w, &r.h); // query image w,h
+        _SDL_QueryTexture(_TEXS[_TEX_BG], null, null, &r.w, &r.h); // query image w,h
         r.x = (_REN_W - r.w) / 2;                           // center of X-axis
         r.y = (_REN_H - r.h) / 2;                           // center of Y-axis
     every SDL_REDRAW do
-        _SDL_RenderCopy(_REN, _TEX_BG, null, &r);
+        _SDL_RenderCopy(_REN, _TEXS[_TEX_BG], null, &r);
     end
 with
     /*
@@ -321,7 +321,7 @@ with
          */
         do
             var _SDL_Rect r;
-            _SDL_QueryTexture(_TEX_TAP, null, null, &r.w, &r.h);
+            _SDL_QueryTexture(_TEXS[_TEX_TAP], null, null, &r.w, &r.h);
                 r.x = _REN_W/2 - r.w/2;     // center on screen
                 r.y = _REN_H/2 - r.h/2;     // center on screen
 
@@ -352,7 +352,7 @@ with
                 // The message will be rendered above the background.
                 every SDL_REDRAW do
                     if on? then
-                        _SDL_RenderCopy(_REN, _TEX_TAP, null, &r);
+                        _SDL_RenderCopy(_REN, _TEXS[_TEX_TAP], null, &r);
                     end
                 end
             end
@@ -449,15 +449,15 @@ with
              * screen limits.
              */
             var int dim; // ship dimensions are squared (WxW):
-                _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
+                _SDL_QueryTexture(_TEXS[_TEX_SHIP1], null, null, &dim, null);
 
             var Ship ship1 with
                 _.id     = _OBJ_SHIP1;
-                _.tex    := _TEX_SHIP1;
+                _.tex    = _TEX_SHIP1;
                 _.dir    = 1;            // positive increase (on X-axis)
                 _.rect.x = dim;          // starting X position
                 _.rect.y = _REN_H/2;     // starting Y position
-                _.controller = &controller1;
+                _.controller = controller1;
 
                 // ship1 cannot cross the left-half screen boundaries:
                 _.lim_x1 = dim/2;
@@ -468,11 +468,11 @@ with
 
             var Ship ship2 with
                 _.id     = _OBJ_SHIP2;
-                _.tex    := _TEX_SHIP2;
+                _.tex    = _TEX_SHIP2;
                 _.dir    = -1;            // positive increase (on X-axis)
                 _.rect.x = _REN_W - dim;  // starting X postion
                 _.rect.y = _REN_H/2;      // starting Y postion
-                _.controller = &controller2;
+                _.controller = controller2;
 
                 // ship2 cannot cross the right-half screen boundaries:
                 _.lim_x1 = _REN_W/2 + dim/2;
@@ -668,7 +668,7 @@ with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_LIFE;
-                                        _.tex    := _TEX_BONUS_LIFE;
+                                        _.tex    = _TEX_BONUS_LIFE;
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 55 then
@@ -676,7 +676,7 @@ with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_HITS;
-                                        _.tex    := _TEX_BONUS_HITS;
+                                        _.tex    = _TEX_BONUS_HITS;
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
@@ -684,7 +684,7 @@ with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_SHIELD;
-                                        _.tex    := _TEX_BONUS_SHIELD;
+                                        _.tex    = _TEX_BONUS_SHIELD;
                                         _.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
@@ -692,7 +692,7 @@ with
                                         _.rect.x = (int) oo2:rect.x;
                                         _.rect.y = (int) oo2:rect.y;
                                         _.id     = _OBJ_BONUS_FIRE;
-                                        _.tex    := _TEX_BONUS_FIRE;
+                                        _.tex    = _TEX_BONUS_FIRE;
                                         _.dir    = -dir;
                                     end;
                                 else

@@ -4,17 +4,15 @@
  * meteros), except the spaceships.
  */
 class MoveObject with
-    var   Object* obj = null;   // object to move
-    var   float   vx = 0;       // requested speed in X
-    var   float   vy = 0;       // requested speed in Y
-    event void    ok;           // signalled when the object leaves the screen
+    var   Object& obj;      // object to move
+    var   float   vx = 0;   // requested speed in X
+    var   float   vy = 0;   // requested speed in Y
+    event void    ok;       // signalled when the object leaves the screen
 do
-    _assert(this.obj != null);
-
     // Convert the current position of the object to "float" to keep precision
     // in animations:
-    var float sx = obj:rect.x;
-    var float sy = obj:rect.y;
+    var float sx = obj.rect.x;
+    var float sy = obj.rect.y;
 
     /*
      * On every frame, apply the physics "linear motion" formula.
@@ -24,16 +22,16 @@ do
     var int dt;
     every dt in SDL_DT do
         sx = sx + this.vx*dt/1000;  // Sx = Sx + vx*dt
-        obj:rect.x = sx;
-        if obj:rect.x < 0
-        or obj:rect.x > _REN_W then
+        obj.rect.x = sx;
+        if obj.rect.x < 0
+        or obj.rect.x > _REN_W then
             break;                  // went out of the screen
         end
 
         sy = sy + this.vy*dt/1000;  // Sy = Sy + vy*dt
-        obj:rect.y = sy;
-        if obj:rect.y < 0
-        or obj:rect.y > _REN_H then
+        obj.rect.y = sy;
+        if obj.rect.y < 0
+        or obj.rect.y > _REN_H then
             break;                  // went out of the screen
         end
     end
@@ -63,7 +61,7 @@ do
      */
     par/or do
         var MoveObject move with
-            _.obj = &this;
+            _.obj = this;
             _.vx  = _REN_W/3 * dir;
             _.vy  = vy;
         end;
@@ -97,13 +95,13 @@ end
  */
 class Ship with
     interface Object;
-    var _SDL_Texture* tex = null;   // left/right oriented image
+    var int tex = _TEX_MAX;         // left/right oriented image
 
     var int lim_x1, lim_x2,         // physical screen limits that the 
             lim_y1, lim_y2;         // ship can move
 
     var int dir;                    // ship orientation (left=1/right=-1)
-    var Controller* controller;     // reference the ship controller
+    var Controller& controller;     // reference the ship controller
 
     event void go_F;                // inc. ship number of shots
     event void go_H;                // inc. ship number of hit points
@@ -117,9 +115,9 @@ do
      * Take the ship image width (it has a squared dimension).
      * Sets w/h from it.
      */
-    _assert(this.tex != null);
+    _assert(this.tex < _TEX_MAX);
     var int dim;    // dim = w
-        _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
+        _SDL_QueryTexture(_TEXS[_TEX_SHIP1], null, null, &dim, null);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -183,7 +181,7 @@ do
              * Terminate when "n_hits=0".
              */
             loop do
-                await this.go_hit until not (this.controller:isImmortal? or
+                await this.go_hit until not (this.controller.isImmortal? or
                                              hasShield?);
                 n_hits = n_hits - 1;
 
@@ -264,7 +262,7 @@ do
              * everything around. The ship is immortal during that period.
              */
             loop do
-                await this.controller:ok_shield
+                await this.controller.ok_shield
                 until (n_shields > 0);
 
                 n_shields = n_shields - 1;      // decrement "n_shields"
@@ -364,7 +362,7 @@ do
         with
             // Spawn a fire shot on every "ok_fired" request:
 
-            every this.controller:ok_fired do
+            every this.controller.ok_fired do
                 if n_fires == 0 then
                     continue;               // ignore if no ammo
                 end
@@ -416,8 +414,8 @@ do
         var int dt;
         every dt in SDL_DT do
             // Speeds are limited to a maximum:
-            vx = vx + this.controller:ax*dt;
-            vy = vy + this.controller:ay*dt;
+            vx = vx + this.controller.ax*dt;
+            vy = vy + this.controller.ay*dt;
             if vx> _REN_W/10 then vx= _REN_W/10; end
             if vx<-_REN_W/10 then vx=-_REN_W/10; end
             if vy> _REN_H/10 then vy= _REN_H/10; end
@@ -451,11 +449,11 @@ do
             end
 
             // choose ship frame
-            if this.controller:ay > 0 then
+            if this.controller.ay > 0 then
                 clip_r.y = dim*3;
-            else/if this.controller:ay < 0 then
+            else/if this.controller.ay < 0 then
                 clip_r.y = dim*2;
-            else/if this.controller:ax * this.dir < 0 then
+            else/if this.controller.ax * this.dir < 0 then
                 clip_r.y = 0;
             else
                 clip_r.y = dim*1;
@@ -466,7 +464,7 @@ do
                 r.y = this.rect.y - dim/2;
                 r.w = dim;
                 r.h = dim;
-            _SDL_RenderCopy(_REN, this.tex, &clip_r, &r);
+            _SDL_RenderCopy(_REN, _TEXS[this.tex], &clip_r, &r);
         end
     end
 
@@ -498,7 +496,7 @@ class RockBig with
     var int id = _OBJ_ROCK;
 do
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEX_ROCK, null, null, null, &dim);
+        _SDL_QueryTexture(_TEXS[_TEX_ROCK], null, null, null, &dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -525,7 +523,7 @@ do
     par/or do
         await (_rand() % 5000)ms;
         var MoveObject move with
-            _.obj = &this;
+            _.obj = this;
             _.vx  = vx;
             _.vy  = vy;
         end;
@@ -545,7 +543,7 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip_r, &r);
+            _SDL_RenderCopy(_REN, _TEXS[_TEX_ROCK], &clip_r, &r);
         end
     with
         await go_hit;
@@ -560,7 +558,7 @@ do
     _assert(this.dir != 0);
 
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEX_rock, null, null, null, &dim);
+        _SDL_QueryTexture(_TEXS[_TEX_rock], null, null, null, &dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -578,7 +576,7 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = &this;
+            _.obj = this;
             _.vx  = vx;
             _.vy  = vy;
         end;
@@ -598,7 +596,7 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_rock, &clip_r, &r);
+            _SDL_RenderCopy(_REN, _TEXS[_TEX_rock], &clip_r, &r);
         end
     with
         await go_hit;
@@ -609,11 +607,11 @@ class Bonus with
     interface Object;
     var int id  = 0;
     var int dir = 0;
-    var _SDL_Texture* tex = null;
+    var int tex = _TEX_MAX;
 do
     _assert(this.id  != 0);
     _assert(this.dir != 0);
-    _assert(this.tex != null);
+    _assert(this.tex < _TEX_MAX);
 
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
@@ -626,7 +624,7 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = &this;
+            _.obj = this;
             _.vx  = vx;
             _.vy  = vy;
         end;
@@ -637,10 +635,10 @@ do
                                     0x00,0x77,0x00,0xFF);
 
             var _SDL_Rect r;
-                _SDL_QueryTexture(this.tex, null, null, &r.w, &r.h);
+                _SDL_QueryTexture(_TEXS[this.tex], null, null, &r.w, &r.h);
                 r.x = this.rect.x - r.w/2;
                 r.y = this.rect.y - r.h/2;
-            _SDL_RenderCopy(_REN, this.tex, null, &r);
+            _SDL_RenderCopy(_REN, _TEXS[this.tex], null, &r);
         end
     with
         await go_hit;
@@ -667,7 +665,7 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = &this;
+            _.obj = this;
             _.vx  = vx;
             _.vy  = vy;
         end;
