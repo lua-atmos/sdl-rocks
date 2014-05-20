@@ -3,20 +3,16 @@
  * the game.
  */
 native do
-    enum {
-        TEX_BG         = 0,     // game background
-        TEX_TAP           ,     // "= TAP TO START ="
-        TEX_SHIP1         ,     // ship in the left
-        TEX_SHIP2         ,     // ship in the right
-        TEX_ROCK          ,     // big meteor
-        TEX_rock          ,     // small meteor
-        TEX_BONUS_LIFE    ,     // life bonus (+1)
-        TEX_BONUS_SHIELD  ,     // shield bonus (S)
-        TEX_BONUS_HITS    ,     // hit-points bonus (H)
-        TEX_BONUS_FIRE    ,     // space fire bonus (F)
-        TEX_MAX
-    };
-    SDL_Texture* TEXS[TEX_MAX];
+    SDL_Texture* TEX_BG         = NULL;     // game background
+    SDL_Texture* TEX_TAP        = NULL;     // "= TAP TO START ="
+    SDL_Texture* TEX_SHIP1      = NULL;     // ship in the left
+    SDL_Texture* TEX_SHIP2      = NULL;     // ship in the right
+    SDL_Texture* TEX_ROCK       = NULL;     // big meteor
+    SDL_Texture* TEX_rock       = NULL;     // small meteor
+    SDL_Texture* TEX_BONUS_LIFE = NULL;     // life bonus (+1)
+    SDL_Texture* TEX_BONUS_SHIELD = NULL;   // shield bonus (S)
+    SDL_Texture* TEX_BONUS_HITS = NULL;     // hit-points bonus (H)
+    SDL_Texture* TEX_BONUS_FIRE = NULL;     // space fire bonus (F)
     SDL_Texture* TEX_BOMB[3];               // 3-2-1 bomb
 end
 
@@ -27,68 +23,68 @@ end
  */
 
 finalize
-    _TEXS[_TEX_BG] = _IMG_LoadTexture(_REN, "imgs/bg.png");
+   _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_BG]);
+   _SDL_DestroyTexture(_TEX_BG);
 end
 
 finalize
-    _TEXS[_TEX_TAP] = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
+   _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
                              &_colors.white, null);
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_TAP]);
+   _SDL_DestroyTexture(_TEX_TAP);
 end
 
 finalize
-    _TEXS[_TEX_SHIP1] = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
+   _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_SHIP1]);
+   _SDL_DestroyTexture(_TEX_SHIP1);
 end
 
 finalize
-    _TEXS[_TEX_SHIP2] = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
+   _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_SHIP2]);
+   _SDL_DestroyTexture(_TEX_SHIP2);
 end
 
 finalize
-    _TEXS[_TEX_ROCK] = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
+   _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_ROCK]);
+   _SDL_DestroyTexture(_TEX_ROCK);
 end
 
 finalize
-    _TEXS[_TEX_rock] = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
+   _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_rock]);
+   _SDL_DestroyTexture(_TEX_rock);
 end
 
 finalize
-    _TEXS[_TEX_BONUS_LIFE] = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
+   _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
                                         &_colors.white, null);
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_BONUS_LIFE]);
+   _SDL_DestroyTexture(_TEX_BONUS_LIFE);
 end
 
 finalize
-_TEXS[_TEX_BONUS_SHIELD] = _SDL_text2texture(_REN, _FONT_SMALL, "S",
+    _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
                                         &_colors.white, null);
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_BONUS_SHIELD]);
+   _SDL_DestroyTexture(_TEX_BONUS_SHIELD);
 end
 
 finalize
-    _TEXS[_TEX_BONUS_HITS] = _SDL_text2texture(_REN, _FONT_SMALL, "H",
+   _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
                                         &_colors.white, null);
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_BONUS_HITS]);
+   _SDL_DestroyTexture(_TEX_BONUS_HITS);
 end
 
 finalize
-    _TEXS[_TEX_BONUS_FIRE] = _SDL_text2texture(_REN, _FONT_SMALL, "F",
+   _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
                                         &_colors.white, null);
 with
-    _SDL_DestroyTexture(_TEXS[_TEX_BONUS_FIRE]);
+   _SDL_DestroyTexture(_TEX_BONUS_FIRE);
 end
 
 loop i in 3 do
@@ -98,14 +94,10 @@ loop i in 3 do
                                       &_colors.white, null);
                  // finalize below
 end
-    finalize with
-        loop i in 3 do
-            _SDL_DestroyTexture(_TEX_BOMB[i]);
-        end
+finalize with
+    loop i in 3 do
+        _SDL_DestroyTexture(_TEX_BOMB[i]);
     end
-
-loop i in _TEX_MAX do
-    _assert(_TEXS[i] != null);
 end
 loop i in 3 do
     _assert(_TEX_BOMB[i] != null);

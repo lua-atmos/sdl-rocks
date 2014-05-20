@@ -95,7 +95,7 @@ end
  */
 class Ship with
     interface Object;
-    var int tex = _TEX_MAX;         // left/right oriented image
+    var _SDL_Texture[] tex = null;  // left/right oriented image
 
     var int lim_x1, lim_x2,         // physical screen limits that the 
             lim_y1, lim_y2;         // ship can move
@@ -115,9 +115,9 @@ do
      * Take the ship image width (it has a squared dimension).
      * Sets w/h from it.
      */
-    _assert(this.tex < _TEX_MAX);
+    _assert(this.tex != null);
     var int dim;    // dim = w
-        _SDL_QueryTexture(_TEXS[_TEX_SHIP1], null, null, &dim, null);
+        _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -464,7 +464,7 @@ do
                 r.y = this.rect.y - dim/2;
                 r.w = dim;
                 r.h = dim;
-            _SDL_RenderCopy(_REN, _TEXS[this.tex], &clip_r, &r);
+            _SDL_RenderCopy(_REN, this.tex, &clip_r, &r);
         end
     end
 
@@ -496,7 +496,7 @@ class RockBig with
     var int id = _OBJ_ROCK;
 do
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEXS[_TEX_ROCK], null, null, null, &dim);
+        _SDL_QueryTexture(_TEX_ROCK, null, null, null, &dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -543,7 +543,7 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEXS[_TEX_ROCK], &clip_r, &r);
+            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip_r, &r);
         end
     with
         await go_hit;
@@ -558,7 +558,7 @@ do
     _assert(this.dir != 0);
 
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEXS[_TEX_rock], null, null, null, &dim);
+        _SDL_QueryTexture(_TEX_rock, null, null, null, &dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -596,7 +596,7 @@ do
                 r.y = this.rect.y - this.rect.h/2;
                 r.w = this.rect.w;
                 r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEXS[_TEX_rock], &clip_r, &r);
+            _SDL_RenderCopy(_REN, _TEX_rock, &clip_r, &r);
         end
     with
         await go_hit;
@@ -607,11 +607,11 @@ class Bonus with
     interface Object;
     var int id  = 0;
     var int dir = 0;
-    var int tex = _TEX_MAX;
+    var _SDL_Texture[] tex = null;
 do
     _assert(this.id  != 0);
     _assert(this.dir != 0);
-    _assert(this.tex < _TEX_MAX);
+    _assert(this.tex != null);
 
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
@@ -635,10 +635,10 @@ do
                                     0x00,0x77,0x00,0xFF);
 
             var _SDL_Rect r;
-                _SDL_QueryTexture(_TEXS[this.tex], null, null, &r.w, &r.h);
+                _SDL_QueryTexture(this.tex, null, null, &r.w, &r.h);
                 r.x = this.rect.x - r.w/2;
                 r.y = this.rect.y - r.h/2;
-            _SDL_RenderCopy(_REN, _TEXS[this.tex], null, &r);
+            _SDL_RenderCopy(_REN, this.tex, null, &r);
         end
     with
         await go_hit;

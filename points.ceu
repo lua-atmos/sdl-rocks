@@ -21,7 +21,7 @@ do
          * Transforms the current points "v" into a graphical texture to draw 
          * on screen.
          */
-        var _SDL_Texture* tex;
+        var _SDL_Texture[] tex;
         var char[10] str;
         _sprintf(str, "%d", v);
         finalize

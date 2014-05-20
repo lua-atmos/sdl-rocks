@@ -35,6 +35,11 @@ class MoveObject
         (Bonus: level 1)
         (Bomb: level 1)
 
+    var Object& obj;
+        (MoveObject: level 0)
+    var Controller& controller;
+        (Ship: level 0)
+
 ## Pool
 
     pool Object[] all;
@@ -84,11 +89,6 @@ class MoveObject
     var Ship* ship = (Ship*) oo2;   (x3)
         (level 8)
 
-
-    var Object* obj;
-        (MoveObject: level 0)
-    var Controller* controller;
-        (Ship: level 0)
 
     ### False positives (`:=´)
 
