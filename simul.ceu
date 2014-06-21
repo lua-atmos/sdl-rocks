@@ -59,5 +59,6 @@ loop do
          *    (Or make it as fast as possible commenting it.)
          */
         _SDL_Delay(dt);
+_SDL_Delay(50);
     end
 end

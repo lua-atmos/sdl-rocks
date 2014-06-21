@@ -61,9 +61,9 @@ do
      */
     par/or do
         var MoveObject move with
-            _.obj = this;
-            _.vx  = _REN_W/3 * dir;
-            _.vy  = vy;
+            this.obj = outer;
+            this.vx  = _REN_W/3 * dir;
+            this.vy  = vy;
         end;
         await move.ok;      // terminates the "par/or" when leaves the screen
     with
@@ -370,11 +370,11 @@ do
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
                 var bool ok? = spawn Fire in fires with
-                    _.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
-                    _.dir  = dir;        // same orientation
-                    _.vy   = vy;         // same speed
-                    _.rect = rect;       // same position
-                    _.w    = fire_w;     // current ship's fire width offset
+                    this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
+                    this.dir  = dir;        // same orientation
+                    this.vy   = vy;         // same speed
+                    this.rect = rect;       // same position
+                    this.w    = fire_w;     // current ship's fire width offset
                 end;
                 if ok? then
                     // Play shoot sound effect if spawn was successful:
@@ -523,9 +523,9 @@ do
     par/or do
         await (_rand() % 5000)ms;
         var MoveObject move with
-            _.obj = this;
-            _.vx  = vx;
-            _.vy  = vy;
+            this.obj = outer;
+            this.vx  = vx;
+            this.vy  = vy;
         end;
         await move.ok;
     with
@@ -576,9 +576,9 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = this;
-            _.vx  = vx;
-            _.vy  = vy;
+            this.obj = outer;
+            this.vx  = vx;
+            this.vy  = vy;
         end;
         await move.ok;
     with
@@ -624,9 +624,9 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = this;
-            _.vx  = vx;
-            _.vy  = vy;
+            this.obj = outer;
+            this.vx  = vx;
+            this.vy  = vy;
         end;
         await move.ok;
     with
@@ -665,9 +665,9 @@ do
 
     par/or do
         var MoveObject move with
-            _.obj = this;
-            _.vx  = vx;
-            _.vy  = vy;
+            this.obj = outer;
+            this.vx  = vx;
+            this.vy  = vy;
         end;
         await move.ok;
     with
