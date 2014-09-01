@@ -369,14 +369,14 @@ do
                 n_fires = n_fires - 1;
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
-                var bool ok? = spawn Fire in fires with
+                var Fire* new = spawn Fire in fires with
                     this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
                     this.dir  = dir;        // same orientation
                     this.vy   = vy;         // same speed
                     this.rect = rect;       // same position
                     this.w    = fire_w;     // current ship's fire width offset
                 end;
-                if ok? then
+                if new != null then
                     // Play shoot sound effect if spawn was successful:
                     _Mix_PlayChannel(-1, _SND_FIRE, 0);
                 end
