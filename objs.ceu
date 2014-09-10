@@ -7,6 +7,8 @@ class MoveObject with
     var   Object& obj;      // object to move
     var   float   vx = 0;   // requested speed in X
     var   float   vy = 0;   // requested speed in Y
+    var   float   ax = 0;   // requested accel in X
+    var   float   ay = 0;   // requested accel in Y
     event void    ok;       // signalled when the object leaves the screen
 do
     // Convert the current position of the object to "float" to keep precision
@@ -21,6 +23,7 @@ do
      */
     var int dt;
     every dt in SDL_DT do
+        vx = vx + ax*dt;
         sx = sx + this.vx*dt/1000;  // Sx = Sx + vx*dt
         obj.rect.x = sx;
         if obj.rect.x < 0
@@ -28,6 +31,7 @@ do
             break;                  // went out of the screen
         end
 
+        vy = vy + ay*dt;
         sy = sy + this.vy*dt/1000;  // Sy = Sy + vy*dt
         obj.rect.y = sy;
         if obj.rect.y < 0
@@ -107,6 +111,7 @@ class Ship with
     event void go_H;                // inc. ship number of hit points
     event void go_S;                // inc. ship number of shields
     
+    event void ok_missile;          // emitted om ship's missile trigger
     event void ok_killed;           // emitted om ship's death (hits=0)
 
     pool Fire[_OBJ_FIRE_N] fires;   // holds all fire shoots
@@ -304,6 +309,13 @@ do
                      * restores the initial values and the controller can spawn 
                      * a new shield.
                      */
+            end
+        with
+            loop do
+                await this.controller.ok_missile
+                ;//until (n_shields > 0);
+                n_shields = n_shields - 1;      // decrement "n_shields"
+                emit this.ok_missile;
             end
         with
             /*
@@ -639,6 +651,58 @@ do
                 r.x = this.rect.x - r.w/2;
                 r.y = this.rect.y - r.h/2;
             _SDL_RenderCopy(_REN, this.tex, null, &r);
+        end
+    with
+        await go_hit;
+    end
+end
+
+class Missile with
+    interface Object;
+    var int id = 0;
+    var Object* obj_to_follow = null;
+do
+    _assert(this.id != 0);
+    _assert(this.obj_to_follow != null);
+
+    this.rect.w = _REN_W/60;
+    this.rect.h = _REN_W/60;
+
+    par/or do
+        var float vx = _REN_W/6 + _rand()%(_REN_W/20);
+        if this.rect.x > obj_to_follow:rect.x then
+            vx = -vx;
+        end
+        var float vy = 0;
+
+        var MoveObject move with
+            this.obj = outer;
+            this.vx  = vx;
+            this.vy  = vy;
+        end;
+        par/or do
+            await move.ok;
+        with
+            watching this.obj_to_follow do
+                every SDL_DT do
+                    if this.rect.y > obj_to_follow:rect.y then
+                        move.ay = -(float)_REN_W/10000;
+                    else
+                        move.ay =  (float)_REN_W/10000;
+                    end
+                    if move.vy > _REN_H/10 then
+                        move.vy = _REN_H/10;
+                    else/if move.vy < -_REN_H/10 then
+                        move.vy = -_REN_H/10;
+                    end
+                end
+            end
+            await FOREVER;
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
+                                    0x77,0x77,0x00,0xFF);
         end
     with
         await go_hit;

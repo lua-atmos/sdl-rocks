@@ -181,6 +181,7 @@ interface Controller with
     var   bool  isImmortal?;  // If the ship is immune to collisions.
     event void  ok_fired;     // Emitted when the controller shoots a fire.
     event void  ok_shield;    // Emitted when the controller invokes a shield.
+    event void  ok_missile;   // Emitted when the controller invokes a missile.
 end
 
 /*
@@ -429,6 +430,7 @@ with
                 this.k_right    = _SDLK_d;
                 this.k_fire     = _SDLK_z;
                 this.k_shield   = _SDLK_x;
+                this.k_missile  = _SDLK_c;
                 this.k_immortal = _SDLK_1;
             end;
             var KeyController controller2 with
@@ -438,6 +440,7 @@ with
                 this.k_right    = _SDLK_RIGHT;
                 this.k_fire     = _SDLK_SEMICOLON;
                 this.k_shield   = _SDLK_PERIOD;
+                this.k_missile  = _SDLK_COMMA;
                 this.k_immortal = _SDLK_0;
             end;
 #endif
@@ -494,6 +497,35 @@ with
             with
                 await ship2.ok_killed;      // if ship2 is destroyed,
                 emit points1.go_inc;        //  increment points1
+            with
+                loop do
+                    var Ship* s;
+                    var int   id;
+                    par/or do
+                        await ship1.ok_missile;
+                        s = &ship1;
+                        id = _OBJ_FIRE1;
+                    with
+                        await ship2.ok_missile;
+                        s = &ship2;
+                        id = _OBJ_FIRE2;
+                    end
+                    var int i=0;
+                    loop (Object*)o in all do
+                        if i == 3 then
+                            break;
+                        end
+                        i = i + 1;
+                        if o:id == _OBJ_ROCK then
+                            spawn Missile in all with
+                                this.rect.x = s:rect.x;
+                                this.rect.y = s:rect.y;
+                                this.id = id;
+                                this.obj_to_follow := o;
+                            end;
+                        end
+                    end
+                end
             with
                 /*
                  * Period to create a new meteor in the game.

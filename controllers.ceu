@@ -15,7 +15,7 @@ class KeyController with
     interface Controller;   // implements "Controller" (ax, ay, isImmortal?,
                             //                          ok_fired, ok_shield)
     var int k_up, k_down, k_left, k_right;  // keys to control movement
-    var int k_fire, k_shield;               // keys to control fire/shield
+    var int k_fire, k_shield, k_missile;    // keys to control fire/shield/missile
     var int k_immortal;                     // key to control isImortal?
 
     /*
@@ -47,6 +47,8 @@ do
                 emit this.ok_fired;
             else/if key:keysym.sym == this.k_shield then
                 emit this.ok_shield;
+            else/if key:keysym.sym == this.k_missile then
+                emit this.ok_missile;
             end
         end
     with
@@ -205,12 +207,18 @@ do
                     await SDL_FINGERUP until (e2:fingerId == id);
                 emit this.ok_fired;
             with
-                // "ok_shield" <- pressing another finger
+                // "ok_shield" | "ok_missile" <- pressing another finger
                 var _SDL_TouchFingerEvent* e2 =
                     await SDL_FINGERDOWN until
                         _SDL_Rect_vs_Point(&fire_r,
                                            _SDL_Touch2Point(&pt,e2,_REN_W,_REN_H));
-                emit this.ok_shield;
+                par/or do
+                    await SDL_FINGERUP until (e2:fingerId != id);
+                    emit this.ok_shield;
+                with
+                    await 500ms;
+                    emit this.ok_missile;
+                end
             end
         end
     with

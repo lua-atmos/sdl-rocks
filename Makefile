@@ -1,5 +1,5 @@
 #CFLAGS = -DCEU_RUNTESTS -DCEU_DEBUG #-DSIMUL #-DCEU_DEBUG_TRAILS
-CFLAGS = -DSIMUL
+#CFLAGS = -DSIMUL
 
 all:
 	ceu --cpp-args "-I . $(CFLAGS)" main.ceu
