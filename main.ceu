@@ -134,8 +134,8 @@ function (int id, Object** o1, Object** o2)=>int getVS do
         return 1;
     else/if (*o2):id == id then
         var Object* tmp = *o1;
-        *o1 := *o2;
-        *o2 := tmp;
+        *o1 = *o2;
+        *o2 = tmp;
             // tmp is an alias to "o1"
         return 1;
     else
@@ -332,8 +332,6 @@ with
              * 2. Toggle between on/off every 500ms.
              * 3. Draw (or hide) the message every frame.
              */
-            var int on? = true; // start showing the message
-                                // (Céu supports "?" in identifiers)
             par/or do
                 // Await the user interaction to proceed to the battle.
                 await 1s; // delay 1 second to prevent a lazy player to 
@@ -344,16 +342,12 @@ with
                 await SDL_KEYDOWN;
 #endif
             with
-                // Alternate between on/off to show/hide the message.
-                every 500ms do
-                    on? = not on?;
-                end
-            with
-                // Redraw the message (or not) on every frame.
-                // The message will be rendered above the background.
-                every SDL_REDRAW do
-                    if on? then
-                        _SDL_RenderCopy(_REN, _TEX_TAP, null, &r);
+                loop do
+                    await 500ms;
+                    watching 500ms do
+                        every SDL_REDRAW do
+                            _SDL_RenderCopy(_REN, _TEX_TAP, null, &r);
+                        end
                     end
                 end
             end
@@ -456,7 +450,7 @@ with
 
             var Ship ship1 with
                 this.id     = _OBJ_SHIP1;
-                this.tex    := _TEX_SHIP1;
+                this.tex    = _TEX_SHIP1;
                 this.dir    = 1;            // positive increase (on X-axis)
                 this.rect.x = dim;          // starting X position
                 this.rect.y = _REN_H/2;     // starting Y position
@@ -471,7 +465,7 @@ with
 
             var Ship ship2 with
                 this.id     = _OBJ_SHIP2;
-                this.tex    := _TEX_SHIP2;
+                this.tex    = _TEX_SHIP2;
                 this.dir    = -1;            // positive increase (on X-axis)
                 this.rect.x = _REN_W - dim;  // starting X postion
                 this.rect.y = _REN_H/2;      // starting Y postion
@@ -499,15 +493,17 @@ with
                 emit points1.go_inc;        //  increment points1
             with
                 loop do
-                    var Ship* s;
-                    var int   id;
+                    var int x,y;
+                    var int id;
                     par/or do
                         await ship1.ok_missile;
-                        s = &ship1;
+                        x = ship1.rect.x;
+                        y = ship1.rect.y;
                         id = _OBJ_FIRE1;
                     with
                         await ship2.ok_missile;
-                        s = &ship2;
+                        x = ship2.rect.x;
+                        y = ship2.rect.y;
                         id = _OBJ_FIRE2;
                     end
                     var int i=0;
@@ -518,10 +514,10 @@ with
                         i = i + 1;
                         if o:id == _OBJ_ROCK then
                             spawn Missile in all with
-                                this.rect.x = s:rect.x;
-                                this.rect.y = s:rect.y;
+                                this.rect.x = x;
+                                this.rect.y = y;
                                 this.id = id;
-                                this.obj_to_follow := o;
+                                this.obj_to_follow = o;
                             end;
                         end
                     end
@@ -565,15 +561,15 @@ with
                     objs[objs_n] = &ship2;
                     objs_n = objs_n + 1;
                     loop (Object*)o in ship1.fires do
-                        objs[objs_n] := o;
+                        objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
                     loop (Object*)o in ship2.fires do
-                        objs[objs_n] := o;
+                        objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
                     loop (Object*)o in all do
-                        objs[objs_n] := o;
+                        objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
 
@@ -700,7 +696,7 @@ with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_LIFE;
-                                        this.tex    := _TEX_BONUS_LIFE;
+                                        this.tex    = _TEX_BONUS_LIFE;
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 55 then
@@ -708,7 +704,7 @@ with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_HITS;
-                                        this.tex    := _TEX_BONUS_HITS;
+                                        this.tex    = _TEX_BONUS_HITS;
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 70 then
@@ -716,7 +712,7 @@ with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_SHIELD;
-                                        this.tex    := _TEX_BONUS_SHIELD;
+                                        this.tex    = _TEX_BONUS_SHIELD;
                                         this.dir    = -dir;
                                     end;
                                 else/if pct < 85 then
@@ -724,7 +720,7 @@ with
                                         this.rect.x = (int) oo2:rect.x;
                                         this.rect.y = (int) oo2:rect.y;
                                         this.id     = _OBJ_BONUS_FIRE;
-                                        this.tex    := _TEX_BONUS_FIRE;
+                                        this.tex    = _TEX_BONUS_FIRE;
                                         this.dir    = -dir;
                                     end;
                                 else

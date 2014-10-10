@@ -90,9 +90,12 @@ end
 loop i in 3 do
     var char[5] str;
     _sprintf(str, "%d", i+1);
-    _TEX_BOMB[i] := _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                      &_colors.white, null);
-                 // finalize below
+    finalize
+        _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                         &_colors.white, null);
+    with
+        // finalize below
+    end
 end
 finalize with
     loop i in 3 do

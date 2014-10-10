@@ -64,12 +64,11 @@ do
      * Move the ship, redraw it, await being hit.
      */
     par/or do
-        var MoveObject move with
+        do MoveObject with
             this.obj = outer;
             this.vx  = _REN_W/3 * dir;
             this.vy  = vy;
         end;
-        await move.ok;      // terminates the "par/or" when leaves the screen
     with
         every SDL_REDRAW do
             _boxRGBA(_REN, rect.x,rect.y, rect.x+rect.w,rect.y+rect.h,
@@ -202,6 +201,7 @@ do
                         blink? = not blink?;    // blink every 100ms
                     end
                 end
+                blink? = false;
                     /*
                      * While blinking, the body is not awaiting "go_hit", 
                      * hence, the ship is immortal during this period.
@@ -378,7 +378,6 @@ do
                 if n_fires == 0 then
                     continue;               // ignore if no ammo
                 end
-                n_fires = n_fires - 1;
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
                 var Fire* new = spawn Fire in fires with
@@ -391,6 +390,7 @@ do
                 if new != null then
                     // Play shoot sound effect if spawn was successful:
                     _Mix_PlayChannel(-1, _SND_FIRE, 0);
+                    n_fires = n_fires - 1;
                 end
             end
         with
@@ -534,12 +534,11 @@ do
 
     par/or do
         await (_rand() % 5000)ms;
-        var MoveObject move with
+        do MoveObject with
             this.obj = outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
-        await move.ok;
     with
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
@@ -587,12 +586,11 @@ do
     end
 
     par/or do
-        var MoveObject move with
+        do MoveObject with
             this.obj = outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
-        await move.ok;
     with
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
@@ -635,12 +633,11 @@ do
     end
 
     par/or do
-        var MoveObject move with
+        do MoveObject with
             this.obj = outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
-        await move.ok;
     with
         every SDL_REDRAW do
             _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
@@ -681,8 +678,6 @@ do
             this.vy  = vy;
         end;
         par/or do
-            await move.ok;
-        with
             watching this.obj_to_follow do
                 every SDL_DT do
                     if this.rect.y > obj_to_follow:rect.y then
@@ -698,6 +693,8 @@ do
                 end
             end
             await FOREVER;
+        with
+            await move.ok;
         end
     with
         every SDL_REDRAW do
@@ -728,12 +725,11 @@ do
     var int timer = 2;  // countdown
 
     par/or do
-        var MoveObject move with
+        do MoveObject with
             this.obj = outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
-        await move.ok;
     with
         // countdown 3-2-1-0
         // (or kill)
