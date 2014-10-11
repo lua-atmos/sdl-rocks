@@ -1,0 +1,69 @@
+input void SDL_QUIT_;
+
+var _SDL_Window* win;
+    finalize
+        win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
+                                          _SDL_WINDOWPOS_CENTERED,
+                                          1280, 800,
+                                          _SDL_WINDOW_SHOWN);
+    with
+        _SDL_DestroyWindow(win);
+    end
+_SDL_GetWindowSize(win, &_REN_W, &_REN_H);
+
+finalize
+    _REN = _SDL_CreateRenderer(win, -1, 0);
+with
+    _SDL_DestroyRenderer(_REN);
+end
+event void go_restart;
+
+#include "play.ceu"
+var Play play;
+
+par/or do
+    await SDL_QUIT_;
+with
+    /*
+     * If we are in SIMUL mode (defined in "Makefile"), we randomly simulate 
+     * input from users.
+     */
+    input _SDL_KeyboardEvent* SDL_KEYDOWN_;
+    loop do
+        if _CEU_TIMEMACHINE_ON then
+            par/or do
+                #include "simul.ceu"
+            with
+                var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
+                                              until key:keysym.sym == _SDLK_q;
+            end
+        else
+            var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
+                                          until key:keysym.sym == _SDLK_q;
+        end
+        _CEU_TIMEMACHINE_ON = not _CEU_TIMEMACHINE_ON;
+    end
+with
+    loop do
+        var _SDL_KeyboardEvent* key;
+        key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
+        emit play.go_on;
+        key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
+        emit play.go_off;
+    end
+with
+    loop do
+        watching play.ok_restart do
+            var int v = do
+                #include "main.ceu"
+            end;
+        end
+    end
+with
+    every SDL_REDRAW do
+        emit play.go_redraw;
+        _SDL_RenderPresent(_REN);
+    end
+end
+
+escape 0;

@@ -194,7 +194,7 @@ do
                 end
 
                 // Play the "hit" sound effect:
-                _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
+                //_Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
 
                 watching 2s do
                     every 100ms do
@@ -279,7 +279,7 @@ do
                 end
 
                 // Play the explosion sound effect:
-                _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+                //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
                 
                 /*
                  * Explosion animation:
@@ -389,7 +389,7 @@ do
                 end;
                 if new != null then
                     // Play shoot sound effect if spawn was successful:
-                    _Mix_PlayChannel(-1, _SND_FIRE, 0);
+                    //_Mix_PlayChannel(-1, _SND_FIRE, 0);
                     n_fires = n_fires - 1;
                 end
             end
@@ -481,7 +481,7 @@ do
     end
 
     // explode 40w/s
-    _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+    //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
     watching 100ms do
         par do
             var float d = dim;
@@ -745,7 +745,7 @@ do
         this.id = _OBJ_EXPLOSION;
 
         // explode 40w/s
-        _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+        //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
         watching 200ms do
             var float d = this.rect.w;
             var float v = 40 * this.rect.w;

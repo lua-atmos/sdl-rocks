@@ -22,6 +22,84 @@ end
  * program termination.
  */
 
+#ifdef CEU_TIMEMACHINE
+
+if _TEX_BG == null then
+
+finalize
+   _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
+with
+end
+
+finalize
+   _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
+                             &_colors.white, null);
+with
+end
+
+finalize
+   _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
+with
+end
+
+finalize
+   _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
+with
+end
+
+finalize
+   _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
+with
+end
+
+finalize
+   _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
+with
+end
+
+finalize
+   _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
+                                        &_colors.white, null);
+with
+end
+
+finalize
+    _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
+                                        &_colors.white, null);
+with
+end
+
+finalize
+   _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
+                                        &_colors.white, null);
+with
+end
+
+finalize
+   _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
+                                        &_colors.white, null);
+with
+end
+
+loop i in 3 do
+    var char[5] str;
+    _sprintf(str, "%d", i+1);
+    finalize
+        _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
+                                         &_colors.white, null);
+    with
+        // finalize below
+    end
+end
+
+loop i in 3 do
+    _assert(_TEX_BOMB[i] != null);
+end
+
+end
+
+#else
+
 finalize
    _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
 with
@@ -105,3 +183,5 @@ end
 loop i in 3 do
     _assert(_TEX_BOMB[i] != null);
 end
+
+#endif

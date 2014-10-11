@@ -212,7 +212,7 @@ end
 native do
     ##include <time.h>
 end
-_srand(_time(null));    // initialize the game "randomizer"
+_srand(0);//_time(null));    // initialize the game "randomizer"
 
 /*
  * Create the game window and renderer.
@@ -228,10 +228,13 @@ _srand(_time(null));    // initialize the game "randomizer"
  * 2. The initialization and finalization stay close together in the code.
  */
 
+#ifndef CEU_TIMEMACHINE
 var _SDL_Window* win;
     finalize
-        win = _SDL_CreateWindow("Rocks!", 500, 400, 1280, 800,
-                                _SDL_WINDOW_SHOWN);
+        win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
+                                          _SDL_WINDOWPOS_CENTERED,
+                                          1280, 800,
+                                          _SDL_WINDOW_SHOWN);
     with
         _SDL_DestroyWindow(win);
     end
@@ -242,6 +245,7 @@ finalize
 with
     _SDL_DestroyRenderer(_REN);
 end
+#endif
 
 /*
  * Allocate all fonts, textures and sounds used in the game.
@@ -251,7 +255,7 @@ end
  */
 #include "fnts.ceu"
 #include "texs.ceu"
-#include "snds.ceu"
+//#include "snds.ceu"
 
 /*
  * The outermost "par/or" that handles all game activities in parallel.
@@ -336,7 +340,7 @@ with
                 // Await the user interaction to proceed to the battle.
                 await 1s; // delay 1 second to prevent a lazy player to 
                           // activate it while reacting to the preivous battle
-#if defined(__ANDROID__) && !defined(SIMUL)
+#if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
                 await SDL_FINGERDOWN;
 #else
                 await SDL_KEYDOWN;
@@ -353,7 +357,7 @@ with
             end
             // After the user interaction, play the starting sound effect 
             // (_SND_START, loaded in "snds.ceu").
-            _Mix_PlayChannel(-1, _SND_START, 0);
+            //_Mix_PlayChannel(-1, _SND_START, 0);
         end
             /*
              * The "do-end" termination makes all memory needed for data (e.g.  
@@ -372,7 +376,7 @@ with
              * We provide different controllers for the Android and Desktop 
              * versions of the game.
              */
-#if defined(__ANDROID__) && !defined(SIMUL)
+#if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
             /*
              * The touch controller needs to know the area in which it should 
              * respond to user input in the tablet:
@@ -635,13 +639,13 @@ with
                                getVS(_OBJ_FIRE2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_ROCK) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
-                                    _Mix_PlayChannel(-1, _SND_ROCK, 0);
+                                    //_Mix_PlayChannel(-1, _SND_ROCK, 0);
                                 end
                             else/if getVS(_OBJ_SHIP1, &oo1, &oo2) or
                                     getVS(_OBJ_SHIP2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_BONUS_LIFE) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
-                                    _Mix_PlayChannel(-1, _SND_BONUS, 0);
+                                    //_Mix_PlayChannel(-1, _SND_BONUS, 0);
                                 end
                             end
 
@@ -872,14 +876,7 @@ with
         //_printf("[FPS=%d]\n", fps);
     end
 #endif
-#ifdef SIMUL
-with
-    /*
-     * If we are in SIMUL mode (defined in "Makefile"), we randomly simulate 
-     * input from users.
-     */
-    #include "simul.ceu"
-#endif
+#ifndef CEU_TIMEMACHINE
 with
     /*
      * Complete the drawing process for every frame.
@@ -890,6 +887,7 @@ with
     every SDL_REDRAW do
         _SDL_RenderPresent(_REN);
     end
+#endif
 end
 
 escape 0;
