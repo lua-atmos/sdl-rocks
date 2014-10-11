@@ -86,13 +86,24 @@ input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONDOWN_;
 native @nohold _queue_put();
 native @pure   _queue_get();
 
-class Play with
-    event void go_on, go_off;
-    event void go_redraw;
-    event void ok_restart;
-do
-    var int time_total = 0;
+finalize
+   _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
+                             &_colors.white, null);
+with
+   _SDL_DestroyTexture(_TEX_TAP);
+end
 
+class TimeMachine with
+    event void go_on, go_off;
+    event void ok_restart;
+
+    event (int,int) go_seek;
+    event void      go_resume;
+    event void      ok_seek;
+
+    var int time_total = 0;
+    var int time_now;
+do
     loop do
         _CEU_TIMEMACHINE_ON = false;
         watching this.go_on do
@@ -100,7 +111,7 @@ do
                 var int dt;
                 every dt in SDL_DT do
                     _queue_put(_CEU_IN_SDL_DT, _EVTP(dt), 0, null);
-                    time_total = time_total + dt;
+                    this.time_total = this.time_total + dt;
                 end
             with
                 var _SDL_KeyboardEvent* key;
@@ -119,139 +130,162 @@ do
 
         _CEU_TIMEMACHINE_ON = true;
         watching this.go_off do
-            event (int,int) go_seek;
-            event void go_resume;
-            event void ok_seek;
-
-            var int time_now = time_total;
-            par do
-                var int time_req = time_total;
-                var int speed    = 0;
-                var bool resume? = false;
-                _queue_reset();
-                loop do
-                    par/or do
-                        (speed, time_req) = await go_seek;
+            this.time_now = time_total;
+            var int time_req = this.time_total;
+            var int speed    = 0;
+            var bool resume? = false;
+            _queue_reset();
+            loop do
+                par/or do
+                    (speed, time_req) = await this.go_seek;
 //var int t = _SDL_GetTicks();
-                        emit this.ok_restart;
+                    emit this.ok_restart;
 //_printf("RESTART = %d\n", _SDL_GetTicks()-t);
-                        time_now = 0;
-                        resume? = false;
-                        _queue_reset();
-                    with
-                        await go_resume;
-                        resume? = true;
-                    with
+                    this.time_now = 0;
+                    resume? = false;
+                    _queue_reset();
+                with
+                    await this.go_resume;
+                    resume? = true;
+                with
 //var int t = _SDL_GetTicks();
 //_printf("seeking\n");
-                        async (&time_now, speed, time_req) do
-                            loop do
-                                var _tceu_queue[] qu = _queue_get();
-                                if qu == null then
-                                    break;
-                                end
-                                if time_now >= time_req then
-                                    break;
-                                end
-                                if qu:evt == _CEU_IN_SDL_DT then
-                                    var int dt = qu:param.v;
-                                    emit (dt)ms;
-                                    emit SDL_DT => dt;
-                                    time_now = time_now + dt;
-                                    if speed > 0 then
-                                        _SDL_Delay(dt/speed);
-                                    else/if speed < 0 then
-                                        _SDL_Delay(dt*-speed);
-                                    end
-                                else/if qu:evt == _CEU_IN_SDL_KEYDOWN then
-                                    emit SDL_KEYDOWN => qu:param.ptr;
-                                else/if qu:evt == _CEU_IN_SDL_KEYUP then
-                                    emit SDL_KEYUP => qu:param.ptr;
-                                else
-                                    _assert(0);
-                                end
-                                if speed != 0 then
-                                    emit SDL_REDRAW;
-                                end
-                                _queue_nxt();
+                    async (&time_now, speed, time_req) do
+                        loop do
+                            var _tceu_queue[] qu = _queue_get();
+                            if qu == null then
+                                break;
                             end
-                            emit SDL_REDRAW;
+                            if this.time_now >= time_req then
+                                break;
+                            end
+                            if qu:evt == _CEU_IN_SDL_DT then
+                                var int dt = qu:param.v;
+                                emit (dt)ms;
+                                emit SDL_DT => dt;
+                                this.time_now = this.time_now + dt;
+                                if speed > 0 then
+                                    _SDL_Delay(dt/speed);
+                                else/if speed < 0 then
+                                    _SDL_Delay(dt*-speed);
+                                end
+                            else/if qu:evt == _CEU_IN_SDL_KEYDOWN then
+                                emit SDL_KEYDOWN => qu:param.ptr;
+                            else/if qu:evt == _CEU_IN_SDL_KEYUP then
+                                emit SDL_KEYUP => qu:param.ptr;
+                            else
+                                _assert(0);
+                            end
+                            if speed != 0 then
+                                emit SDL_REDRAW;
+                            end
+                            _queue_nxt();
                         end
+                        emit SDL_REDRAW;
+                    end
 //_printf("SEEK = %d\n", _SDL_GetTicks()-t);
-                        emit ok_seek;
+                    emit this.ok_seek;
 
-                        // only allow resume after completing
-                        if resume? then
-                            speed = 2;
-                            time_req = time_total;
-                            resume? = false;
-                        else
-                            await FOREVER;
-                        end
+                    // only allow resume after completing
+                    if resume? then
+                        speed = 2;
+                        time_req = this.time_total;
+                        resume? = false;
+                    else
+                        await FOREVER;
                     end
                 end
+            end
+        end
+    end
+end
+
+class UITimeMachine with
+    event void go_on, go_off;
+    event void ok_restart;
+
+    event void go_redraw;
+do
+    input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONDOWN_;
+    input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONUP_;
+    input _SDL_MouseMotionEvent* SDL_MOUSEMOTION_;
+
+    var TimeMachine tm;
+
+    var int x = _REN_W/4;
+    var int w = _REN_W - x*2;
+    var int h = _REN_H/80;
+    var int y = _REN_H - h*2;
+
+    var _SDL_Rect r;
+        r.x = x;
+        r.y = y;
+        r.w = w;
+        r.h = h;
+
+    par do
+        every this.go_on do
+            emit tm.go_on;
+        end
+    with
+        every this.go_off do
+            emit tm.go_off;
+        end
+    with
+        every tm.ok_restart do
+            emit this.ok_restart;
+        end
+    with
+        loop do
+            await this.go_on;
+            par/or do
+                await this.go_off;
             with
-                var int x = _REN_W/4;
-                var int w = _REN_W - x*2;
-                var int h = _REN_H/80;
-                var int y = _REN_H - h*2;
-
-                var _SDL_Rect r;
-                    r.x = x;
-                    r.y = y;
-                    r.w = w;
-                    r.h = h;
-
-                par do
-                    input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONDOWN_;
-                    input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONUP_;
-                    input _SDL_MouseMotionEvent* SDL_MOUSEMOTION_;
-                    loop do
-                        var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_
-                                                       until _SDL_Rect_vs_Mouse(&r,e);
-                        emit go_seek => (0, time_total * (e:x-x) / w);
-                        watching SDL_MOUSEBUTTONUP_ do
-                            loop do
-                                par/and do
-                                    await ok_seek;
-                                with
-                                    await SDL_MOUSEMOTION_;
-                                end
-                                var int x_,y_;
-                                _SDL_GetMouseState(&x_, &y_);
-                                emit go_seek => (0, time_total * (x_-x) / w);
+                loop do
+                    var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_
+                                                   until _SDL_Rect_vs_Mouse(&r,e);
+                    emit tm.go_seek => (0, tm.time_total * (e:x-x) / w);
+                    watching SDL_MOUSEBUTTONUP_ do
+                        loop do
+                            par/and do
+                                await tm.ok_seek;
+                            with
+                                await SDL_MOUSEMOTION_;
                             end
+                            var int x_,y_;
+                            _SDL_GetMouseState(&x_, &y_);
+                            emit tm.go_seek => (0, tm.time_total * (x_-x) / w);
                         end
+                    end
 
-                        //var int x_,y_;
-                        //_SDL_GetMouseState(&x_, &y_);
-                        //emit this.ok_restart;
-                        //emit go_seek => (0, time_total * (x_-x) / w);
-                        emit go_resume;
+                    //var int x_,y_;
+                    //_SDL_GetMouseState(&x_, &y_);
+                    //emit this.ok_restart;
+                    //emit tm.go_seek => (0, tm.time_total * (x_-x) / w);
+                    emit tm.go_resume;
+                end
+            with
+        //do await FOREVER; end
+                loop i do
+                    var int t = tm.time_total - i*30;
+                    if t < 0 then
+                        break;
                     end
-                with
-//do await FOREVER; end
-                    loop i do
-                        var int t = time_total - i*30;
-                        if t < 0 then
-                            break;
-                        end
-                        emit go_seek => (0, t);
-                        //par/and do
-                            await ok_seek;
-                        //with
-                            //await 30ms; // TODO: speed
-                        //end
-                    end
-                    await FOREVER;
-                with
-                    every this.go_redraw do
-                        var int dx = ((float)time_now)/time_total * w;
-                        _boxRGBA(_REN, x, y, x+w, y+h,
-                                       0x88,0x88,0x88,0x88);
-                        _filledCircleRGBA(_REN, x+dx, y+h/2, h,
-                                                0xFF,0xFF,0xFF,0x88);
-                    end
+                    emit tm.go_seek => (0, t);
+                    //par/and do
+                        await tm.ok_seek;
+                    //with
+                        //await 30ms; // TODO: speed
+                    //end
+                end
+                await FOREVER;
+            with
+                every this.go_redraw do
+                    var int dx = ((float)tm.time_now)/tm.time_total * w;
+                    _boxRGBA(_REN, x, y, x+w, y+h,
+                                   0x88,0x88,0x88,0x88);
+                    _filledCircleRGBA(_REN, x+dx, y+h/2, h,
+                                            0xFF,0xFF,0xFF,0x88);
                 end
             end
         end
