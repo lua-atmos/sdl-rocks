@@ -194,7 +194,6 @@ do
                         await e_backward;
                         go? = true;
                         bk_speed = speed;   // save, successive seeks will overwrite to 0
-_printf("speed %d\n", bk_speed);
                     with
                         // stop on any of these
                         par/or do
@@ -203,8 +202,6 @@ _printf("speed %d\n", bk_speed);
                             (t,bk?) = await go_seek until (not bk?);
                         with
                             await go_forward;
-                        with
-                            await go_backward;
                         end
                         go? = false;
                     with
