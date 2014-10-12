@@ -1,4 +1,6 @@
 input void SDL_QUIT_;
+input _SDL_KeyboardEvent* SDL_KEYDOWN_;
+input _SDL_KeyboardEvent* SDL_KEYUP_;
 
 var _SDL_Window* win;
     finalize
@@ -19,7 +21,10 @@ end
 event void go_restart;
 
 #include "time-machine.ceu"
-var UITimeMachine tm;
+var TimeMachine tm;
+var UITimeMachine uitm with
+    this.tm = tm;
+end;
 
 par/or do
     await SDL_QUIT_;
@@ -28,7 +33,6 @@ with
      * If we are in SIMUL mode (defined in "Makefile"), we randomly simulate 
      * input from users.
      */
-    input _SDL_KeyboardEvent* SDL_KEYDOWN_;
     loop do
         if _CEU_TIMEMACHINE_ON then
             par/or do
@@ -48,7 +52,19 @@ with
         var _SDL_KeyboardEvent* key;
         key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
         emit tm.go_on;
+        emit uitm.go_on;
         key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
+        emit uitm.go_off;
+        emit tm.go_off;
+    end
+with
+    loop do
+        var _SDL_KeyboardEvent* key;
+        key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_g;
+        emit tm.go_on;
+        async do end;
+        emit tm.go_backward => 1;
+        key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_g;
         emit tm.go_off;
     end
 with
@@ -61,7 +77,7 @@ with
     end
 with
     every SDL_REDRAW do
-        emit tm.go_redraw;
+        emit uitm.go_redraw;
         _SDL_RenderPresent(_REN);
     end
 end
