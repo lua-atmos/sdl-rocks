@@ -1,3 +1,5 @@
+// TODO: enclose em iface
+
 input void SDL_QUIT_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN_;
 input _SDL_KeyboardEvent* SDL_KEYUP_;
@@ -65,6 +67,7 @@ with
         async do end;
         emit tm.go_backward => 1;
         key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_g;
+        await tm.ok;
         emit tm.go_off;
     end
 with

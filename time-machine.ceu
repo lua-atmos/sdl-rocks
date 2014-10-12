@@ -125,13 +125,14 @@ do
         _CEU_TIMEMACHINE_ON = true;
         finalize with
             _CEU_TIMEMACHINE_ON = false;
+            this.time_total = time_now;     // drop future
+            _QUEUE_put = _QUEUE_get;
+            _QUEUE_tot = _QUEUE_get;
         end
-        watching this.go_off do
-            this.time_now = time_total;
-            var int time_req = this.time_total;
-            var int speed;
-            _queue_reset();
 
+        watching this.go_off do
+            var int time_req = -2;      // MAX
+            var int speed;
             event void e_backward;
 
             par do
@@ -148,22 +149,27 @@ do
                         emit e_backward;
                     with
                         speed = await this.go_forward;
-                        time_req = this.time_total;
+                        time_req = -1;  // MAX
                     with
                         async (&time_now, speed, time_req) do
                             loop do
-                                if this.time_now >= time_req then
-                                    break;
+                                if time_req == -2 then
+                                    time_now = this.time_total;    // MAX
+                                    break;  // first execution
+                                else/if time_req!=-1 and time_now>=time_req then
+                                    time_now = time_req;
+                                    break;  // reached the requested time
                                 end
                                 var _tceu_queue[] qu = _queue_get();
                                 if qu == null then
-                                    break;
+                                    time_now = this.time_total;    // MAX
+                                    break;  // reached the present
                                 end
                                 if qu:evt == _CEU_IN_SDL_DT then
                                     var int dt = qu:param.v;
                                     emit (dt)ms;
                                     emit SDL_DT => dt;
-                                    this.time_now = this.time_now + dt;
+                                    time_now = time_now + dt;
                                     if speed > 0 then
                                         _SDL_Delay(dt/speed);
                                     else/if speed < 0 then
@@ -241,23 +247,25 @@ do
 end
 
 native do
-    SDL_Texture* TEX_PLAY    = NULL;
-    SDL_Texture* TEX_STOP    = NULL;
-    SDL_Texture* TEX_PAUSE   = NULL;
-    SDL_Texture* TEX_FORWARD = NULL;
+    #define TEX_N 6
+    SDL_Texture* TEX_FIRST   = NULL;
     SDL_Texture* TEX_REWIND  = NULL;
-    SDL_Texture* TEXS[5];
+    SDL_Texture* TEX_PAUSE   = NULL;
+    SDL_Texture* TEX_PLAY    = NULL;
+    SDL_Texture* TEX_FORWARD = NULL;
+    SDL_Texture* TEX_LAST    = NULL;
+    SDL_Texture* TEXS[TEX_N];
 end
 
 finalize
-   _TEX_PLAY = _IMG_LoadTexture(_REN, "tm/play.png");
+   _TEX_FIRST = _IMG_LoadTexture(_REN, "tm/first.png");
 with
-   _SDL_DestroyTexture(_TEX_PLAY);
+   _SDL_DestroyTexture(_TEX_FIRST);
 end
 finalize
-   _TEX_STOP = _IMG_LoadTexture(_REN, "tm/stop.png");
+   _TEX_REWIND = _IMG_LoadTexture(_REN, "tm/rewind.png");
 with
-   _SDL_DestroyTexture(_TEX_STOP);
+   _SDL_DestroyTexture(_TEX_REWIND);
 end
 finalize
    _TEX_PAUSE = _IMG_LoadTexture(_REN, "tm/pause.png");
@@ -265,25 +273,32 @@ with
    _SDL_DestroyTexture(_TEX_PAUSE);
 end
 finalize
+   _TEX_PLAY = _IMG_LoadTexture(_REN, "tm/play.png");
+with
+   _SDL_DestroyTexture(_TEX_PLAY);
+end
+finalize
    _TEX_FORWARD = _IMG_LoadTexture(_REN, "tm/forward.png");
 with
    _SDL_DestroyTexture(_TEX_FORWARD);
 end
 finalize
-   _TEX_REWIND = _IMG_LoadTexture(_REN, "tm/rewind.png");
+   _TEX_LAST = _IMG_LoadTexture(_REN, "tm/last.png");
 with
-   _SDL_DestroyTexture(_TEX_REWIND);
+   _SDL_DestroyTexture(_TEX_LAST);
 end
-_assert(_TEX_PLAY    != null);
-_assert(_TEX_STOP    != null);
-_assert(_TEX_PAUSE   != null);
-_assert(_TEX_FORWARD != null);
+_assert(_TEX_FIRST   != null);
 _assert(_TEX_REWIND  != null);
-_TEXS[0] = _TEX_REWIND;
-_TEXS[1] = _TEX_STOP;
-_TEXS[2] = _TEX_PLAY;
-_TEXS[3] = _TEX_PAUSE;
+_assert(_TEX_PAUSE   != null);
+_assert(_TEX_PLAY    != null);
+_assert(_TEX_FORWARD != null);
+_assert(_TEX_LAST    != null);
+_TEXS[0] = _TEX_FIRST;
+_TEXS[1] = _TEX_REWIND;
+_TEXS[2] = _TEX_PAUSE;
+_TEXS[3] = _TEX_PLAY;
 _TEXS[4] = _TEX_FORWARD;
+_TEXS[5] = _TEX_LAST;
 
 class UITimeMachine with
     var TimeMachine& tm;
@@ -314,10 +329,10 @@ do
         rc.y = y - _REN_H/10 - _REN_H/80;
         rc.h = _REN_H/10;
 
-    var _SDL_Rect[5] rcs;
+    var _SDL_Rect[_TEX_N] rcs;
     do
-        var int dx = rc.w / 6;
-        loop i in 5 do
+        var int dx = rc.w / (_TEX_N+1);
+        loop i in _TEX_N do
             var _SDL_Rect ri;
             _SDL_QueryTexture(_TEXS[i], null, null, &ri.w, &ri.h);
             ri.x = rc.x + (i+1)*dx - ri.w/2;
@@ -356,7 +371,7 @@ do
             loop do
                 var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_;
                 var int i = -1;
-                loop ii in 5 do
+                loop ii in _TEX_N do
                     if _SDL_Rect_vs_Mouse(&rcs[ii], e) then
                         i = ii;
                         break;
@@ -364,26 +379,28 @@ do
                 end
                 e = await SDL_MOUSEBUTTONUP_;
                 if _SDL_Rect_vs_Mouse(&rcs[i], e) then
-                    if i == 0 then
+                    if i == 0 then                          // FIRST
+                        emit tm.go_seek => (0, false);
+                    else/if i == 1 then                     // REWIND
                         emit tm.go_backward => bk_speed;
                         bk_speed = bk_speed + 1;
                         if bk_speed == 0 then
                             bk_speed = 1;   // skip seek speed 0
                         end
-                    else/if i == 1 then     // stop
-                        emit tm.go_seek => (0, false);
-                    else/if i == 2 then     // play
-                        emit tm.go_forward => 1;
-                    else/if i == 3 then     // pause
+                    else/if i == 2 then                     // PAUSE
                         emit tm.go_seek => (tm.time_now, false);
-                    else/if i == 4 then     // forward
+                    else/if i == 3 then                     // PLAY
+                        emit tm.go_forward => 1;
+                    else/if i == 4 then                     // FORWARD
                         emit tm.go_forward => fw_speed;
                         fw_speed = fw_speed + 1;
                         if fw_speed == 0 then
                             fw_speed = 1;   // skip seek speed 0
                         end
+                    else/if i == 5 then                     // LAST
+                        emit tm.go_forward => 0;
                     end
-                    if i != 0 then
+                    if i != 1 then
                         bk_speed = -4;  // reset fw_speed for other clicks
                     end
                     if i != 4 then
@@ -403,7 +420,7 @@ do
                 do
                     _boxRGBA(_REN, rc.x, rc.y, rc.x+rc.w, rc.y+rc.h,
                              0xAA,0xAA,0xAA,0xAA);
-                    loop i in 5 do
+                    loop i in _TEX_N do
                         _SDL_RenderCopy(_REN, _TEXS[i], null, &rcs[i]);
                     end
                 end
