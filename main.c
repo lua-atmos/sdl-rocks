@@ -187,6 +187,20 @@ if (!CEU_TIMEMACHINE_ON) {
             {
                 //redraw = WCLOCK_nxt <= 1000*dt;
 #endif
+if (CEU_TIMEMACHINE) {
+                ceu_sys_go(&app, CEU_IN__WCLOCK_, (tceu_evtp)(1000*dt));
+#ifdef CEU_RET
+                if (! app.isAlive)
+                    goto END;
+#endif
+                while (WCLOCK_nxt <= 0) {
+                    ceu_sys_go(&app, CEU_IN__WCLOCK_, (tceu_evtp)0);
+#ifdef CEU_RET
+                    if (! app.isAlive)
+                        goto END;
+#endif
+                }
+}
 if (!CEU_TIMEMACHINE_ON) {
                 ceu_sys_go(&app, CEU_IN__WCLOCK, (tceu_evtp)(1000*dt));
 #ifdef CEU_RET

@@ -78,7 +78,7 @@ end
 #include "sdl-gfx.ceu"
 
 input void SDL_QUIT;
-input int  SDL_DT, SDL_DT_;
+input int  SDL_DT;
 input void SDL_REDRAW, SDL_REDRAW_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 input _SDL_KeyboardEvent* SDL_KEYUP;
@@ -223,14 +223,7 @@ do
                                 else/if bk_speed < 0 then
                                     awt = 30*-bk_speed;
                                 end
-
-                                var int dt;
-                                every dt in SDL_DT_ do
-                                    if awt <= 0 then
-                                        break;
-                                    end
-                                    awt = awt - dt;
-                                end
+                                await (awt)ms_;
                             end
                             if now == 0 then
                                 break;
