@@ -94,7 +94,13 @@ class TimeMachine with
     event (int,bool) go_seek;
     event int  go_backward;
     event int  go_forward;
+
+    var   bool seeking? = false;
     event void ok;
+    #define TM_AWAIT_SEEK(me)  \
+        if me.seeking? then    \
+            await me.ok;       \
+        end
 
     var int time_total = 0;
     var int time_now;
@@ -130,9 +136,11 @@ do
             _QUEUE_tot = _QUEUE_get;
         end
 
-        watching this.go_off do
+        par/or do
+            await this.go_off;
+        with
             var int time_req = -2;      // MAX
-            var int speed;
+            var int speed = -1;         // avoids emitting seeking? in the first run
             event void e_backward;
 
             par do
@@ -140,17 +148,23 @@ do
                 loop do
                     par/or do
                         (time_req,bk?) = await this.go_seek;
+                        TM_AWAIT_SEEK(this);
                         emit this.ok_restart;
                         this.time_now = 0;
                         speed = 0;
                         _queue_reset();
                     with
                         speed = await this.go_backward;
+                        TM_AWAIT_SEEK(this);
                         emit e_backward;
                     with
                         speed = await this.go_forward;
+                        TM_AWAIT_SEEK(this);
                         time_req = -1;  // MAX
                     with
+                        if speed == 0 then
+                            this.seeking? = true;
+                        end
                         async (&time_now, speed, time_req) do
                             loop do
                                 if time_req == -2 then
@@ -189,7 +203,10 @@ do
                             end
                             emit SDL_REDRAW;
                         end
-                        emit this.ok;
+                        if this.seeking? then
+                            this.seeking? = false;
+                            emit this.ok;
+                        end
                         await FOREVER;
                     end
                 end
@@ -356,11 +373,7 @@ do
                 fw_speed = -4;
                 watching SDL_MOUSEBUTTONUP_ do
                     loop do
-                        par/and do
-                            await tm.ok;
-                        with
                             await SDL_MOUSEMOTION_;
-                        end
                         var int x_,y_;
                         _SDL_GetMouseState(&x_, &y_);
                         emit tm.go_seek => (tm.time_total * (x_-x) / w, false);
