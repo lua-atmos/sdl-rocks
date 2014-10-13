@@ -113,11 +113,15 @@ do
                     every SDL_MOUSEMOTION_ do
                         var int x_,y_;
                         _SDL_GetMouseState(&x_, &y_);
-                        var int to = (tm.time_total * (x_-x) / w);
-                        if to < 0 then
-                            to = 0;
+                        do
+                            var int to = (tm.time_total * (x_-x) / w);
+                            if to < 0 then
+                                to = 0;
+                            else/if to > tm.time_total then
+                                to = tm.time_total;
+                            end
+                            emit tm.go_seek => (to, false);
                         end
-                        emit tm.go_seek => (to, false);
                     end
                 end
             end

@@ -8,9 +8,7 @@ native @pure   _queue_get();
 
 native do
     enum {
-        TM_REQ_PAUSE    = -1,
-        TM_REQ_BACKWARD = -2,
-        TM_REQ_FORWARD  = -3
+        TM_REQ_PAUSE = -1,
     };
 end
 
@@ -94,7 +92,7 @@ do
                     with
                         speed = await this.go_forward;
                         TM_AWAIT_SEEK(this);
-                        time_req = _TM_REQ_FORWARD;
+                        time_req = this.time_total;
                     with
                         if speed == 0 then
                             this.seeking? = true;
@@ -103,18 +101,14 @@ do
                             loop do
                                 if time_req == _TM_REQ_PAUSE then
                                     break;  // already there
-                                else/if time_req == _TM_REQ_FORWARD then
-                                            // just let it go
                                 else/if time_now >= time_req then
-                                    time_now = time_req;
+                                    // > possible for bar/backwards imprecision
+                                    // do: accept the overflow
+                                    // don't: force with "time_now = time_req;"
                                     break;  // reached the requested time
                                 end
                                 var _tceu_queue[] qu = _queue_get();
-                                if qu == null then
-                                    time_now = time_total;
-                                    _assert(time_req == _TM_REQ_FORWARD);
-                                    break;  // reached the present
-                                end
+                                _assert(qu != null);
                                 if qu:evt == _CEU_IN_SDL_DT then
                                     var int dt = qu:param.v;
                                     emit (dt)ms;
