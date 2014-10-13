@@ -209,10 +209,12 @@ end
  * GAME EXECUTION STARTS HERE
  */
 
+#ifndef CEU_TIMEMACHINE
 native do
     ##include <time.h>
 end
-_srand(0);//_time(null));    // initialize the game "randomizer"
+_srand(_time(null));    // initialize the game "randomizer"
+#endif
 
 /*
  * Create the game window and renderer.
@@ -482,7 +484,7 @@ with
                 this.lim_y2 = _REN_H - dim/2;
             end;
 
-            pool Object[] all;
+            pool RockBig[40] all;
 
             /*
              * The game innermost "par/or" only terminates when one of the 
@@ -516,6 +518,7 @@ with
                             break;
                         end
                         i = i + 1;
+/*
                         if o:id == _OBJ_ROCK then
                             spawn Missile in all with
                                 this.rect.x = x;
@@ -524,6 +527,7 @@ with
                                 this.obj_to_follow = o;
                             end;
                         end
+*/
                     end
                 end
             with
@@ -662,6 +666,7 @@ with
                              * collisions are handled together below, after 
                              * handling extra effects.)
                              */
+/**
                             if getVS(_OBJ_ROCK, &oo1, &oo2) and
                                (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
                                 var int dir;    // which direction to spawn?
@@ -742,7 +747,7 @@ with
                                     end;
                                 end
                             end
-
+**/
                             /*
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.

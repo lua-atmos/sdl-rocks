@@ -47,7 +47,44 @@ s32 WCLOCK_nxt;
 #define ceu_out_wclock_set(us) WCLOCK_nxt = us;
 #endif
 
+char* SNAP_data;
+void snap_put (u32 queue, u32 time);
+u32 snap_get (u32 time);
+
 #include "_ceu_app.c"
+
+///////////////////////////////////////////////////////////////////////////////
+
+    typedef struct {
+        CEU_App data;
+        u32     time;
+        u32     queue;
+    } tceu_snap;
+
+    tceu_snap SNAP[1000];
+
+    int SNAP_put = 0;
+
+    void snap_put (u32 queue, u32 time) {
+        assert(SNAP_put < 1000);
+        SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
+        SNAP[SNAP_put].queue = queue;
+        SNAP[SNAP_put].time  = time;
+        SNAP_put++;
+    }
+
+    u32 snap_get (u32 time) {
+        int i;  // SNAP[0] is guaranteed to succeed
+        for (i=SNAP_put-1; i>=0; i--) {
+            if (SNAP[i].time <= time)
+                break;
+        }
+        *((CEU_App*)SNAP_data) = SNAP[i].data;
+        QUEUE_get = SNAP[i].queue;
+        return SNAP[i].time;
+    }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #ifdef __ANDROID__
 int SDL_main (int argc, char *argv[])

@@ -31,6 +31,8 @@ class TimeMachine with
     var int time_total = 0;
     var int time_now;
 do
+    _snap_put(_QUEUE_put, this.time_total);     // 0, 0
+    var int next_snap = 30000;
     loop do
         watching this.go_on do
             par do
@@ -38,6 +40,10 @@ do
                 every dt in SDL_DT do
                     _queue_put(_CEU_IN_SDL_DT, _EVTP(dt), 0, null);
                     this.time_total = this.time_total + dt;
+                    if this.time_total >= next_snap then
+                        next_snap = next_snap + 30000;
+                        _snap_put(_QUEUE_put, this.time_total);
+                    end
                 end
             with
                 var _SDL_KeyboardEvent* key;
@@ -79,10 +85,10 @@ do
                         (tmp,xxx) = await this.go_seek;
                         TM_AWAIT_SEEK(this);
                         time_req = tmp;
-                        emit this.ok_restart;
-                        this.time_now = 0;
+                        this.time_now = _snap_get(time_req);
                         speed = 0;
-                        _queue_reset();
+                        //emit this.ok_restart;
+                        //_queue_reset();
                     with
                         await this.go_pause;
                         TM_AWAIT_SEEK(this);

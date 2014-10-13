@@ -1,6 +1,7 @@
 // TODO: enclose em iface
 // - bug play no inicio
 // - async vs async_ (testar async no jogo!)
+// - tests para pause/async
 // simul 3a opcao (replay, game mechanics, simul)
 
 input void SDL_QUIT_;
@@ -23,7 +24,26 @@ finalize
 with
     _SDL_DestroyRenderer(_REN);
 end
-event void go_restart;
+
+native do
+    unsigned int* RAND_SEED;
+    #define rand() rand_r(RAND_SEED)
+end
+
+class App with
+    event int ok;
+do
+    var uint seed = 0;
+    _RAND_SEED := &seed;
+    _srand(seed);
+
+    var int ret = do
+        #include "main.ceu"
+    end;
+    emit this.ok => ret;
+end
+var App app;
+_SNAP_data = &app;
 
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
@@ -32,6 +52,7 @@ var UITimeMachine uitm with
     this.tm = tm;
 end;
 
+//event void go_restart;
 event bool in_tm?;
 var int blur? = false;
 
@@ -72,14 +93,6 @@ with
             TM_AWAIT_SEEK(tm);
             emit tm.go_off;
             emit in_tm? => false;
-        end
-    end
-with
-    loop do
-        watching tm.ok_restart do
-            var int v = do
-                #include "main.ceu"
-            end;
         end
     end
 with
