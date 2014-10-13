@@ -2,8 +2,6 @@
  * Simulate input from the players.
  */
 
-_srand(_time(null));
-
 // Simulate forever.
 loop do
     // To emit external events, we need to be inside an "async" block.

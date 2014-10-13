@@ -54,11 +54,11 @@ do
             end
         end
 
-        _CEU_TIMEMACHINE_ON = true;
+        _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
 
         par/or do
             finalize with
-                _CEU_TIMEMACHINE_ON = false;
+                _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON - 1;
                 this.time_total = time_now;     // drop future
                 _QUEUE_put = _QUEUE_get;
                 _QUEUE_tot = _QUEUE_get;

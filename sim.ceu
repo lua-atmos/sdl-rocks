@@ -1,4 +1,7 @@
 // TODO: enclose em iface
+// - bug play no inicio
+// - async vs async_ (testar async no jogo!)
+// simul 3a opcao (replay, game mechanics, simul)
 
 input void SDL_QUIT_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN_;
@@ -29,61 +32,46 @@ var UITimeMachine uitm with
     this.tm = tm;
 end;
 
+event bool in_tm?;
 var int blur? = false;
 
 par/or do
     await SDL_QUIT_;
 with
-    /*
-     * If we are in SIMUL mode (defined in "Makefile"), we randomly simulate 
-     * input from users.
-     */
-/*
-    loop do
-        if _CEU_TIMEMACHINE_ON then
-            par/or do
-                #include "simul.ceu"
-            with
-                var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
-                                              until key:keysym.sym == _SDLK_q;
-            end
-        else
-            var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
-                                          until key:keysym.sym == _SDLK_q;
-        end
-        _CEU_TIMEMACHINE_ON = not _CEU_TIMEMACHINE_ON;
-    end
-with
-*/
     loop do
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
-        if key:keysym.sym == _SDLK_ESCAPE then
+        var int sym = key:keysym.sym;
+        if sym == _SDLK_ESCAPE then
+            emit in_tm? => true;
             emit tm.go_on;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
             emit uitm.go_off;
             emit tm.go_off;
-        else/if key:keysym.sym == _SDLK_LALT then
+            emit in_tm? => false;
+        else/if sym == _SDLK_LALT then
             blur? = true;
+            emit in_tm? => true;
             emit tm.go_on;
             par/or do
                 key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_LALT;
             with
                 loop do
                     key = await SDL_KEYDOWN_;
-                    var int sym = key:keysym.sym;
-                    if sym == _SDLK_LEFT then
+                    var int sym2 = key:keysym.sym;
+                    if sym2 == _SDLK_LEFT then
                         emit tm.go_backward => 1;
-                    else/if sym == _SDLK_RIGHT then
+                    else/if sym2 == _SDLK_RIGHT then
                         emit tm.go_forward => 1;
                     end
-                    key = await SDL_KEYUP_ until key:keysym.sym == sym;
+                    key = await SDL_KEYUP_ until key:keysym.sym == sym2;
                     emit tm.go_pause;
                 end
             end
             blur? = false;
             TM_AWAIT_SEEK(tm);
             emit tm.go_off;
+            emit in_tm? => false;
         end
     end
 with
@@ -101,6 +89,45 @@ with
             _boxRGBA(_REN, 0, 0, _REN_W, _REN_H, 0xAA,0x88,0x88,0x88);
         end
         _SDL_RenderPresent(_REN);
+    end
+with
+    loop do
+        var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
+                                      until key:keysym.sym == _SDLK_LCTRL;
+        var bool ok? =
+            par do
+                key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_LCTRL;
+                escape false;
+            with
+                await 1s;
+                escape true;
+            end;
+        if not ok? then
+            continue;
+        end
+
+        _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
+        finalize with
+            _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON - 1;
+        end
+
+        pause/if in_tm? do
+            par/or do
+                loop do
+                    key = await SDL_KEYDOWN_
+                          until key:keysym.sym == _SDLK_LCTRL;
+                    par/or do
+                        key = await SDL_KEYUP_
+                              until key:keysym.sym == _SDLK_LCTRL;
+                    with
+                        await 1s;
+                        break;
+                    end
+                end
+            with
+                #include "input.ceu"
+            end
+        end
     end
 end
 
