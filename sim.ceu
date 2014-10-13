@@ -22,7 +22,8 @@ with
 end
 event void go_restart;
 
-#include "time-machine.ceu"
+#include "timemachine.ceu"
+#include "ui-timemachine.ceu"
 var TimeMachine tm;
 var UITimeMachine uitm with
     this.tm = tm;

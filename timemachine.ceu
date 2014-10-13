@@ -1,0 +1,259 @@
+input int  SDL_DT;
+input void SDL_REDRAW;
+input _SDL_KeyboardEvent* SDL_KEYDOWN;
+input _SDL_KeyboardEvent* SDL_KEYUP;
+
+native @nohold _queue_put();
+native @pure   _queue_get();
+
+class TimeMachine with
+    event void go_on, go_off;
+    event void ok_restart;
+
+    event (int,bool) go_seek;
+    event int  go_backward;
+    event int  go_forward;
+
+    var   bool seeking? = false;
+    event void ok;
+    #define TM_AWAIT_SEEK(me)  \
+        if me.seeking? then    \
+            await me.ok;       \
+        end
+
+    var int time_total = 0;
+    var int time_now;
+do
+    loop do
+        watching this.go_on do
+            par do
+                var int dt;
+                every dt in SDL_DT do
+                    _queue_put(_CEU_IN_SDL_DT, _EVTP(dt), 0, null);
+                    this.time_total = this.time_total + dt;
+                end
+            with
+                var _SDL_KeyboardEvent* key;
+                every key in SDL_KEYDOWN do
+                    _queue_put(_CEU_IN_SDL_KEYDOWN, _EVTP(null),
+                               sizeof(_SDL_KeyboardEvent), (byte*)key);
+                end
+            with
+                var _SDL_KeyboardEvent* key;
+                every key in SDL_KEYUP do
+                    _queue_put(_CEU_IN_SDL_KEYUP, _EVTP(null),
+                               sizeof(_SDL_KeyboardEvent), (byte*)key);
+                end
+            end
+        end
+
+        _CEU_TIMEMACHINE_ON = true;
+        finalize with
+            _CEU_TIMEMACHINE_ON = false;
+            this.time_total = time_now;     // drop future
+            _QUEUE_put = _QUEUE_get;
+            _QUEUE_tot = _QUEUE_get;
+        end
+
+        par/or do
+            await this.go_off;
+        with
+            var int time_req = -2;      // MAX
+            var int speed = -1;         // avoids emitting seeking? in the first run
+            event void e_backward;
+
+            par do
+                var bool bk? = false;
+                loop do
+                    par/or do
+                        (time_req,bk?) = await this.go_seek;
+                        TM_AWAIT_SEEK(this);
+                        emit this.ok_restart;
+                        this.time_now = 0;
+                        speed = 0;
+                        _queue_reset();
+                    with
+                        speed = await this.go_backward;
+                        TM_AWAIT_SEEK(this);
+                        emit e_backward;
+                    with
+                        speed = await this.go_forward;
+                        TM_AWAIT_SEEK(this);
+                        time_req = -1;  // MAX
+                    with
+                        if speed == 0 then
+                            this.seeking? = true;
+                        end
+                        async (&time_now, speed, time_req) do
+                            loop do
+                                if time_req == -2 then
+                                    time_now = this.time_total;    // MAX
+                                    break;  // first execution
+                                else/if time_req!=-1 and time_now>=time_req then
+                                    time_now = time_req;
+                                    break;  // reached the requested time
+                                end
+                                var _tceu_queue[] qu = _queue_get();
+                                if qu == null then
+                                    time_now = this.time_total;    // MAX
+                                    break;  // reached the present
+                                end
+                                if qu:evt == _CEU_IN_SDL_DT then
+                                    var int dt = qu:param.v;
+                                    emit (dt)ms;
+                                    emit SDL_DT => dt;
+                                    time_now = time_now + dt;
+                                    if speed > 0 then
+                                        _SDL_Delay(dt/speed);
+                                    else/if speed < 0 then
+                                        _SDL_Delay(dt*-speed);
+                                    end
+                                else/if qu:evt == _CEU_IN_SDL_KEYDOWN then
+                                    emit SDL_KEYDOWN => qu:param.ptr;
+                                else/if qu:evt == _CEU_IN_SDL_KEYUP then
+                                    emit SDL_KEYUP => qu:param.ptr;
+                                else
+                                    _assert(0);
+                                end
+                                if speed != 0 then
+                                    emit SDL_REDRAW;
+                                end
+                                _queue_nxt();
+                            end
+                            emit SDL_REDRAW;
+                        end
+                        if this.seeking? then
+                            this.seeking? = false;
+                            emit this.ok;
+                        end
+                        await FOREVER;
+                    end
+                end
+            with
+                var bool go? = false;
+                var int bk_speed;
+                loop do
+                    par/or do
+                        // start on this
+                        await e_backward;
+                        go? = true;
+                        bk_speed = speed;   // save, successive seeks will overwrite to 0
+                    with
+                        // stop on any of these
+                        par/or do
+                            var int t;
+                            var bool bk?;
+                            (t,bk?) = await go_seek until (not bk?);
+                        with
+                            await go_forward;
+                        end
+                        go? = false;
+                    with
+                        if not go? then
+                            await FOREVER;
+                        end
+                        var int now = this.time_now;
+                        loop i do
+                            if now < 0 then
+                                now = 0; // one last time to stop exactly at 0
+                            end
+                            emit this.go_seek => (now,true);
+                            par/and do
+                                await this.ok;
+                            with
+                                var int awt;
+                                if bk_speed > 0 then
+                                    awt = 30/bk_speed;
+                                else/if bk_speed < 0 then
+                                    awt = 30*-bk_speed;
+                                end
+                                await (awt)ms_;
+                            end
+                            if now == 0 then
+                                break;
+                            end
+                            now = now - 30;
+                        end
+                        await FOREVER;
+                    end
+                end
+            end
+        end
+    end
+end
+
+native do
+    #define EVTP(v) ((tceu_evtp)v)
+    #define QUEUE_MAX 3000000
+
+    typedef struct {
+        tceu_nevt evt;
+        tceu_evtp param;
+        s32       sz;
+        byte      buf[0];
+    } tceu_queue;
+
+    byte QUEUE[QUEUE_MAX];
+    int  QUEUE_tot = 0;
+    u32  QUEUE_get = 0;
+    u32  QUEUE_put = 0;
+
+    int queue_put (tceu_nevt evt, tceu_evtp param,
+                           int sz, byte* buf) {
+        int n = sizeof(tceu_queue) + sz;
+
+        if (QUEUE_tot+n > QUEUE_MAX)
+            assert(0);
+            //return 0;   /* TODO: add event FULL when QUEUE_MAX-1 */
+
+        /* An event+data must be continuous in the QUEUE. */
+        if (QUEUE_put+n+sizeof(tceu_queue)>=QUEUE_MAX && evt!=CEU_IN__NONE) {
+            int fill = QUEUE_MAX - QUEUE_put - sizeof(tceu_queue);
+            tceu_queue* qu = (tceu_queue*) &QUEUE[QUEUE_put];
+            qu->evt = CEU_IN__NONE;
+            qu->sz  = fill;
+            QUEUE_put += sizeof(tceu_queue) + fill;
+            QUEUE_tot += sizeof(tceu_queue) + fill;
+        }
+
+        {
+            tceu_queue* qu = (tceu_queue*) &QUEUE[QUEUE_put];
+            qu->evt = evt;
+            qu->sz  = sz;
+
+            if (sz == 0) {
+                /* "param" is self-contained */
+                qu->param = param;
+            } else {
+                /* "param" points to "buf" */
+                qu->param.ptr = qu->buf;
+                memcpy(qu->buf, buf, sz);
+            }
+        }
+        QUEUE_put += n;
+        QUEUE_tot += n;
+
+        return 1;
+    }
+
+    tceu_queue* queue_get (void) {
+        tceu_queue* ret;
+        if (QUEUE_get == QUEUE_put) {
+            ret = NULL;
+        } else {
+            assert(QUEUE_tot > 0);
+            ret = (tceu_queue*) &QUEUE[QUEUE_get];
+        }
+        return ret;
+    }
+
+    void queue_nxt (void) {
+        tceu_queue* qu = (tceu_queue*) &QUEUE[QUEUE_get];
+        //QUEUE_tot -= sizeof(tceu_queue) + qu->sz;
+        QUEUE_get += sizeof(tceu_queue) + qu->sz;
+    }
+
+    void queue_reset (void) {
+        QUEUE_get = 0;
+    }
+end
