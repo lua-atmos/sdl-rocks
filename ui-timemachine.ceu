@@ -106,7 +106,7 @@ do
             loop do
                 var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_
                                                until _SDL_Rect_vs_Mouse(&r,e);
-                emit tm.go_seek => ((tm.time_total * (e:x-x) / w), false);
+                emit tm.go_seek => ((tm.time_total * (e:x-x) / (float)w), false);
                 bk_speed = -4;
                 fw_speed = -4;
                 watching SDL_MOUSEBUTTONUP_ do
@@ -114,7 +114,7 @@ do
                         var int x_,y_;
                         _SDL_GetMouseState(&x_, &y_);
                         do
-                            var int to = (tm.time_total * (x_-x) / w);
+                            var int to = (tm.time_total * (x_-x) / (float)w);
                             if to < 0 then
                                 to = 0;
                             else/if to > tm.time_total then
@@ -169,7 +169,7 @@ do
         with
             every this.go_redraw do
                 do
-                    var int dx = ((float)tm.time_now)/tm.time_total * w;
+                    var int dx = tm.time_now/(float)tm.time_total * w;
                     _boxRGBA(_REN, x, y, x+w, y+h,
                                    0x88,0x88,0x88,0x88);
                     _filledCircleRGBA(_REN, x+dx-h/2, y+h/2, h,
