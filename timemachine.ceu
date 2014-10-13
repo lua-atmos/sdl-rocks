@@ -6,13 +6,22 @@ input _SDL_KeyboardEvent* SDL_KEYUP;
 native @nohold _queue_put();
 native @pure   _queue_get();
 
+native do
+    enum {
+        TM_REQ_PAUSE    = -1,
+        TM_REQ_BACKWARD = -2,
+        TM_REQ_FORWARD  = -3
+    };
+end
+
 class TimeMachine with
     event void go_on, go_off;
     event void ok_restart;
 
     event (int,bool) go_seek;
-    event int  go_backward;
-    event int  go_forward;
+    event void       go_pause;
+    event int        go_backward;
+    event int        go_forward;
 
     var   bool seeking? = false;
     event void ok;
@@ -48,30 +57,36 @@ do
         end
 
         _CEU_TIMEMACHINE_ON = true;
-        finalize with
-            _CEU_TIMEMACHINE_ON = false;
-            this.time_total = time_now;     // drop future
-            _QUEUE_put = _QUEUE_get;
-            _QUEUE_tot = _QUEUE_get;
-        end
 
         par/or do
+            finalize with
+                _CEU_TIMEMACHINE_ON = false;
+                this.time_total = time_now;     // drop future
+                _QUEUE_put = _QUEUE_get;
+                _QUEUE_tot = _QUEUE_get;
+            end
             await this.go_off;
         with
-            var int time_req = -2;      // MAX
-            var int speed = -1;         // avoids emitting seeking? in the first run
+            var int speed;
             event void e_backward;
+            var int time_req = _TM_REQ_PAUSE;
+            time_now = this.time_total; // start in the end (the current state)
+            _QUEUE_get = _QUEUE_put;
 
             par do
-                var bool bk? = false;
                 loop do
                     par/or do
-                        (time_req,bk?) = await this.go_seek;
+                        var bool xxx;   // dummy
+                        (time_req,xxx) = await this.go_seek;
                         TM_AWAIT_SEEK(this);
                         emit this.ok_restart;
                         this.time_now = 0;
                         speed = 0;
                         _queue_reset();
+                    with
+                        await this.go_pause;
+                        TM_AWAIT_SEEK(this);
+                        time_req = _TM_REQ_PAUSE;
                     with
                         speed = await this.go_backward;
                         TM_AWAIT_SEEK(this);
@@ -79,23 +94,25 @@ do
                     with
                         speed = await this.go_forward;
                         TM_AWAIT_SEEK(this);
-                        time_req = -1;  // MAX
+                        time_req = _TM_REQ_FORWARD;
                     with
                         if speed == 0 then
                             this.seeking? = true;
                         end
-                        async (&time_now, speed, time_req) do
+                        async (&time_now, speed, time_req, time_total) do
                             loop do
-                                if time_req == -2 then
-                                    time_now = this.time_total;    // MAX
-                                    break;  // first execution
-                                else/if time_req!=-1 and time_now>=time_req then
+                                if time_req == _TM_REQ_PAUSE then
+                                    break;  // already there
+                                else/if time_req == _TM_REQ_FORWARD then
+                                            // just let it go
+                                else/if time_now >= time_req then
                                     time_now = time_req;
                                     break;  // reached the requested time
                                 end
                                 var _tceu_queue[] qu = _queue_get();
                                 if qu == null then
-                                    time_now = this.time_total;    // MAX
+                                    time_now = time_total;
+                                    _assert(time_req == _TM_REQ_FORWARD);
                                     break;  // reached the present
                                 end
                                 if qu:evt == _CEU_IN_SDL_DT then
@@ -141,9 +158,12 @@ do
                     with
                         // stop on any of these
                         par/or do
-                            var int t;
+                            var int xxx;    // dummy
                             var bool bk?;
-                            (t,bk?) = await go_seek until (not bk?);
+                            (xxx,bk?) = await go_seek
+                                        until (not bk?);
+                        with
+                            await go_pause;
                         with
                             await go_forward;
                         end
@@ -157,7 +177,7 @@ do
                             if now < 0 then
                                 now = 0; // one last time to stop exactly at 0
                             end
-                            emit this.go_seek => (now,true);
+                            emit this.go_seek => (now, true);
                             par/and do
                                 await this.ok;
                             with

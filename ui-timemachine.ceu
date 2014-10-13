@@ -106,15 +106,18 @@ do
             loop do
                 var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_
                                                until _SDL_Rect_vs_Mouse(&r,e);
-                emit tm.go_seek => (tm.time_total * (e:x-x) / w, false);
+                emit tm.go_seek => ((tm.time_total * (e:x-x) / w), false);
                 bk_speed = -4;
                 fw_speed = -4;
                 watching SDL_MOUSEBUTTONUP_ do
-                    loop do
-                            await SDL_MOUSEMOTION_;
+                    every SDL_MOUSEMOTION_ do
                         var int x_,y_;
                         _SDL_GetMouseState(&x_, &y_);
-                        emit tm.go_seek => (tm.time_total * (x_-x) / w, false);
+                        var int to = (tm.time_total * (x_-x) / w);
+                        if to < 0 then
+                            to = 0;
+                        end
+                        emit tm.go_seek => (to, false);
                     end
                 end
             end
@@ -139,7 +142,7 @@ do
                             bk_speed = 1;   // skip seek speed 0
                         end
                     else/if i == 2 then                     // PAUSE
-                        emit tm.go_seek => (tm.time_now, false);
+                        emit tm.go_pause;
                     else/if i == 3 then                     // PLAY
                         emit tm.go_forward => 1;
                     else/if i == 4 then                     // FORWARD
