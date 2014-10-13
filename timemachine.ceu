@@ -31,8 +31,11 @@ class TimeMachine with
     var int time_total = 0;
     var int time_now;
 do
+    _queue_reset();
+    _snap_reset();
+
     _snap_put(_QUEUE_put, this.time_total);     // 0, 0
-    var int next_snap = 30000;
+    var int next_snap = _SNAP_ms;
     loop do
         watching this.go_on do
             par do
@@ -41,7 +44,7 @@ do
                     _queue_put(_CEU_IN_SDL_DT, _EVTP(dt), 0, null);
                     this.time_total = this.time_total + dt;
                     if this.time_total >= next_snap then
-                        next_snap = next_snap + 30000;
+                        next_snap = next_snap + _SNAP_ms;
                         _snap_put(_QUEUE_put, this.time_total);
                     end
                 end
@@ -208,7 +211,10 @@ end
 
 native do
     #define EVTP(v) ((tceu_evtp)v)
-    #define QUEUE_MAX 3000000
+    #define QUEUE_MAX 60*60*1000/30*2   // 60min*60sec*1000ms=(1h in ms)
+                                        // /30=(1h in frames) *2events/frame
+        // 1h of events with 2 events/frame
+        // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 
     typedef struct {
         tceu_nevt evt;

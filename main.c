@@ -47,26 +47,32 @@ s32 WCLOCK_nxt;
 #define ceu_out_wclock_set(us) WCLOCK_nxt = us;
 #endif
 
+#ifdef CEU_TIMEMACHINE
+#define SNAP_ms 60000       // 60s, 1min, 30*60=1800frames
+#define SNAP_N     60       //  1h
 char* SNAP_data;
-void snap_put (u32 queue, u32 time);
-u32 snap_get (u32 time);
+void snap_put   (u32 queue, u32 time);
+u32  snap_get   (u32 time);
+void snap_reset (void);
+#endif
 
 #include "_ceu_app.c"
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifdef CEU_TIMEMACHINE
     typedef struct {
         CEU_App data;
         u32     time;
         u32     queue;
     } tceu_snap;
 
-    tceu_snap SNAP[1000];
+    tceu_snap SNAP[SNAP_N];
 
     int SNAP_put = 0;
 
     void snap_put (u32 queue, u32 time) {
-        assert(SNAP_put < 1000);
+        assert(SNAP_put < SNAP_N);
         SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
         SNAP[SNAP_put].queue = queue;
         SNAP[SNAP_put].time  = time;
@@ -83,6 +89,11 @@ u32 snap_get (u32 time);
         QUEUE_get = SNAP[i].queue;
         return SNAP[i].time;
     }
+
+    void snap_reset (void) {
+        SNAP_put = 0;
+    }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
