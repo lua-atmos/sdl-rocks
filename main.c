@@ -47,57 +47,7 @@ s32 WCLOCK_nxt;
 #define ceu_out_wclock_set(us) WCLOCK_nxt = us;
 #endif
 
-#ifdef CEU_TIMEMACHINE
-#define SNAP_ms 10000       // 10s = 30*10 = at most 300 frames to traverse
-#define SNAP_N   6*60       // 10s*6*60=1h  (360*56K-rocks = 1.8Mb)
-char* SNAP_data;
-void snap_put   (u32 queue, u32 time);
-u32  snap_get   (u32 time);
-void snap_reset (void);
-#endif
-
 #include "_ceu_app.c"
-
-///////////////////////////////////////////////////////////////////////////////
-
-#ifdef CEU_TIMEMACHINE
-    typedef struct {
-        CEU_App data;
-        u32     time;
-        u32     queue;
-    } tceu_snap;
-
-    tceu_snap SNAP[SNAP_N];
-
-    int SNAP_put = 0;
-
-    void snap_put (u32 queue, u32 time) {
-        assert(SNAP_put < SNAP_N);
-        SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
-        SNAP[SNAP_put].queue = queue;
-        SNAP[SNAP_put].time  = time;
-//printf("PUT %d\n", SNAP_put);
-        SNAP_put++;
-    }
-
-    u32 snap_get (u32 time) {
-        int i;  // SNAP[0] is guaranteed to succeed
-        for (i=SNAP_put-1; i>=0; i--) {
-            if (SNAP[i].time <= time)
-                break;
-        }
-        *((CEU_App*)SNAP_data) = SNAP[i].data;
-        QUEUE_get = SNAP[i].queue;
-//printf("GET %d %d\n", i, time);
-        return SNAP[i].time;
-    }
-
-    void snap_reset (void) {
-        SNAP_put = 0;
-    }
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 
 #ifdef __ANDROID__
 int SDL_main (int argc, char *argv[])

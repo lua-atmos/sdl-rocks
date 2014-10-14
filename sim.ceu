@@ -41,12 +41,13 @@ do
     emit this.ok => ret;
 end
 var App app;
-_SNAP_data = &app;
 _printf("APP %d\n", sizeof(_CEU_App));
 
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
-var TimeMachine tm;
+var TimeMachine tm with
+    this.app = app;
+end;
 var UITimeMachine uitm with
     this.tm = tm;
 end;
