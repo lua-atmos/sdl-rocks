@@ -75,7 +75,7 @@ do
             await this.go_off;
         with
             var int speed;
-            event void e_backward;
+            event int e_backward;
             var int time_req = _TM_REQ_PAUSE;
             time_now = this.time_total; // start in the end (the current state)
             _QUEUE_get = _QUEUE_put;
@@ -99,7 +99,7 @@ do
                         var int s = await this.go_backward;
                         TM_AWAIT_SEEK(this);
                         speed = s;
-                        emit e_backward;
+                        emit e_backward => s;
                     with
                         var int s = await this.go_forward;
                         TM_AWAIT_SEEK(this);
@@ -159,9 +159,8 @@ do
                     var bool me? = false;
                     par/or do
                         // start on this
-                        await e_backward;
+                        bk_speed = await e_backward;
                         go? = true;
-                        bk_speed = speed;   // save, successive seeks will overwrite to 0
                     with
                         // stop on any of these
                         par/or do
@@ -193,7 +192,11 @@ do
                                     awt = 30/bk_speed;
                                 else/if bk_speed < 0 then
                                     awt = 30*-bk_speed;
+                                else
+                                    _assert(0);
                                 end
+//awt = 15;
+//_printf("AWT = %d\n", awt);
                                 await (awt)ms_;
                             end
                             if now == 0 then
