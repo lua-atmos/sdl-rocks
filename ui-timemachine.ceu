@@ -106,7 +106,7 @@ do
             loop do
                 var _SDL_MouseButtonEvent* e = await SDL_MOUSEBUTTONDOWN_
                                                until _SDL_Rect_vs_Mouse(&r,e);
-                emit tm.go_seek => ((tm.time_total * (e:x-x) / (float)w), false);
+                emit tm.go_seek => (tm.time_total * (e:x-x) / (float)w);
                 bk_speed = -4;
                 fw_speed = -4;
                 watching SDL_MOUSEBUTTONUP_ do
@@ -120,7 +120,7 @@ do
                             else/if to > tm.time_total then
                                 to = tm.time_total;
                             end
-                            emit tm.go_seek => (to, false);
+                            emit tm.go_seek => to;
                         end
                     end
                 end
@@ -138,7 +138,7 @@ do
                 e = await SDL_MOUSEBUTTONUP_;
                 if _SDL_Rect_vs_Mouse(&rcs[i], e) then
                     if i == 0 then                          // FIRST
-                        emit tm.go_seek => (0, false);
+                        emit tm.go_seek => 0;
                     else/if i == 1 then                     // REWIND
                         emit tm.go_backward => bk_speed;
                         bk_speed = bk_speed + 1;

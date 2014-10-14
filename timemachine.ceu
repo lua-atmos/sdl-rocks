@@ -16,10 +16,10 @@ class TimeMachine with
     event void go_on, go_off;
     event void ok_restart;
 
-    event (int,bool) go_seek;
-    event void       go_pause;
-    event int        go_backward;
-    event int        go_forward;
+    event int  go_seek;
+    event void go_pause;
+    event int  go_backward;
+    event int  go_forward;
 
     var   bool seeking? = false;
     event void ok;
@@ -83,9 +83,8 @@ do
             par do
                 loop do
                     par/or do
-                        var bool xxx;   // dummy
-                        var int tmp;    // avoid conflict w/ ongoing time_req
-                        (tmp,xxx) = await this.go_seek;
+                        var int tmp = await this.go_seek;
+                                    // avoid conflict w/ ongoing time_req
                         TM_AWAIT_SEEK(this);
                         time_req = tmp;
                         this.time_now = _snap_get(time_req);
@@ -157,6 +156,7 @@ do
                 var bool go? = false;
                 var int bk_speed;
                 loop do
+                    var bool me? = false;
                     par/or do
                         // start on this
                         await e_backward;
@@ -165,10 +165,7 @@ do
                     with
                         // stop on any of these
                         par/or do
-                            var int xxx;    // dummy
-                            var bool bk?;
-                            (xxx,bk?) = await go_seek
-                                        until (not bk?);
+                            await go_seek until (not me?);
                         with
                             await go_pause;
                         with
@@ -181,10 +178,13 @@ do
                         end
                         var int now = this.time_now;
                         loop i do
+                            now = now - 30;
                             if now < 0 then
                                 now = 0; // one last time to stop exactly at 0
                             end
-                            emit this.go_seek => (now, true);
+                            me? = true;
+                            emit this.go_seek => now;   // don't awake myself
+                            me? = false;
                             par/and do
                                 await this.ok;
                             with
@@ -199,7 +199,6 @@ do
                             if now == 0 then
                                 break;
                             end
-                            now = now - 30;
                         end
                         await FOREVER;
                     end
