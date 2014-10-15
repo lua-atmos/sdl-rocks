@@ -1,8 +1,10 @@
 // - bug play no inicio
 // - async vs async_ (testar async no jogo!)
 // - tests para pause/async
+// - bug pontuacao!
 
 input void SDL_QUIT_;
+input int  SDL_DT_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN_;
 input _SDL_KeyboardEvent* SDL_KEYUP_;
 
@@ -26,6 +28,9 @@ end
 native do
     unsigned int* RAND_SEED;
     #define rand() rand_r(RAND_SEED)
+
+    int TIME1 = 3;
+    int TIME2 = 3;
 end
 
 class App with
@@ -70,7 +75,8 @@ with
             emit uitm.go_off;
             emit tm.go_off;
             emit in_tm? => false;
-        else/if sym == _SDLK_LALT then
+        else/if sym == _SDLK_LALT and _TIME1>0 then
+            _TIME1 = _TIME1 - 1;
             blur? = true;
             emit in_tm? => true;
             emit tm.go_on;
@@ -85,7 +91,15 @@ with
                     else/if sym2 == _SDLK_RIGHT then
                         emit tm.go_forward => 2;
                     end
-                    key = await SDL_KEYUP_ until key:keysym.sym == sym2;
+                    par/or do
+                        key = await SDL_KEYUP_ until key:keysym.sym == sym2;
+                    with
+                        every tm.ok do
+                            if tm.time_total-tm.time_now > 2000 then
+                                break;
+                            end
+                        end
+                    end
                     emit tm.go_pause;
                 end
             end

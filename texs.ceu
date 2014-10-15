@@ -64,8 +64,13 @@ with
 end
 
 finalize
+#ifdef CEU_TIMEMACHINE
+    _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "T",
+                                        &_colors.white, null);
+#else
     _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
                                         &_colors.white, null);
+#endif
 with
 end
 
