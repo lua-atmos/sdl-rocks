@@ -48,6 +48,9 @@ end
 var App app;
 _printf("APP %d\n", sizeof(_CEU_App));
 
+/* The "Time Machine" must be declared after "The Application".
+ * The "tm" must record the events *after* the "app" reacts to them.
+ */
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
 var TimeMachine tm with
@@ -92,7 +95,7 @@ do
             with
                 every global:tm_.ok do
                     if global:tm_.time_total-global:tm_.time_now > 2000 then
-                        break;
+                        //break;
                     end
                 end
             end
@@ -110,6 +113,7 @@ end
 
 par/or do
     await SDL_QUIT_;
+    //_dump();
 with
     loop do
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
