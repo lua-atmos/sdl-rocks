@@ -75,7 +75,6 @@ do
                 _QUEUE_put = _QUEUE_get;
                 _QUEUE_tot = _QUEUE_get;
                 next_snap = _snap_set(time_now);
-//_printf("NEXT = %d\n", next_snap);
             end
             await this.go_off;
         with
@@ -94,19 +93,16 @@ do
                         time_req = tmp;
                         this.time_now = _snap_get(time_req);
                         speed = 0;
-//_printf("=== SEEK: [%d] => [%d]\n", time_now, time_req);
                         //emit this.ok_restart;
                         //_queue_reset();
                     with
                         await this.go_pause;
                         TM_AWAIT_SEEK(this);
-//_printf("=== PAUSE ===\n");
                         time_req = _TM_REQ_PAUSE;
                     with
                         var int s = await this.go_backward;
                         TM_AWAIT_SEEK(this);
                         speed = s;
-//_printf("=== BACKWARDS: [%d] => ??\n", time_now);
                         emit e_backward => s;
                         await FOREVER;          // e_backward emits go_seek
                     with
@@ -114,49 +110,27 @@ do
                         TM_AWAIT_SEEK(this);
                         speed    = s;
                         time_req = this.time_total;
-//_printf("=== FORWARD: [%d] => [%d]\n", time_now, time_req);
                     with
                         if speed == 0 then
                             this.seeking? = true;
                         end
                         async (&time_now, speed, time_req, time_total) do
-//_printf("=== seek (%d => %d || %d) ===\n", time_now, time_req, time_total);
                             loop do
                                 if time_req == _TM_REQ_PAUSE then
-//_printf("=== break: pause ===\n");
                                     break;  // already there
-                                else/if time_now > time_req then
-// TODO: remove this branch
-_assert(0);
-                                    // > possible for bar/backwards imprecision
-                                    // do: accept the overflow
-                                    // don't: force with "time_now = time_req;"
-/*
-if time_now > time_total then
-    //_printf("[%d] %d => %d\n", time_req, time_now, time_total);
-    //_printf("SNAP[1] = %d\n", _SNAP[_SNAP_PUT-1].time);
-end
-*/
-                                    _assert(time_now <= time_total);
-                                    break;  // reached the requested time
                                 end
-var int e = _QUEUE_get;
+                                var int get = _QUEUE_get;
                                 var _tceu_queue[] qu = _queue_get();
-var int f = _QUEUE_get;
                                 if qu == null then
-//_printf("=== break: e=null ===\n");
                                     break;
                                 end
-//_printf("|\t[get=%d]  evt=%d v=%d\n", e, qu:evt, qu:param.v);
                                 //_assert(qu != null);
                                 if qu:evt == _CEU_IN_SDL_DT then
                                     var int dt = qu:param.v;
                                     if time_now+dt > time_req then
-                                        _QUEUE_get = e;
-//_printf("=== break: >time_req ===\n");
+                                        _QUEUE_get = get;   // undo get
                                         break;  // stop before this emission
                                     end
-//_printf("[%d] => dt=%d , %d-%d\n", time_now, dt, e, f);
                                     time_now = time_now + dt;
                                     emit (dt)ms;
                                     emit SDL_DT => dt;
@@ -166,13 +140,10 @@ var int f = _QUEUE_get;
                                         _SDL_Delay(dt*-speed);
                                     end
                                 else/if qu:evt == _CEU_IN_SDL_KEYDOWN then
-//_printf("[%d] => dw=%d , %d-%d\n", time_now, 0, e, f);
                                     emit SDL_KEYDOWN => qu:param.ptr;
                                 else/if qu:evt == _CEU_IN_SDL_KEYUP then
-//_printf("[%d] => up=%d , %d-%d\n", time_now, 0, e, f);
                                     emit SDL_KEYUP => qu:param.ptr;
                                 else
-                                    //_printf("INVALID EVENT: %d\n", qu:evt);
                                     _assert(0);
                                 end
                                 if speed != 0 then
@@ -181,7 +152,6 @@ var int f = _QUEUE_get;
                             end
                             emit SDL_REDRAW;
                         end
-//_printf("=== EO-Seek ===\n");
                         if this.seeking? then
                             this.seeking? = false;
                             emit this.ok;
@@ -213,7 +183,6 @@ var int f = _QUEUE_get;
                             await FOREVER;
                         end
                         var int now = this.time_now;
-//_printf("=======back from now [%d]\n", now);
                         loop i do
                             now = now - 30;
                             if now < 0 then
@@ -231,12 +200,8 @@ var int f = _QUEUE_get;
                                 else/if bk_speed < 0 then
                                     awt = 30*-bk_speed;
                                 else
-                                    //_printf("get=%d put=%d\n", _QUEUE_get, 
-                                    //_QUEUE_put);
                                     _assert(0);
                                 end
-//awt = 15;
-//_printf("AWT = %d\n", awt);
                                 await (awt)ms_;
                             end
                             if now == 0 then
@@ -344,7 +309,6 @@ var int f = _QUEUE_get;
             SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
             SNAP[SNAP_put].queue = queue;
             SNAP[SNAP_put].time  = time;
-//printf("PUT %d => %d\n", SNAP_put, time);
             SNAP_put++;
         }
 
@@ -353,7 +317,6 @@ var int f = _QUEUE_get;
             for (i=0; i<SNAP_put; i++) {
                 if (SNAP[i].time > time) {
                     SNAP_put = i;
-//printf("SET %d\n", i);
                     return SNAP[i].time;
                 }
             }
@@ -363,36 +326,13 @@ var int f = _QUEUE_get;
         u32 snap_get (u32 time) {
             int i;  // SNAP[0] is guaranteed to succeed
             for (i=SNAP_put-1; i>=0; i--) {
-//printf("SNAP[%d]=%d\n",i,SNAP[i].time);
                 if (SNAP[i].time <= time) {
                     *((CEU_App*)SNAP_data) = SNAP[i].data;
                     QUEUE_get = SNAP[i].queue;
-//printf("GET %d => %d\n", i, time);
                     return SNAP[i].time;
                 }
             }
             assert(0);
         }
-
-/*
-        void dump () {
-            int i;
-            for (i=0; i<SNAP_put; i++) {
-                tceu_snap snap = SNAP[i];
-                snap_get(snap.time);
-                //printf("SNAP[%d]  time=%d  queue=%d\n", i, snap.time, snap.queue);
-                tceu_queue* qu;
-                u32 get = QUEUE_get;
-                int time = snap.time;
-                while (qu = queue_get()) {
-                    //printf("|\t[get=%d] [now=%d]  %d=>%d\n",
-                            //get, time, qu->evt, qu->param);
-                    if (qu->evt == CEU_IN_SDL_DT)
-                        time += qu->param.v;
-                    get = QUEUE_get;
-                }
-            }
-        }
-*/
     end
 end

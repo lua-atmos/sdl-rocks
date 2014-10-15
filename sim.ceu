@@ -113,7 +113,6 @@ end
 
 par/or do
     await SDL_QUIT_;
-    //_dump();
 with
     loop do
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
