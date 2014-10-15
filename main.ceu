@@ -257,7 +257,7 @@ end
  */
 #include "fnts.ceu"
 #include "texs.ceu"
-//#include "snds.ceu"
+#include "snds.ceu"
 
 /*
  * The outermost "par/or" that handles all game activities in parallel.
@@ -359,7 +359,7 @@ with
             end
             // After the user interaction, play the starting sound effect 
             // (_SND_START, loaded in "snds.ceu").
-            //_Mix_PlayChannel(-1, _SND_START, 0);
+            _Mix_PlayChannel(-1, _SND_START, 0);
         end
             /*
              * The "do-end" termination makes all memory needed for data (e.g.  
@@ -498,6 +498,8 @@ with
                 await ship2.ok_killed;      // if ship2 is destroyed,
                 emit points1.go_inc;        //  increment points1
             with
+/*
+                // TODO: too ugly!!
                 loop do
                     var int x,y;
                     var int id;
@@ -529,6 +531,7 @@ with
                     end
                 end
             with
+*/
                 /*
                  * Period to create a new meteor in the game.
                  * It starts with 2s but goes down continuously.
@@ -641,13 +644,13 @@ with
                                getVS(_OBJ_FIRE2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_ROCK) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
-                                    //_Mix_PlayChannel(-1, _SND_ROCK, 0);
+                                    _Mix_PlayChannel(-1, _SND_ROCK, 0);
                                 end
                             else/if getVS(_OBJ_SHIP1, &oo1, &oo2) or
                                     getVS(_OBJ_SHIP2, &oo1, &oo2) then
                                 if (oo2:id >= _OBJ_BONUS_LIFE) and
                                    (oo2:id <= _OBJ_BONUS_FIRE) then
-                                    //_Mix_PlayChannel(-1, _SND_BONUS, 0);
+                                    _Mix_PlayChannel(-1, _SND_BONUS, 0);
                                 end
                             end
 

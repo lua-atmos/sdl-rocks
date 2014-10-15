@@ -139,6 +139,7 @@ do
                                 else/if qu:evt == _CEU_IN_SDL_KEYUP then
                                     emit SDL_KEYUP => qu:param.ptr;
                                 else
+                                    _printf("INVALID EVENT: %d\n", qu:evt);
                                     _assert(0);
                                 end
                                 if speed != 0 then
@@ -214,10 +215,6 @@ do
 
     native do
         #define EVTP(v) ((tceu_evtp)v)
-        #define QUEUE_MAX 60*60*1000/30*2   // 60min*60sec*1000ms=(1h in ms)
-                                            // /30=(1h in frames) *2events/frame
-            // 1h of events with 2 events/frame
-            // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 
         typedef struct {
             tceu_nevt evt;
@@ -225,6 +222,15 @@ do
             s32       sz;
             byte      buf[0];
         } tceu_queue;
+
+        #define QUEUE_MAX 60*60*1000           \
+                          * sizeof(tceu_queue) \
+                          / 30 * 2
+                            // 60min*60sec*1000ms=(1h in ms)
+                            // * minimum size of an event
+                            // 30FPS * 2events/frame
+            // 1h of events with 2 events/frame
+            // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 
         byte QUEUE[QUEUE_MAX];
         int  QUEUE_tot = 0;
@@ -241,6 +247,7 @@ do
 
             /* An event+data must be continuous in the QUEUE. */
             if (QUEUE_put+n+sizeof(tceu_queue)>=QUEUE_MAX && evt!=CEU_IN__NONE) {
+                assert(0);
                 int fill = QUEUE_MAX - QUEUE_put - sizeof(tceu_queue);
                 tceu_queue* qu = (tceu_queue*) &QUEUE[QUEUE_put];
                 qu->evt = CEU_IN__NONE;
@@ -304,7 +311,7 @@ do
             SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
             SNAP[SNAP_put].queue = queue;
             SNAP[SNAP_put].time  = time;
-    //printf("PUT %d\n", SNAP_put);
+printf("PUT %d\n", SNAP_put);
             SNAP_put++;
         }
 
@@ -316,7 +323,7 @@ do
             }
             *((CEU_App*)SNAP_data) = SNAP[i].data;
             QUEUE_get = SNAP[i].queue;
-    //printf("GET %d %d\n", i, time);
+printf("GET %d %d\n", i, time);
             return SNAP[i].time;
         }
 

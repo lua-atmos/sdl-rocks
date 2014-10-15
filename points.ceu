@@ -12,41 +12,32 @@ do
      * Initial value, on requested position.
      */
     var int v = 0;
+    var int v0=0, v1=0, v2=0;
+
     var _SDL_Rect rect;
         rect.x = this.pos.x;    // centered position
         rect.y = this.pos.y;    // centered position
+    _SDL_QueryTexture(_TEX_NUM[0], null, null, &rect.w, &rect.h);
 
-    loop do
-        /*
-         * Transforms the current points "v" into a graphical texture to draw 
-         * on screen.
-         */
-        var _SDL_Texture[] tex;
-        var char[10] str;
-        _sprintf(str, "%d", v);
-        finalize
-            tex = _SDL_text2texture(_REN, _FONT_BIG, str,
-                                        &_colors.white, null);
-        with
-            _SDL_DestroyTexture(tex);
-        end
-        _SDL_QueryTexture(tex, null, null, &rect.w, &rect.h);
-
-        /*
-         * While the value remains the same, redraw the created texture on 
-         * every frame.
-         * When a "go_inc" is requested, terminate the "par/or" and restart the 
-         * outer "loop", with the new value.
-         */
-        par/or do
-            await this.go_inc;
+    par do
+        every this.go_inc do
             v = v + 1;
-        with
+            v = v % 1000;
+            v0 =     v % 10;
+            v1 =  v/10 % 10;
+            v2 = v/100 % 10;
+        end
+    with
+        every SDL_REDRAW do
             var _SDL_Rect r = rect;
-                r.x = r.x - r.w/2;
-                r.y = r.y - r.h/2;
-            every SDL_REDRAW do
-                _SDL_RenderCopy(_REN, tex, null, &r);
+            _SDL_RenderCopy(_REN, _TEX_NUM[v0], null, &r);
+            if v >= 10 then
+                r.x = r.x - r.w;
+                _SDL_RenderCopy(_REN, _TEX_NUM[v1], null, &r);
+                if v >= 100 then
+                    r.x = r.x - r.w;
+                    _SDL_RenderCopy(_REN, _TEX_NUM[v2], null, &r);
+                end
             end
         end
     end

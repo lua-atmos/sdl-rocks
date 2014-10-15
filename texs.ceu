@@ -14,6 +14,7 @@ native do
     SDL_Texture* TEX_BONUS_HITS = NULL;     // hit-points bonus (H)
     SDL_Texture* TEX_BONUS_FIRE = NULL;     // space fire bonus (F)
     SDL_Texture* TEX_BOMB[3];               // 3-2-1 bomb
+    SDL_Texture* TEX_NUM[10];
 end
 
 /*
@@ -21,89 +22,6 @@ end
  * The "finalize" clause ensures that each image is properly destroyed on 
  * program termination.
  */
-
-#ifdef CEU_TIMEMACHINE
-
-if _TEX_BG == null then
-
-finalize
-   _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
-with
-end
-
-finalize
-   _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
-                             &_colors.white, null);
-with
-end
-
-finalize
-   _TEX_SHIP1 = _IMG_LoadTexture(_REN, "imgs/ship_1.gif");
-with
-end
-
-finalize
-   _TEX_SHIP2 = _IMG_LoadTexture(_REN, "imgs/ship_2.gif");
-with
-end
-
-finalize
-   _TEX_ROCK = _IMG_LoadTexture(_REN, "imgs/rock_big.gif");
-with
-end
-
-finalize
-   _TEX_rock = _IMG_LoadTexture(_REN, "imgs/rock_small.gif");
-with
-end
-
-finalize
-   _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
-                                        &_colors.white, null);
-with
-end
-
-finalize
-#ifdef CEU_TIMEMACHINE
-    _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "T",
-                                        &_colors.white, null);
-#else
-    _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
-                                        &_colors.white, null);
-#endif
-with
-end
-
-finalize
-   _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
-                                        &_colors.white, null);
-with
-end
-
-finalize
-   _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
-                                        &_colors.white, null);
-with
-end
-
-loop i in 3 do
-    var char[5] str;
-    _sprintf(str, "%d", i+1);
-    finalize
-        _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                         &_colors.white, null);
-    with
-        // finalize below
-    end
-end
-
-loop i in 3 do
-    _assert(_TEX_BOMB[i] != null);
-end
-
-end
-
-#else
 
 finalize
    _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
@@ -189,4 +107,21 @@ loop i in 3 do
     _assert(_TEX_BOMB[i] != null);
 end
 
-#endif
+loop i in 10 do
+    var char[5] str;
+    _sprintf(str, "%d", i);
+    finalize
+        _TEX_NUM[i] = _SDL_text2texture(_REN, _FONT_BIG, str,
+                                        &_colors.white, null);
+    with
+        // finalize below
+    end
+end
+finalize with
+    loop i in 10 do
+        _SDL_DestroyTexture(_TEX_NUM[i]);
+    end
+end
+loop i in 10 do
+    _assert(_TEX_NUM[i] != null);
+end

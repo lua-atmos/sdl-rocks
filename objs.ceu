@@ -194,7 +194,7 @@ do
                 end
 
                 // Play the "hit" sound effect:
-                //_Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
+                _Mix_PlayChannel(-1, _SND_HIT_DEC, 0);
 
                 watching 2s do
                     every 100ms do
@@ -267,7 +267,11 @@ do
             // Increment "n_shields" on every "S" bonus:
             every this.go_S do
                 if *p_shields < _SHIP_SHIELDS_MAX then
+#ifdef CEU_TIMEMACHINE
+if not _CEU_TIMEMACHINE_ON then
                     *p_shields = *p_shields + 1;
+end
+#endif
                 end
             end
         with
@@ -290,7 +294,7 @@ do
                 end
 
                 // Play the explosion sound effect:
-                //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+                _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
                 
                 /*
                  * Explosion animation:
@@ -324,7 +328,7 @@ do
         with
             loop do
                 await this.controller.ok_missile
-                ;//until (*p_shields > 0);
+                until (*p_shields > 0);
                 *p_shields = *p_shields - 1;      // decrement "n_shields"
                 emit this.ok_missile;
             end
@@ -400,7 +404,7 @@ do
                 end;
                 if new != null then
                     // Play shoot sound effect if spawn was successful:
-                    //_Mix_PlayChannel(-1, _SND_FIRE, 0);
+                    _Mix_PlayChannel(-1, _SND_FIRE, 0);
                     n_fires = n_fires - 1;
                 end
             end
@@ -492,7 +496,7 @@ do
     end
 
     // explode 40w/s
-    //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+    _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
     watching 100ms do
         par do
             var float d = dim;
@@ -756,7 +760,7 @@ do
         this.id = _OBJ_EXPLOSION;
 
         // explode 40w/s
-        //_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+        _Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
         watching 200ms do
             var float d = this.rect.w;
             var float v = 40 * this.rect.w;
