@@ -53,12 +53,6 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
  */
 native do
     /*
-     * We have a unique global renderer for the game.
-     */
-    SDL_Renderer* REN = NULL;
-    int REN_W, REN_H;
-
-    /*
      * Identification for each type of graphical object in the game.
      */
     enum {
@@ -231,6 +225,15 @@ _srand(_time(null));    // initialize the game "randomizer"
  */
 
 #ifndef CEU_TIMEMACHINE
+
+native do
+    /*
+     * We have a unique global renderer for the game.
+     */
+    SDL_Renderer* REN = NULL;
+    int REN_W, REN_H;
+end
+
 var _SDL_Window* win;
     finalize
         win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
@@ -247,6 +250,7 @@ finalize
 with
     _SDL_DestroyRenderer(_REN);
 end
+
 #endif
 
 /*

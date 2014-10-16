@@ -1,12 +1,37 @@
 // - bug play no inicio
 // - async vs async_ (testar async no jogo!)
 // - tests para pause/async
-// - bug pontuacao!
+// - outros jogos
+// - blog:
+//      - replay
+//          - debug, na velocidade que quiser, seek, retomada em qq ponto
+//          - replay em jogo
+//      - simulacao
+//          - velocidade infinita para testes
+//          - controle de NPC com interface equivalente
+//              - após morte
+//              - single player
+//      - mecanica
+//          - exige 1st-class-time-machine
+//      - Como?
+//          - evento de proxy
+//          - start/stop
+//          - gravacao em tempo real
+//          - save/restore all state
+//              - ceu é estático, mesmo p/ instâncias dinâmicas
+//          - grava estado inteiro de X em X ms
+//          - entre intervalos, usa eventos gravados
+//          - teoricamente, só precisa dos eventos
 
 input void SDL_QUIT_;
 input int  SDL_DT_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN_;
 input _SDL_KeyboardEvent* SDL_KEYUP_;
+
+native do
+    SDL_Renderer* REN = NULL;
+    int REN_W, REN_H;
+end
 
 var _SDL_Window* win;
     finalize
