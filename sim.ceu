@@ -120,7 +120,7 @@ do
             with
                 every global:tm_.ok do
                     if global:tm_.time_total-global:tm_.time_now > 2000 then
-                        //break;
+                        break;
                     end
                 end
             end
@@ -151,14 +151,14 @@ with
             emit tm.go_off;
             emit in_tm? => false;
         else/if sym==_SDLK_LALT and _TIME1>0 then
-            //_TIME1 = _TIME1 - 1;
+            _TIME1 = _TIME1 - 1;
             do TimeKeyController with
                 this.k_alt   = _SDLK_LALT;
                 this.k_left  = _SDLK_a;
                 this.k_right = _SDLK_d;
             end;
         else/if sym==_SDLK_RALT and _TIME2>0 then
-            //_TIME2 = _TIME2 - 1;
+            _TIME2 = _TIME2 - 1;
             do TimeKeyController with
                 this.k_alt   = _SDLK_RALT;
                 this.k_left  = _SDLK_LEFT;
