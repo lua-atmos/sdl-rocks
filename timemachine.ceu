@@ -1,8 +1,3 @@
-input int  SDL_DT;
-input void SDL_REDRAW;
-input _SDL_KeyboardEvent* SDL_KEYDOWN;
-input _SDL_KeyboardEvent* SDL_KEYUP;
-
 native @nohold _queue_put();
 native @pure   _queue_get();
 
@@ -12,8 +7,22 @@ native do
     };
 end
 
+#ifndef TM_INPUT_DT
+#error Missing "TM_INPUT_DT"
+#endif
+#ifndef TM_INPUT_FRAME
+#error Missing "TM_INPUT_FRAME"
+#endif
+
+interface IIOTimeMachine with
+    event void         go_on;
+    event void         go_off;
+    event _tceu_queue* go_queue;
+end
+
 class TimeMachine with
     var App& app;
+    var IIOTimeMachine& io;
     event void go_on, go_off;
     //event void ok_restart;
 
@@ -23,10 +32,10 @@ class TimeMachine with
     event int  go_forward;
 
     var   bool seeking? = false;
-    event void ok;
+    event void ok_seek;
     #define TM_AWAIT_SEEK(me)  \
         if me.seeking? then    \
-            await me.ok;       \
+            await me.ok_seek;  \
         end
 
     var int time_total = 0;
@@ -41,34 +50,21 @@ do
 
     loop do
         watching this.go_on do
-            par do
-                var int dt;
-                every dt in SDL_DT do
-                    this.time_total = this.time_total + dt;
+            var int dt;
+            every dt in TM_INPUT_DT do
+                this.time_total = this.time_total + dt;
 //_printf("DT %d %d\n", this.time_total, this.app.v);
-                    _assert(dt > 0);
-                    _queue_put(_CEU_IN__WCLOCK, _CEU_EVTP(dt), 0, null);
-                    if _SNAP_ms!=0 and this.time_total>=next_snap then
-                        next_snap = next_snap + _SNAP_ms;
-                        _snap_put(_QUEUE_put, this.time_total);
-                    end
-                end
-            with
-                var _SDL_KeyboardEvent* key;
-                every key in SDL_KEYDOWN do
-                    _queue_put(_CEU_IN_SDL_KEYDOWN, _CEU_EVTP(null),
-                               sizeof(_SDL_KeyboardEvent), (byte*)key);
-                end
-            with
-                var _SDL_KeyboardEvent* key;
-                every key in SDL_KEYUP do
-                    _queue_put(_CEU_IN_SDL_KEYUP, _CEU_EVTP(null),
-                               sizeof(_SDL_KeyboardEvent), (byte*)key);
+                _assert(dt > 0);
+                _queue_put(_CEU_IN__WCLOCK, _CEU_EVTP(dt), 0, null);
+                if _SNAP_ms!=0 and this.time_total>=next_snap then
+                    next_snap = next_snap + _SNAP_ms;
+                    _snap_put(_QUEUE_put, this.time_total);
                 end
             end
         end
 
         _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
+        emit this.io.go_on;
 
         par/or do
             finalize with
@@ -79,6 +75,7 @@ do
                 next_snap = _snap_set(time_now);
             end
             await this.go_off;
+            emit this.io.go_off;
         with
             var int speed = 0;
                 // initialization avoids valgrind "uninitalized access" below
@@ -206,34 +203,25 @@ TODO: old, remove
 
                                 async(dt) do
                                     emit (dt)ms;
-                                    emit SDL_DT => dt;
-                                end
-
-                            else/if qu:evt == _CEU_IN_SDL_KEYDOWN then
-                                async(qu) do
-                                    emit SDL_KEYDOWN => qu:param.ptr;
-                                end
-                            else/if qu:evt == _CEU_IN_SDL_KEYUP then
-                                async(qu) do
-                                    emit SDL_KEYUP => qu:param.ptr;
+                                    emit TM_INPUT_DT => dt;
                                 end
                             else
-                                _assert(0);
+                                emit io.go_queue => qu;
                             end
                             if speed != 0 then
                                 async do
-                                    emit SDL_REDRAW;
+                                    emit TM_INPUT_FRAME;
                                 end
                             end
                         end
                         async do
-                            emit SDL_REDRAW;
+                            emit TM_INPUT_FRAME;
                         end
 /*
 */
                         if this.seeking? then
                             this.seeking? = false;
-                            emit this.ok;
+                            emit this.ok_seek;
                         end
                         await FOREVER;
                     end
@@ -273,7 +261,7 @@ TODO: old, remover
                             emit this.go_seek => now;   // don't awake myself
                             me? = false;
                             par/and do
-                                await this.ok;
+                                await this.ok_seek;
                             with
                                 var int awt;
                                 if bk_speed > 0 then
@@ -316,7 +304,7 @@ TODO: old, remover
                             emit this.go_seek => now; // don't awake myself (above)
                             me? = false;
                             par/and do
-                                await this.ok;
+                                await this.ok_seek;
                             with
                                 await (awt)ms_;     // other iterations
                             end

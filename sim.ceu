@@ -76,10 +76,57 @@ _printf("APP %d\n", sizeof(_CEU_App));
 /* The "Time Machine" must be declared after "The Application".
  * The "tm" must record the events *after* the "app" reacts to them.
  */
+#define TM_INPUT_DT    SDL_DT
+#define TM_INPUT_FRAME SDL_REDRAW
+
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
+
+class IOTimeMachine with
+    interface IIOTimeMachine;
+do
+    par do
+        loop do
+            // starts off
+            watching this.go_on do
+                par do
+                    var _SDL_KeyboardEvent* key;
+                    every key in SDL_KEYDOWN do
+                        _queue_put(_CEU_IN_SDL_KEYDOWN, _CEU_EVTP(null),
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key);
+                    end
+                with
+                    var _SDL_KeyboardEvent* key;
+                    every key in SDL_KEYUP do
+                        _queue_put(_CEU_IN_SDL_KEYUP, _CEU_EVTP(null),
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key);
+                    end
+                end
+            end
+            await this.go_off;
+        end
+    with
+        var _tceu_queue[] qu;   // TODO: ptr across await p/ else/if
+        every qu in this.go_queue do
+            if qu:evt == _CEU_IN_SDL_KEYDOWN then
+                async(qu) do
+                    emit SDL_KEYDOWN => qu:param.ptr;
+                end
+            else/if qu:evt == _CEU_IN_SDL_KEYUP then
+                async(qu) do
+                    emit SDL_KEYUP => qu:param.ptr;
+                end
+            else
+                _assert(0);
+            end
+        end
+    end
+end
+var IOTimeMachine io;
+
 var TimeMachine tm with
     this.app = app;
+    this.io  = io;
 end;
 var UITimeMachine uitm with
     this.tm = tm;
@@ -118,7 +165,7 @@ do
             par/or do
                 key = await SDL_KEYUP_ until key:keysym.sym == sym2;
             with
-                every global:tm_.ok do
+                every global:tm_.ok_seek do
                     if global:tm_.time_total-global:tm_.time_now > 2000 then
                         break;
                     end
