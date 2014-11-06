@@ -14,6 +14,8 @@ end
 #error Missing "TM_INPUT_FRAME"
 #endif
 
+#define TM_SNAP
+
 interface IIOTimeMachine with
     event void         go_on;
     event void         go_off;
@@ -41,12 +43,14 @@ class TimeMachine with
     var int time_total = 0;
     var int time_now;
 do
-    _SNAP_data := (char*) &this.app;
     _QUEUE_get = 0;
-    _SNAP_put = 0;
 
+    _SNAP_data := (char*) &this.app;
+    _SNAP_put = 0;
     _snap_put(_QUEUE_put, this.time_total);     // 0, 0
+#ifdef TM_SNAP
     var int next_snap = _SNAP_ms;
+#endif
 
     loop do
         watching this.go_on do
@@ -56,10 +60,12 @@ do
 //_printf("DT %d %d\n", this.time_total, this.app.v);
                 _assert(dt > 0);
                 _queue_put(_CEU_IN__WCLOCK, _CEU_EVTP(dt), 0, null);
-                if _SNAP_ms!=0 and this.time_total>=next_snap then
+#ifdef TM_SNAP
+                if this.time_total >= next_snap then
                     next_snap = next_snap + _SNAP_ms;
                     _snap_put(_QUEUE_put, this.time_total);
                 end
+#endif
             end
         end
 
@@ -72,7 +78,9 @@ do
                 this.time_total = time_now;     // drop future
                 _QUEUE_put = _QUEUE_get;
                 _QUEUE_tot = _QUEUE_get;
+#ifdef TM_SNAP
                 next_snap = _snap_set(time_now);
+#endif
             end
             await this.go_off;
             emit this.io.go_off;
@@ -114,7 +122,6 @@ do
                         if speed == 0 then
                             this.seeking? = true;
                         end
-#define TM_DELAY
 #ifndef TM_DELAY
                         var int late = 0;
 #endif
@@ -186,7 +193,7 @@ TODO: old, remove
                                         awt = dt*-speed;
                                     end
 #ifdef TM_DELAY
-                                    _SDL_Delay(awt);
+                                    TM_DELAY(awt);
 #else
 //_printf("AWT: %d %d\n", awt, late);
                                     if awt > late then
@@ -338,8 +345,10 @@ TODO: old, remover
                             // 30FPS * 2events/frame
             // 1h of events with 2 events/frame
             // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
-*/
 
+        #undef QUEUE_MAX
+        #define QUEUE_MAX 1000
+*/
 
         byte QUEUE[QUEUE_MAX];
         u32  QUEUE_tot = 0;
@@ -350,9 +359,10 @@ TODO: old, remover
                                int sz, byte* buf) {
             int n = sizeof(tceu_queue) + sz;
 
-            if (QUEUE_tot+n > QUEUE_MAX)
+            if (QUEUE_tot+n > QUEUE_MAX) {
                 assert(0);
                 /*return 0;   TODO: add event FULL when QUEUE_MAX-1 */
+            }
 
             /* An event+data must be continuous in the QUEUE. */
             if (QUEUE_put+n+sizeof(tceu_queue)>=QUEUE_MAX && evt!=CEU_IN__NONE) {
@@ -400,7 +410,11 @@ TODO: old, remover
 
         #define SNAP_ms 2000  /* 10s = 30*10 = at most 300 frames to traverse */
                               /* 0 means "do not take snaps" */
+#ifdef TM_SNAP
         #define SNAP_N  6*60  /* 10s*6*60=1h  (360*56K-rocks = 1.8Mb) */
+#else
+        #define SNAP_N  1
+#endif
 
         typedef struct {
             CEU_App data;
