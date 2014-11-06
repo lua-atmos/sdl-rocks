@@ -80,6 +80,22 @@ _printf("APP %d\n", sizeof(_CEU_App));
 #define TM_INPUT_FRAME SDL_REDRAW
 #define TM_DELAY(v)    _SDL_Delay(v)
 
+#define TM_QUEUE_MAX 60*60*1000        \
+                  * sizeof(tceu_queue) \
+                  / 30 * 2
+/*
+                            // 60min*60sec*1000ms=(1h in ms)
+                            // * minimum size of an event
+                            // 30FPS * 2events/frame
+            // 1h of events with 2 events/frame
+            // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
+*/
+
+#define TM_SNAP
+#define TM_SNAP_MS 2000  /* 10s = 30*10 = at most 300 frames to traverse */
+                         /* 0 means "do not take snaps" */
+#define TM_SNAP_N  6*60  /* 10s*6*60=1h  (360*56K-rocks = 1.8Mb) */
+
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
 
@@ -159,15 +175,18 @@ do
             var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
             var int sym2 = key:keysym.sym;
             if sym2 == this.k_left then
-                emit global:tm_.go_backward => 2;
+                if global:tm_.time_total-global:tm_.time_now < 2000 then
+                    emit global:tm_.go_backward => 2;
+                end
             else/if sym2 == this.k_right then
                 emit global:tm_.go_forward => 2;
             end
             par/or do
                 key = await SDL_KEYUP_ until key:keysym.sym == sym2;
             with
-                every global:tm_.ok_seek do
-                    if global:tm_.time_total-global:tm_.time_now > 2000 then
+                var int time_now;
+                every time_now in global:tm_.ok_seek do
+                    if global:tm_.time_total-time_now >= 2000 then
                         break;
                     end
                 end
