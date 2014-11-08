@@ -51,9 +51,6 @@ with
 end
 
 native do
-    unsigned int* RAND_SEED;
-    #define rand() rand_r(RAND_SEED)
-
     int TIME1 = 3;
     int TIME2 = 3;
 end
@@ -61,10 +58,6 @@ end
 class App with
     event int ok;
 do
-    var uint seed = 0;
-    _RAND_SEED := &seed;
-    _srand(seed);
-
     var int ret = do
         #include "main.ceu"
     end;

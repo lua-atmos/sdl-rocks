@@ -203,12 +203,10 @@ end
  * GAME EXECUTION STARTS HERE
  */
 
-#ifndef CEU_TIMEMACHINE
 native do
     ##include <time.h>
 end
 _srand(_time(null));    // initialize the game "randomizer"
-#endif
 
 /*
  * Create the game window and renderer.
