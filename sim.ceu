@@ -28,29 +28,12 @@ input int  SDL_DT_;
 input _SDL_KeyboardEvent* SDL_KEYDOWN_;
 input _SDL_KeyboardEvent* SDL_KEYUP_;
 
+#include "c.ceu"
 native do
-    SDL_Renderer* REN = NULL;
-    int REN_W, REN_H;
-end
+    ##include <time.h>
+    unsigned int* RAND_SEED;
+    #define rand() rand_r(RAND_SEED)
 
-var _SDL_Window* win;
-    finalize
-        win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
-                                          _SDL_WINDOWPOS_CENTERED,
-                                          1280, 800,
-                                          _SDL_WINDOW_SHOWN);
-    with
-        _SDL_DestroyWindow(win);
-    end
-_SDL_GetWindowSize(win, &_REN_W, &_REN_H);
-
-finalize
-    _REN = _SDL_CreateRenderer(win, -1, 0);
-with
-    _SDL_DestroyRenderer(_REN);
-end
-
-native do
     int TIME1 = 3;
     int TIME2 = 3;
 end
@@ -58,6 +41,11 @@ end
 class App with
     event int ok;
 do
+    var uint seed = _time(null);
+    _RAND_SEED := &seed;
+    _srand(seed);
+    #define srand(x)
+
     var int ret = do
         #include "main.ceu"
     end;
@@ -250,10 +238,13 @@ with
             continue;
         end
 
+        emit tm.go_on;
+/*
         _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
         finalize with
             _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON - 1;
         end
+*/
 
         pause/if in_tm? do
             par/or do
@@ -272,6 +263,8 @@ with
                 #include "input.ceu"
             end
         end
+
+        emit tm.go_off;
     end
 end
 

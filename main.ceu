@@ -222,8 +222,6 @@ _srand(_time(null));    // initialize the game "randomizer"
  * 2. The initialization and finalization stay close together in the code.
  */
 
-#ifndef CEU_TIMEMACHINE
-
 native do
     /*
      * We have a unique global renderer for the game.
@@ -248,8 +246,6 @@ finalize
 with
     _SDL_DestroyRenderer(_REN);
 end
-
-#endif
 
 /*
  * Allocate all fonts, textures and sounds used in the game.
