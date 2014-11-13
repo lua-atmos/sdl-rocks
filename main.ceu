@@ -878,7 +878,6 @@ with
         //_printf("[FPS=%d]\n", fps);
     end
 #endif
-#ifndef CEU_TIMEMACHINE
 with
     /*
      * Complete the drawing process for every frame.
@@ -889,7 +888,6 @@ with
     every SDL_REDRAW do
         _SDL_RenderPresent(_REN);
     end
-#endif
 end
 
 escape 0;
