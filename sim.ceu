@@ -29,6 +29,7 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN_;
 input _SDL_KeyboardEvent* SDL_KEYUP_;
 
 #include "c.ceu"
+#include "sdl.ceu"
 native do
     ##include <time.h>
     unsigned int* RAND_SEED;
@@ -46,10 +47,16 @@ do
     _srand(seed);
     #define srand(x)
 
+    #define _SDL_RenderPresent(x) nothing
+    #define _Mix_PlayChannel(a,b,c) if not _CEU_TIMEMACHINE_ON then _Mix_PlayChannel(a,b,c); end
+
     var int ret = do
         #include "main.ceu"
     end;
     emit this.ok => ret;
+
+    #undef _SDL_RenderPresent
+    #undef _Mix_PlayChannel
 end
 var App app;
 _printf("APP %d\n", sizeof(_CEU_App));

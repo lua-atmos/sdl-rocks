@@ -7,27 +7,6 @@ native do
     TTF_Font* FONT_SMALL = NULL; // smaller font (e.g. text inside bonuses)
 end
 
-#ifdef CEU_TIMEMACHINE
-
-if _FONT_BIG == null then
-
-_TTF_Init();
-finalize
-    _FONT_BIG = _TTF_OpenFont("fnts/vera.ttf", _REN_H/20);
-with
-end
-_assert(_FONT_BIG != null);
-
-finalize
-    _FONT_SMALL = _TTF_OpenFont("fnts/vera.ttf", _REN_H/40);
-with
-end
-_assert(_FONT_SMALL != null);
-
-end
-
-#else
-
 /*
  * Initialize (and quit) the "TTF" library.
  * The "finalize" clause if attached to the global scope of the program (which 
@@ -58,5 +37,3 @@ with
     _TTF_CloseFont(_FONT_SMALL);
 end
 _assert(_FONT_SMALL != null);
-
-#endif

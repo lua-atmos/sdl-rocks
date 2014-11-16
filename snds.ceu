@@ -9,16 +9,6 @@ native do
     Mix_Chunk* SND_HIT_DEC   = NULL;    // ship being hit
     Mix_Chunk* SND_EXPLOSION = NULL;    // explosions (ship, bomb)
     Mix_Chunk* SND_START     = NULL;    // every battle
-
-#ifdef CEU_TIMEMACHINE
-    void Mix_PlayChannel_ (int a, Mix_Chunk* b, int c) {
-        if (!CEU_TIMEMACHINE_ON) {
-            Mix_PlayChannel(a,b,c);
-        }
-    }
-    #undef Mix_PlayChannel
-    #define Mix_PlayChannel Mix_PlayChannel_
-#endif
 end
 
 /*

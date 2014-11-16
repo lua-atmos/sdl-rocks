@@ -8,7 +8,7 @@ all:
 		-o rocks.exe
 
 sim:
-	ceu --cpp-args "-I . -DCEU_TIMEMACHINE $(CFLAGS)" sim.ceu
+	ceu --timemachine --cpp-args "-I . $(CFLAGS)" sim.ceu
 	gcc -g -Os -DCEU_TIMEMACHINE $(CFLAGS) main.c -lSDL2 -lSDL2_image \
 		-lSDL2_mixer -lSDL2_ttf -lSDL2_net -lSDL2_gfx -lpthread -lm \
 		-o rocks.exe
