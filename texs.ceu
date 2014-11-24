@@ -14,6 +14,7 @@ native do
     SDL_Texture* TEX_BONUS_HITS = NULL;     // hit-points bonus (H)
     SDL_Texture* TEX_BONUS_FIRE = NULL;     // space fire bonus (F)
     SDL_Texture* TEX_BOMB[3];               // 3-2-1 bomb
+    SDL_Texture* TEX_NUM[10];
 end
 
 /*
@@ -104,4 +105,23 @@ finalize with
 end
 loop i in 3 do
     _assert(_TEX_BOMB[i] != null);
+end
+
+loop i in 10 do
+    var char[5] str;
+    _sprintf(str, "%d", i);
+    finalize
+        _TEX_NUM[i] = _SDL_text2texture(_REN, _FONT_BIG, str,
+                                        &_colors.white, null);
+    with
+        // finalize below
+    end
+end
+finalize with
+    loop i in 10 do
+        _SDL_DestroyTexture(_TEX_NUM[i]);
+    end
+end
+loop i in 10 do
+    _assert(_TEX_NUM[i] != null);
 end

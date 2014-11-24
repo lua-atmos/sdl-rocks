@@ -3,8 +3,8 @@
  * game.
  */
 native do
-    TTF_Font* FONT_BIG;     // bigger font (e.g. "= TAP TO START =" message)
-    TTF_Font* FONT_SMALL;   // smaller font (e.g. text inside bonuses)
+    TTF_Font* FONT_BIG = NULL; // bigger font (e.g. "= TAP TO START =" message)
+    TTF_Font* FONT_SMALL = NULL; // smaller font (e.g. text inside bonuses)
 end
 
 /*

@@ -53,12 +53,6 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
  */
 native do
     /*
-     * We have a unique global renderer for the game.
-     */
-    SDL_Renderer* REN = NULL;
-    int REN_W, REN_H;
-
-    /*
      * Identification for each type of graphical object in the game.
      */
     enum {
@@ -228,10 +222,20 @@ _srand(_time(null));    // initialize the game "randomizer"
  * 2. The initialization and finalization stay close together in the code.
  */
 
+native do
+    /*
+     * We have a unique global renderer for the game.
+     */
+    SDL_Renderer* REN = NULL;
+    int REN_W, REN_H;
+end
+
 var _SDL_Window* win;
     finalize
-        win = _SDL_CreateWindow("Rocks!", 500, 400, 1280, 800,
-                                _SDL_WINDOW_SHOWN);
+        win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
+                                          _SDL_WINDOWPOS_CENTERED,
+                                          1280, 800,
+                                          _SDL_WINDOW_SHOWN);
     with
         _SDL_DestroyWindow(win);
     end
@@ -336,7 +340,7 @@ with
                 // Await the user interaction to proceed to the battle.
                 await 1s; // delay 1 second to prevent a lazy player to 
                           // activate it while reacting to the preivous battle
-#if defined(__ANDROID__) && !defined(SIMUL)
+#if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
                 await SDL_FINGERDOWN;
 #else
                 await SDL_KEYDOWN;
@@ -372,7 +376,7 @@ with
              * We provide different controllers for the Android and Desktop 
              * versions of the game.
              */
-#if defined(__ANDROID__) && !defined(SIMUL)
+#if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
             /*
              * The touch controller needs to know the area in which it should 
              * respond to user input in the tablet:
@@ -478,7 +482,7 @@ with
                 this.lim_y2 = _REN_H - dim/2;
             end;
 
-            pool Object[] all;
+            pool Object[30] all;
 
             /*
              * The game innermost "par/or" only terminates when one of the 
@@ -492,6 +496,8 @@ with
                 await ship2.ok_killed;      // if ship2 is destroyed,
                 emit points1.go_inc;        //  increment points1
             with
+/*
+                // TODO: too ugly!!
                 loop do
                     var int x,y;
                     var int id;
@@ -523,6 +529,7 @@ with
                     end
                 end
             with
+*/
                 /*
                  * Period to create a new meteor in the game.
                  * It starts with 2s but goes down continuously.
@@ -738,7 +745,6 @@ with
                                     end;
                                 end
                             end
-
                             /*
                              * SHIP vs BONUS_LIFE (+1):
                              * Increment the player's total points.
@@ -871,14 +877,6 @@ with
         fps = c;
         //_printf("[FPS=%d]\n", fps);
     end
-#endif
-#ifdef SIMUL
-with
-    /*
-     * If we are in SIMUL mode (defined in "Makefile"), we randomly simulate 
-     * input from users.
-     */
-    #include "simul.ceu"
 #endif
 with
     /*
