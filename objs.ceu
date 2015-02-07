@@ -98,7 +98,7 @@ end
  */
 class Ship with
     interface Object;
-    var _SDL_Texture[] tex = null;  // left/right oriented image
+    var _SDL_Texture& tex;          // left/right oriented image
 
     var int lim_x1, lim_x2,         // physical screen limits that the 
             lim_y1, lim_y2;         // ship can move
@@ -119,7 +119,6 @@ do
      * Take the ship image width (it has a squared dimension).
      * Sets w/h from it.
      */
-    _assert(this.tex != null);
     var int dim;    // dim = w
         _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
     this.rect.w = dim;
@@ -242,16 +241,16 @@ do
          * - Spawn/decrement with controller (event "ok_shield").
          * - Draw a number-of-shields bar on every frame.
          */
-        var int[] p_shields;
+        var int& p_shields;
 #ifdef CEU_TIMEMACHINE
         if id == _OBJ_SHIP1 then
-            p_shields = &_TIME1;
+            p_shields = _TIME1;
         else
-            p_shields = &_TIME2;
+            p_shields = _TIME2;
         end
 #else
         var int n_shields = 0;
-        p_shields = &n_shields;
+        p_shields = n_shields;
 #endif
 
         var _SDL_Rect shields_r;
@@ -266,10 +265,10 @@ do
         par do
             // Increment "n_shields" on every "S" bonus:
             every this.go_S do
-                if *p_shields < _SHIP_SHIELDS_MAX then
+                if p_shields < _SHIP_SHIELDS_MAX then
 #ifdef CEU_TIMEMACHINE
 if not _CEU_TIMEMACHINE_ON then
-                    *p_shields = *p_shields + 1;
+                    p_shields = p_shields + 1;
 end
 #endif
                 end
@@ -283,9 +282,9 @@ end
              */
             loop do
                 await this.controller.ok_shield
-                until (*p_shields > 0);
+                until (p_shields > 0);
 
-                *p_shields = *p_shields - 1;    // decrement "n_shields"
+                p_shields = p_shields - 1;    // decrement "n_shields"
                 hasShield? = true;              // set hasShield?
                 finalize with
                     this.rect.w = dim;          // on termination
@@ -328,8 +327,8 @@ end
         with
             loop do
                 await this.controller.ok_missile
-                until (*p_shields > 0);
-                *p_shields = *p_shields - 1;      // decrement "n_shields"
+                until (p_shields > 0);
+                p_shields = p_shields - 1;      // decrement "n_shields"
                 emit this.ok_missile;
             end
         with
@@ -342,7 +341,7 @@ end
              * - h: depends on "n_shields"
              */
             every SDL_REDRAW do
-                shields_r.h = *p_shields * _REN_H/33;
+                shields_r.h = p_shields * _REN_H/33;
                 _boxRGBA(_REN, shields_r.x, shields_r.y,
                                 shields_r.x+shields_r.w,
                                 shields_r.y+shields_r.h,
@@ -491,7 +490,7 @@ end
                 r.y = this.rect.y - dim/2;
                 r.w = dim;
                 r.h = dim;
-            _SDL_RenderCopy(_REN, this.tex, &clip_r, &r);
+            _SDL_RenderCopy(_REN, &this.tex, &clip_r, &r);
         end
     end
 
@@ -632,11 +631,10 @@ class Bonus with
     interface Object;
     var int id  = 0;
     var int dir = 0;
-    var _SDL_Texture[] tex = null;
+    var _SDL_Texture& tex;
 do
     _assert(this.id  != 0);
     _assert(this.dir != 0);
-    _assert(this.tex != null);
 
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
@@ -659,10 +657,10 @@ do
                                     0x00,0x77,0x00,0xFF);
 
             var _SDL_Rect r;
-                _SDL_QueryTexture(this.tex, null, null, &r.w, &r.h);
+                _SDL_QueryTexture(&this.tex, null, null, &r.w, &r.h);
                 r.x = this.rect.x - r.w/2;
                 r.y = this.rect.y - r.h/2;
-            _SDL_RenderCopy(_REN, this.tex, null, &r);
+            _SDL_RenderCopy(_REN, &this.tex, null, &r);
         end
     with
         await go_hit;
