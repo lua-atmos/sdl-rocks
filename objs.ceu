@@ -135,13 +135,13 @@ do
 
     /*
      * Temporary ship states:
-     * - blink?     : if the ship lost a hit point.
+     * - blink      : if the ship lost a hit point.
      *                  It blinks and becomes immortal for 2s.
-     * - hasShield? : if the ship activated a shield.
+     * - hasShield  : if the ship activated a shield.
      *                  It spawns a blue circle and becomes immortal.
      */
-    var bool blink?     = false;
-    var bool hasShield? = false;
+    var bool blink     = false;
+    var bool hasShield = false;
 
     /*
      * The "vy" ship speed is inherited by all fire shots.
@@ -179,13 +179,13 @@ do
         with
             /*
              * Decrement "n_hits" on every "go_hit" (collision).
-             * Ignore if "isImmortal?" or "hasShield?".
+             * Ignore if "isImmortal" or "hasShield".
              * Blink during 2s.
              * Terminate when "n_hits=0".
              */
             loop do
-                await this.go_hit until not (this.controller.isImmortal? or
-                                             hasShield?);
+                await this.go_hit until not (this.controller.isImmortal or
+                                             hasShield);
                 n_hits = n_hits - 1;
 
                 if n_hits <= 0 then
@@ -197,10 +197,10 @@ do
 
                 watching 2s do
                     every 100ms do
-                        blink? = not blink?;    // blink every 100ms
+                        blink = not blink;    // blink every 100ms
                     end
                 end
-                blink? = false;
+                blink = false;
                     /*
                      * While blinking, the body is not awaiting "go_hit", 
                      * hence, the ship is immortal during this period.
@@ -244,9 +244,9 @@ do
         var int& p_shields;
 #ifdef CEU_TIMEMACHINE
         if id == _OBJ_SHIP1 then
-            p_shields = _TIME1;
+            p_shields = &_TIME1;
         else
-            p_shields = _TIME2;
+            p_shields = &_TIME2;
         end
 #else
         var int n_shields = 0;
@@ -285,11 +285,11 @@ end
                 until (p_shields > 0);
 
                 p_shields = p_shields - 1;    // decrement "n_shields"
-                hasShield? = true;              // set hasShield?
+                hasShield = true;              // set hasShield
                 finalize with
                     this.rect.w = dim;          // on termination
                     this.rect.h = dim;          //   restore w/h
-                    hasShield? = false;         //   unset hasShield?
+                    hasShield = false;          //   unset hasShield
                 end
 
                 // Play the explosion sound effect:
@@ -470,7 +470,7 @@ end
         end
     with
         every SDL_REDRAW do
-            if blink? then
+            if blink then
                 continue;
             end
 

@@ -6,6 +6,7 @@ native _glEnable(), _glDisable(), _glScissor();
 
 native @plain _SDL_Rect, _SDL_Point, _SDL_Color,
               _SDL_TouchFingerEvent,
+              _SDL_KeyboardEvent,
               _SDL_Texture;
 
 native @const _SDL_TRUE, _SDL_FALSE,

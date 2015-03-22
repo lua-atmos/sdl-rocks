@@ -172,7 +172,7 @@ end
  */
 interface Controller with
     var   float ax, ay;       // The current acceleration imposed to the ship.
-    var   bool  isImmortal?;  // If the ship is immune to collisions.
+    var   bool  isImmortal;   // If the ship is immune to collisions.
     event void  ok_fired;     // Emitted when the controller shoots a fire.
     event void  ok_shield;    // Emitted when the controller invokes a shield.
     event void  ok_missile;   // Emitted when the controller invokes a missile.
@@ -230,19 +230,19 @@ native do
     int REN_W, REN_H;
 end
 
-var _SDL_Window* win;
+var _SDL_Window&? win;
     finalize
         win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
                                           _SDL_WINDOWPOS_CENTERED,
                                           1280, 800,
                                           _SDL_WINDOW_SHOWN);
     with
-        _SDL_DestroyWindow(win);
+        _SDL_DestroyWindow(&win);
     end
-_SDL_GetWindowSize(win, &_REN_W, &_REN_H);
+_SDL_GetWindowSize(&win, &_REN_W, &_REN_H);
 
 finalize
-    _REN = _SDL_CreateRenderer(win, -1, 0);
+    _REN = _SDL_CreateRenderer(&win, -1, 0);
 with
     _SDL_DestroyRenderer(_REN);
 end

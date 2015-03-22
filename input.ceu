@@ -3,12 +3,12 @@
  */
 
 var int  dt         = 30;
-var bool invisible? = false;
+var bool invisible  = false;
 
 par do
     var _SDL_KeyboardEvent* key;
     every key in SDL_KEYDOWN_ do
-        invisible? = false;
+        invisible = false;
         if key:keysym.sym==_SDLK_LEFT then
             dt = dt + 10;
         else/if key:keysym.sym==_SDLK_RIGHT then
@@ -19,7 +19,7 @@ par do
         else/if key:keysym.sym==_SDLK_DOWN then
             dt = 30;
         else/if key:keysym.sym==_SDLK_UP then
-            invisible? = true;
+            invisible = true;
         end
     end
 with
@@ -27,7 +27,8 @@ with
     var int time = 0;
     loop do
         // To emit external events, we need to be inside an "async" block.
-        async(&time, dt, invisible?) do
+        var int& t = time;
+        async(t, dt, invisible) do
             /*
              * 1. make some time elapse (0->99)ms
              */
@@ -35,11 +36,11 @@ with
             loop i in n do
                 emit (30)ms;
                 emit SDL_DT => 30;
-                if not invisible? then
+                if not invisible then
                     emit SDL_REDRAW;
                     _SDL_Delay(dt);
                 end
-                time = time + 30;
+                t = t + 30;
             end
 
             /*
@@ -76,8 +77,8 @@ with
             e_key.type = _SDL_KEYDOWN;
             emit SDL_KEYDOWN => &e_key;
 
-            if (not invisible?) or time>3600000 then
-                time = 0;
+            if (not invisible) or t>3600000 then
+                t = 0;
                 emit SDL_REDRAW;
             end
         end

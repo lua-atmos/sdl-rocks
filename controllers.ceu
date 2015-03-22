@@ -12,7 +12,7 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
  * react and set its acceleration values.
  */
 class KeyController with
-    interface Controller;   // implements "Controller" (ax, ay, isImmortal?,
+    interface Controller;   // implements "Controller" (ax, ay, isImmortal,
                             //                          ok_fired, ok_shield)
     var int k_up, k_down, k_left, k_right;  // keys to control movement
     var int k_fire, k_shield, k_missile;    // keys to control fire/shield/missile
@@ -23,7 +23,7 @@ class KeyController with
      */
     var float ax = 0;             // no acceleration by default
     var float ay = 0;             // no acceleration by default
-    var bool isImmortal? = false; // ship starts in normal mode
+    var bool isImmortal = false;  // ship starts in normal mode
 do
     /*
      * No trails in parallel terminate, so we use a "par" here.
@@ -71,12 +71,12 @@ do
     with
         /*
          * Await for "k_immortal" (down) presses in a loop to toggle the 
-         * "isImmortal?" mode.
+         * "isImmortal" mode.
          */
         var _SDL_KeyboardEvent* key;
         every key in SDL_KEYDOWN do
             if key:keysym.sym == this.k_immortal then
-                this.isImmortal? = not this.isImmortal?;
+                this.isImmortal = not this.isImmortal;
             end
         end
     end
@@ -107,7 +107,7 @@ class TouchController with
      */
     var int ax = 0;              // no acceleration by default
     var int ay = 0;              // no acceleration by default
-    var int isImmortal? = false; // ship starts in normal mode
+    var int isImmortal = false;  // ship starts in normal mode
 do
     /*
      * No trails in parallel terminate, so we use a "par" here.
@@ -265,7 +265,7 @@ do
                     end
                 end
                 // Finally the control is in immortal mode.
-                this.isImmortal? = not this.isImmortal?;
+                this.isImmortal = not this.isImmortal;
             end
         end
     end

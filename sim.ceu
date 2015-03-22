@@ -97,29 +97,37 @@ do
                 par do
                     var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYDOWN do
-                        _queue_put(_CEU_IN_SDL_KEYDOWN, _CEU_EVTP(null),
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key);
+                        _queue_put(_CEU_IN_SDL_KEYDOWN,
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                            finalize with
+                                nothing;
+                            end;
                     end
                 with
                     var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYUP do
-                        _queue_put(_CEU_IN_SDL_KEYUP, _CEU_EVTP(null),
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key);
+                        _queue_put(_CEU_IN_SDL_KEYUP,
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                            finalize with
+                                nothing;
+                            end;
                     end
                 end
             end
             await this.go_off;
         end
     with
-        var _tceu_queue[] qu;   // TODO: ptr across await p/ else/if
+        var _tceu_queue* qu;
         every qu in this.go_queue do
-            if qu:evt == _CEU_IN_SDL_KEYDOWN then
-                async(qu) do
-                    emit SDL_KEYDOWN => qu:param.ptr;
+            var int                evt = qu:evt;
+            var _SDL_KeyboardEvent val = *((_SDL_KeyboardEvent*)qu:buf);
+            if evt == _CEU_IN_SDL_KEYDOWN then
+                async(val) do
+                    emit SDL_KEYDOWN => &val;
                 end
-            else/if qu:evt == _CEU_IN_SDL_KEYUP then
-                async(qu) do
-                    emit SDL_KEYUP => qu:param.ptr;
+            else/if evt == _CEU_IN_SDL_KEYUP then
+                async(val) do
+                    emit SDL_KEYUP => &val;
                 end
             else
                 _assert(0);
@@ -140,19 +148,19 @@ end;
 //event void go_restart;
 interface Global with
     var   TimeMachine& tm_;
-    event bool in_tm?;
-    var   bool blur?;
+    event bool in_tm;
+    var   bool blur;
 end
-event bool in_tm?;
-var   bool blur? = false;
+event bool in_tm;
+var   bool blur = false;
 var   TimeMachine& tm_ = tm;
 
 class TimeKeyController with
     var int   k_alt, k_left, k_right;
     event void ok;
 do
-    global:blur? = true;
-    emit global:in_tm? => true;
+    global:blur = true;
+    emit global:in_tm => true;
     emit global:tm_.go_on;
 
     par/or do
@@ -185,8 +193,8 @@ do
 
     TM_AWAIT_SEEK(global:tm_);
     emit global:tm_.go_off;
-    emit global:in_tm? => false;
-    global:blur? = false;
+    emit global:in_tm => false;
+    global:blur = false;
 
     emit this.ok;
 end
@@ -198,13 +206,13 @@ with
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
         var int sym = key:keysym.sym;
         if sym == _SDLK_ESCAPE then
-            emit in_tm? => true;
+            emit in_tm => true;
             emit tm.go_on;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
             emit uitm.go_off;
             emit tm.go_off;
-            emit in_tm? => false;
+            emit in_tm => false;
         else/if sym==_SDLK_LALT and _TIME1>0 then
             _TIME1 = _TIME1 - 1;
             do TimeKeyController with
@@ -224,7 +232,7 @@ with
 with
     every SDL_REDRAW do
         emit uitm.go_redraw;
-        if blur? then
+        if blur then
             _boxRGBA(_REN, 0, 0, _REN_W, _REN_H, 0xAA,0x88,0x88,0x88);
         end
         _SDL_RenderPresent(_REN);
@@ -233,7 +241,7 @@ with
     loop do
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
                                       until key:keysym.sym == _SDLK_LCTRL;
-        var bool ok? =
+        var bool ok =
             par do
                 key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_LCTRL;
                 escape false;
@@ -241,7 +249,7 @@ with
                 await 1s;
                 escape true;
             end;
-        if not ok? then
+        if not ok then
             continue;
         end
 
@@ -253,7 +261,7 @@ with
         end
 */
 
-        pause/if in_tm? do
+        pause/if in_tm do
             par/or do
                 loop do
                     key = await SDL_KEYDOWN_
