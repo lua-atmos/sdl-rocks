@@ -59,7 +59,8 @@ do
     #undef _Mix_PlayChannel
 end
 var App app;
-_printf("APP %d\n", sizeof(_CEU_App));
+_printf("APP %ld\n", sizeof(_CEU_App));
+_printf("MSE %ld\n", sizeof(_SDL_MouseMotionEvent));
 
 /* The "Time Machine" must be declared after "The Application".
  * The "tm" must record the events *after* the "app" reacts to them.
@@ -280,6 +281,18 @@ with
         end
 
         emit tm.go_off;
+    end
+with
+    var int fps = 0;                // previous FPS
+    loop do
+        var int c = 0;              // reset the current counter
+        watching 1s_ do
+            every SDL_DT_ do
+                c = c + 1;
+            end
+        end
+        fps = c;
+        _printf("[FPS=%d]\n", fps);
     end
 end
 

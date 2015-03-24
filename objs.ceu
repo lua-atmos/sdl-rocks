@@ -51,7 +51,7 @@ end
  * It moves until it leaves the screen ("MoveObject") or collides ("go_hit").
  */
 class Fire with
-    interface Object;
+    interface NObject;
     var int dir;        // fire orientation (left=1/right=-1)
     var int vy;         // inherit "vy" from the shooting ship
     var int w;          // fire width (may increase with "F" bonus)
@@ -186,7 +186,7 @@ do
             loop do
                 await this.go_hit until not (this.controller.isImmortal or
                                              hasShield);
-                n_hits = n_hits - 1;
+                //n_hits = n_hits - 1;
 
                 if n_hits <= 0 then
                     break;  // escapes the "loop" and consequently the "par/or"
@@ -518,7 +518,7 @@ end
 end
 
 class RockBig with
-    interface Object;
+    interface NObject;
     var int id = _OBJ_ROCK;
 do
     var int dim;    // dim = h
@@ -576,7 +576,7 @@ do
 end
 
 class RockSmall with
-    interface Object;
+    interface NObject;
     var int id = _OBJ_rock;
     var int dir = 0;
 do
@@ -628,7 +628,7 @@ do
 end
 
 class Bonus with
-    interface Object;
+    interface NObject;
     var int id  = 0;
     var int dir = 0;
     var _SDL_Texture& tex;
@@ -668,7 +668,7 @@ do
 end
 
 class Missile with
-    interface Object;
+    interface NObject;
     var int id = 0;
     var Object* obj_to_follow = null;
 do
@@ -720,7 +720,7 @@ do
 end
 
 class Bomb with
-    interface Object;
+    interface NObject;
     var int id = _OBJ_BOMB;
     var int dir = 0;
 do

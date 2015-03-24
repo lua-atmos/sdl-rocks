@@ -37,16 +37,11 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
  */
 #define _OBJ_SHIP_N     1       // x2       // spaceship
 #define _OBJ_FIRE_N     3       // x2       // spaceship simultaneous shots
-#define _OBJ_ROCK_N     40                  // big meteors
-#define _OBJ_rock_N     40                  // small meteors
-#define _OBJ_BONUS_N    10                  // bonus items
-#define _OBJ_BOMB_N     5                   // bomb items
-#define _OBJ_N + 2*_OBJ_SHIP_N  \
-               + 2*_OBJ_FIRE_N  \
-               +   _OBJ_ROCK_N  \
-               +   _OBJ_rock_N  \
-               +   _OBJ_BONUS_N \
-               +   _OBJ_BOMB_N
+#define _OBJ_N          30
+#define _OBJ_NN + 2*_OBJ_SHIP_N  \
+                + 2*_OBJ_FIRE_N  \
+                +   _OBJ_N
+#define MS 2000
 
 /*
  * Céu relies on C to declare globals, enums, and functions.
@@ -196,6 +191,11 @@ interface Object with
     event void      go_hit;   // Signal that the object has collided.
 end
 
+interface NObject with
+    interface Object;
+    var char[0] nope;
+end
+
 // Implementations for all game objects: ships, shots, meteors, etc.
 #include "objs.ceu"    // (Ignore it for now.)
 
@@ -256,6 +256,35 @@ end
 #include "fnts.ceu"
 #include "texs.ceu"
 #include "snds.ceu"
+
+class T with
+do
+end
+
+_printf("SIZES | T=%ld               \n \
+                 TextPoints=%ld      \n \
+                 KeyController=%ld   \n \
+                 MoveObject=%ld      \n \
+                 Fire=%ld            \n \
+                 Ship=%ld            \n \
+                 RockBig=%ld         \n \
+                 RockSmall=%ld       \n \
+                 Bonus=%ld           \n \
+                 Missile=%ld         \n \
+                 Bomb=%ld            \n \
+    "
+    , sizeof(_CEU_T)
+    , sizeof(_CEU_TextPoints)
+    , sizeof(_CEU_KeyController)
+    , sizeof(_CEU_MoveObject)
+    , sizeof(_CEU_Fire)
+    , sizeof(_CEU_Ship)
+    , sizeof(_CEU_RockBig)
+    , sizeof(_CEU_RockSmall)
+    , sizeof(_CEU_Bonus)
+    , sizeof(_CEU_Missile)
+    , sizeof(_CEU_Bomb)
+);
 
 /*
  * The outermost "par/or" that handles all game activities in parallel.
@@ -482,7 +511,7 @@ with
                 this.lim_y2 = _REN_H - dim/2;
             end;
 
-            pool Object[30] all;
+            pool NObject[_OBJ_N] all;
 
             /*
              * The game innermost "par/or" only terminates when one of the 
@@ -541,7 +570,7 @@ with
                  * "battle block" will restart and all meteors will be 
                  * automatically destroyed.
                  */
-                var int period = 2000;
+                var int period = MS;
                 every (_rand() % period)ms do
                     if period > 50 then
                         period = period - 10;
@@ -561,7 +590,7 @@ with
                 every SDL_DT do
 
 // TODO: smart pools iterator
-                    var Object*[_OBJ_N] objs;
+                    var Object*[_OBJ_NN] objs;
                     var int     objs_n = 0;
                     objs[objs_n] = &ship1;
                     objs_n = objs_n + 1;
@@ -583,7 +612,7 @@ with
                     /*
                      * Outer loop: "o1" iterates through [0, objs_n[
                      */
-                    loop/_OBJ_N i in objs_n do
+                    loop/_OBJ_NN i in objs_n do
                         var Object* o1 = objs[i];
                         _assert(o1 != null);
 
@@ -593,7 +622,7 @@ with
                          * These two loops make all possible combinations for 
                          * any two objects alive.
                          */
-                        loop/_OBJ_N j in objs_n-i-1 do
+                        loop/_OBJ_NN j in objs_n-i-1 do
                             var Object* o2 = objs[i+1+j];
                             _assert(o2 != null);
 
@@ -834,7 +863,7 @@ with
      * The "main loop" never terminates.
      * This "end" is never surpassed.
      */
-#ifdef DEBUG
+#ifdef DEBUG_FPS
 with
     /*
      * If we are in DEBUG mode (defined in "Makefile"), we display a text with 
@@ -849,12 +878,12 @@ with
         // create a texture with the previous FPS
         var char[5] str;
         _sprintf(str, "%d", fps);
-        var _SDL_Texture[] tex;
+        var _SDL_Texture&? tex;
         finalize
             tex = _SDL_text2texture(_REN, _FONT_SMALL, str,
                                     &_colors.white, null);
         with
-            _SDL_DestroyTexture(tex);
+            _SDL_DestroyTexture(&tex);
         end
         var _SDL_Rect r;
             r.x = 200;
@@ -871,7 +900,7 @@ with
         watching 1s do
             every SDL_REDRAW do
                 c = c + 1;
-                _SDL_RenderCopy(_REN, tex, null, &r);
+                _SDL_RenderCopy(_REN, &tex, null, &r);
             end
         end
         fps = c;
