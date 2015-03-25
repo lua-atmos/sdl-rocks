@@ -532,14 +532,14 @@ do
         clip_r.w = this.rect.w;
         clip_r.h = this.rect.h;
 
-    var float vx = _rand()%(_REN_W/5) + 1;
-    var float vy = _rand()%(_REN_H/5) + 1;
+    var float vx = _drand()%(_REN_W/5) + 1;
+    var float vy = _drand()%(_REN_H/5) + 1;
 
-    this.rect.x = _REN_W/3 + _rand()%_REN_W/3;
-    if _rand() % 2 then
+    this.rect.x = _REN_W/3 + _drand()%_REN_W/3;
+    if _drand() % 2 then
         vx = -vx;
     end
-    if _rand() % 2 then
+    if _drand() % 2 then
         this.rect.y = 0;
     else
         this.rect.y = _REN_H;
@@ -547,7 +547,7 @@ do
     end
 
     par/or do
-        await (_rand() % 5000)ms;
+        await (_drand() % 5000)ms;
         do MoveObject with
             this.obj = outer;
             this.vx  = vx;
@@ -593,9 +593,9 @@ do
         clip_r.w = this.rect.w;
         clip_r.h = this.rect.h;
 
-    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var float vy = (_rand()%(_REN_H/10) + 1);
-    if _rand() % 2 then
+    var float vx = (_drand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_drand()%(_REN_H/10) + 1);
+    if _drand() % 2 then
         vy = -vy;
     end
 
@@ -639,9 +639,9 @@ do
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
 
-    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var float vy = (_rand()%(_REN_H/10) + 1);
-    if _rand() % 2 then
+    var float vx = (_drand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_drand()%(_REN_H/10) + 1);
+    if _drand() % 2 then
         vy = -vy;
     end
 
@@ -679,7 +679,7 @@ do
     this.rect.h = _REN_W/60;
 
     par/or do
-        var float vx = _REN_W/6 + _rand()%(_REN_W/20);
+        var float vx = _REN_W/6 + _drand()%(_REN_W/20);
         if this.rect.x > obj_to_follow:rect.x then
             vx = -vx;
         end
@@ -729,9 +729,9 @@ do
     this.rect.w = _REN_W/30;
     this.rect.h = _REN_W/30;
 
-    var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
-    var float vy = (_rand()%(_REN_H/10) + 1);
-    if _rand() % 2 then
+    var float vx = (_drand()%(_REN_W/10) + 1) * this.dir;
+    var float vy = (_drand()%(_REN_H/10) + 1);
+    if _drand() % 2 then
         vy = -vy;
     end
 
@@ -747,7 +747,7 @@ do
         // countdown 3-2-1-0
         // (or kill)
         watching go_hit do
-            var int dt = 500 + _rand() % 2000;
+            var int dt = 500 + _drand() % 2000;
             loop i in 3 do
                 await (dt) ms;
                 timer = timer - 1;

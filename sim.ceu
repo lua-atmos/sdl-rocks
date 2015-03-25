@@ -33,7 +33,7 @@ input _SDL_KeyboardEvent* SDL_KEYUP_;
 native do
     ##include <time.h>
     unsigned int* RAND_SEED;
-    #define rand() rand_r(RAND_SEED)
+    #define drand() rand_r(RAND_SEED)
 
     int TIME1 = 3;
     int TIME2 = 3;
@@ -99,34 +99,28 @@ do
     par do
         loop do
             // starts off
-            var bool keep;
-            par/or do
-                keep = await this.go_on;
-                if keep then
-                    await this.go_off;
-                end
-            with
-                var _SDL_KeyboardEvent* key;
-                every key in SDL_KEYDOWN do
-                    _queue_put(_CEU_IN_SDL_KEYDOWN,
-                               sizeof(_SDL_KeyboardEvent), (byte*)key)
-                        finalize with
-                            nothing;
-                        end;
-                end
-            with
-                var _SDL_KeyboardEvent* key;
-                every key in SDL_KEYUP do
-                    _queue_put(_CEU_IN_SDL_KEYUP,
-                               sizeof(_SDL_KeyboardEvent), (byte*)key)
-                        finalize with
-                            nothing;
-                        end;
+            watching this.go_on do
+                par do
+                    var _SDL_KeyboardEvent* key;
+                    every key in SDL_KEYDOWN do
+                        _queue_put(_CEU_IN_SDL_KEYDOWN,
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                            finalize with
+                                nothing;
+                            end;
+                    end
+                with
+                    var _SDL_KeyboardEvent* key;
+                    every key in SDL_KEYUP do
+                        _queue_put(_CEU_IN_SDL_KEYUP,
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                            finalize with
+                                nothing;
+                            end;
+                    end
                 end
             end
-            if not keep then
-                await this.go_off;
-            end
+            await this.go_off;
         end
     with
         var _tceu_queue* qu;
@@ -173,7 +167,7 @@ class TimeKeyController with
 do
     global:blur = true;
     emit global:in_tm => true;
-    emit global:tm_.go_on => false;
+    emit global:tm_.go_on;
 
     par/or do
         var _SDL_KeyboardEvent* key = await SDL_KEYUP_
@@ -219,7 +213,7 @@ with
         var int sym = key:keysym.sym;
         if sym == _SDLK_ESCAPE then
             emit in_tm => true;
-            emit tm.go_on => false;
+            emit tm.go_on;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
             emit uitm.go_off;
@@ -265,13 +259,11 @@ with
             continue;
         end
 
-/*
-        _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
+        _assert(_CEU_TIMEMACHINE_ON == 0);
+        _CEU_TIMEMACHINE_ON = 1;
         finalize with
-            _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON - 1;
+            _CEU_TIMEMACHINE_ON = 0;
         end
-*/
-        emit tm.go_on => true;
 
         pause/if in_tm do
             par/or do
@@ -290,8 +282,6 @@ with
                 #include "input.ceu"
             end
         end
-
-        emit tm.go_off;
     end
 with
     var int fps = 0;                // previous FPS

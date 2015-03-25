@@ -571,7 +571,7 @@ with
                  * automatically destroyed.
                  */
                 var int period = MS;
-                every (_rand() % period)ms do
+                every (_drand() % period)ms do
                     if period > 50 then
                         period = period - 10;
                     end
@@ -702,7 +702,7 @@ with
                                 else
                                     dir = -1;   // right if shot by FIRE2
                                 end
-                                var int pct = _rand() % 100;
+                                var int pct = _drand() % 100;
                                 if pct < 35 then
                                     /*
                                      * Spawn two smaller rocks.
