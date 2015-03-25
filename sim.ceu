@@ -59,8 +59,6 @@ do
     #undef _Mix_PlayChannel
 end
 var App app;
-_printf("APP %ld\n", sizeof(_CEU_App));
-_printf("MSE %ld\n", sizeof(_SDL_MouseMotionEvent));
 
 /* The "Time Machine" must be declared after "The Application".
  * The "tm" must record the events *after* the "app" reacts to them.
@@ -69,13 +67,15 @@ _printf("MSE %ld\n", sizeof(_SDL_MouseMotionEvent));
 #define TM_INPUT_REDRAW SDL_REDRAW
 //#define TM_DELAY(v)     _SDL_Delay(v)
 
-#define TM_QUEUE_MAX 60*60*1000        \
-                  * sizeof(tceu_queue) \
-                  / 30 * 2
+#define TM_QUEUE_MAX (10*60*60 * (2+8+32))
+                     /* 10e/s for 1h */
+    /*  sizeof(tceu_queue)=8
+        sizeof(SDL_KeyboardEvent)=32
+    */
 /*
                             // 60min*60sec*1000ms=(1h in ms)
                             // * minimum size of an event
-                            // 30FPS * 2events/frame
+                            // CEU_FPS * events/frame
             // 1h of events with 2 events/frame
             // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 */
@@ -88,34 +88,45 @@ _printf("MSE %ld\n", sizeof(_SDL_MouseMotionEvent));
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
 
+_printf("APP %ld\n", sizeof(_CEU_App));
+_printf("EVT %ld\n", sizeof(_tceu_queue));
+_printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
+_printf("QUEUE_MAX %d\n", TM_QUEUE_MAX);
+
 class IOTimeMachine with
     interface IIOTimeMachine;
 do
     par do
         loop do
             // starts off
-            watching this.go_on do
-                par do
-                    var _SDL_KeyboardEvent* key;
-                    every key in SDL_KEYDOWN do
-                        _queue_put(_CEU_IN_SDL_KEYDOWN,
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
-                            finalize with
-                                nothing;
-                            end;
-                    end
-                with
-                    var _SDL_KeyboardEvent* key;
-                    every key in SDL_KEYUP do
-                        _queue_put(_CEU_IN_SDL_KEYUP,
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
-                            finalize with
-                                nothing;
-                            end;
-                    end
+            var bool keep;
+            par/or do
+                keep = await this.go_on;
+                if keep then
+                    await this.go_off;
+                end
+            with
+                var _SDL_KeyboardEvent* key;
+                every key in SDL_KEYDOWN do
+                    _queue_put(_CEU_IN_SDL_KEYDOWN,
+                               sizeof(_SDL_KeyboardEvent), (byte*)key)
+                        finalize with
+                            nothing;
+                        end;
+                end
+            with
+                var _SDL_KeyboardEvent* key;
+                every key in SDL_KEYUP do
+                    _queue_put(_CEU_IN_SDL_KEYUP,
+                               sizeof(_SDL_KeyboardEvent), (byte*)key)
+                        finalize with
+                            nothing;
+                        end;
                 end
             end
-            await this.go_off;
+            if not keep then
+                await this.go_off;
+            end
         end
     with
         var _tceu_queue* qu;
@@ -162,7 +173,7 @@ class TimeKeyController with
 do
     global:blur = true;
     emit global:in_tm => true;
-    emit global:tm_.go_on;
+    emit global:tm_.go_on => false;
 
     par/or do
         var _SDL_KeyboardEvent* key = await SDL_KEYUP_
@@ -208,7 +219,7 @@ with
         var int sym = key:keysym.sym;
         if sym == _SDLK_ESCAPE then
             emit in_tm => true;
-            emit tm.go_on;
+            emit tm.go_on => false;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
             emit uitm.go_off;
@@ -254,13 +265,13 @@ with
             continue;
         end
 
-        emit tm.go_on;
 /*
         _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON + 1;
         finalize with
             _CEU_TIMEMACHINE_ON = _CEU_TIMEMACHINE_ON - 1;
         end
 */
+        emit tm.go_on => true;
 
         pause/if in_tm do
             par/or do

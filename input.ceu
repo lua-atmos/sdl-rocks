@@ -2,13 +2,13 @@
  * Simulate input from the players.
  */
 
-var int  dt         = 30;
-var bool invisible  = false;
+var int  dt      = (1000/_CEU_FPS);
+var bool visible = true;
 
 par do
     var _SDL_KeyboardEvent* key;
     every key in SDL_KEYDOWN_ do
-        invisible = false;
+        visible = true;
         if key:keysym.sym==_SDLK_LEFT then
             dt = dt + 10;
         else/if key:keysym.sym==_SDLK_RIGHT then
@@ -19,7 +19,7 @@ par do
         else/if key:keysym.sym==_SDLK_DOWN then
             dt = 30;
         else/if key:keysym.sym==_SDLK_UP then
-            invisible = true;
+            visible = false;
         end
     end
 with
@@ -28,19 +28,19 @@ with
     loop do
         // To emit external events, we need to be inside an "async" block.
         var int& t = time;
-        async(t, dt, invisible) do
+        async(t, dt, visible) do
             /*
              * 1. make some time elapse (0->99)ms
              */
-            var int n = _rand() % 5;
+            var int n = 5; //_rand() % 5;   // (0->4 * MS) for each event
             loop i in n do
-                emit (30)ms;
-                emit SDL_DT => 30;
-                if not invisible then
+                emit (1000/_CEU_FPS)ms;
+                emit SDL_DT => (1000/_CEU_FPS);
+                if visible then
                     emit SDL_REDRAW;
                     _SDL_Delay(dt);
                 end
-                t = t + 30;
+                t = t + (1000/_CEU_FPS);
             end
 
             /*
@@ -77,7 +77,10 @@ with
             e_key.type = _SDL_KEYDOWN;
             emit SDL_KEYDOWN => &e_key;
 
-            if (not invisible) or t>3600000 then
+            if visible or t>10*60*1000 then
+                if not visible then
+                    _printf("10min\n");
+                end
                 t = 0;
                 emit SDL_REDRAW;
             end
