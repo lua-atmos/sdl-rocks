@@ -89,7 +89,8 @@ var App app;
 #include "ui-timemachine.ceu"
 
 _printf("APP %ld\n", sizeof(_CEU_App));
-_printf("EVT %ld\n", sizeof(_tceu_queue));
+_printf("DT  %ld\n", sizeof(_tceu_queue_dt));
+_printf("QUE %ld\n", sizeof(_tceu_queue));
 _printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
 _printf("QUEUE_MAX %d\n", TM_QUEUE_MAX);
 
