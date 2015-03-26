@@ -42,7 +42,7 @@ do
         end
         fps = c;
         //_printf("[FPS=%d (%ds)]\n", fps, t/10);
-        _printf("%d %d\n", t/10, fps);
+        //_printf("%d %d\n", t/10, fps);
     end
 end
 
@@ -75,7 +75,7 @@ class TimeMachine with
 do
     _SNAP_data := (char*) &this.app;
     _SNAP_put = 0;
-    _snap_put(_QUEUE.put, this.time_total);     // 0, 0
+    _snap_put(this.time_total);     // 0, 0
 #ifdef TM_SNAP
     var int next_snap = TM_SNAP_MS;
 #endif
@@ -86,14 +86,19 @@ do
             every dt in TM_INPUT_DT do
                 this.time_total = this.time_total + dt;
                 _assert(dt >= 0);
-                _queue_put(_CEU_IN__WCLOCK, sizeof(s32), &dt)
+#ifdef TM_SNAP
+                var bool next = (this.time_total >= next_snap);
+                _queue_put(_CEU_IN__WCLOCK, next, &dt)
+#else
+                _queue_put(_CEU_IN__WCLOCK, 0, &dt)
+#endif
                     finalize with
                         nothing;
                     end;
 #ifdef TM_SNAP
-                if this.time_total >= next_snap then
+                if next then
                     next_snap = next_snap + TM_SNAP_MS;
-                    _snap_put(_QUEUE.put, this.time_total);
+                    _snap_put(this.time_total);
                 end
 #endif
             end
@@ -366,13 +371,13 @@ _QUEUE_get = get;
             int n = (evt==CEU_IN__WCLOCK) ?  sizeof(tceu_queue_dt) :
                                              sizeof(tceu_queue) + sz;
             assert(QUEUE.tot+n <= TM_QUEUE_MAX);
-            assert(sz > 0);
 
             if (evt == CEU_IN__WCLOCK) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
                 assert(*((s32*)buf) == (1000/CEU_FPS));
                 tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put_old];
-                if (QUEUE.put!=QUEUE.put_old && qu->evt==CEU_IN__WCLOCK && qu->n<255) {
+                if (sz==0 && QUEUE.put!=QUEUE.put_old && qu->evt==CEU_IN__WCLOCK && qu->n<255) {
+                    /* sz==1 means "break now" when reaching a SNAP boundary */
                     QUEUE.put = QUEUE.put_old;
                     qu->n++;
                 } else {
@@ -410,19 +415,13 @@ _QUEUE_get = get;
                 tceu_queue* qu = (tceu_queue*) &QUEUE.buf[QUEUE.get];
                 if (qu->evt == CEU_IN__WCLOCK) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
-                    if (QUEUE.get_n == 0) {         // not yet tracking current
+                    if (QUEUE.get_n == 0) {     // not yet tracking current
                         tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
                         QUEUE.get_n = qu->n;
-                    } else {
-                        QUEUE.get_n--;
-                        if (QUEUE.get_n == 0) {     // reached last DT
-                            QUEUE.get += sizeof(tceu_queue_dt);
-                            if (QUEUE.get == QUEUE.put) {
-                                return NULL;
-                            } else {
-                                return (tceu_queue*) &QUEUE.buf[QUEUE.get];
-                            }
-                        }
+                    }
+                    QUEUE.get_n--;
+                    if (QUEUE.get_n == 0) {     // reached last DT
+                        QUEUE.get += sizeof(tceu_queue_dt);
                     }
 #else
                     QUEUE.get += sizeof(tceu_queue_dt);
@@ -442,6 +441,10 @@ _QUEUE_get = get;
 #ifdef TM_QUEUE_WCLOCK_REUSE
             if (QUEUE.get_n > 0) {
                 tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
+TM com reuse
+ta falhando no backwards normal (mesmo s/ o ALT-setas)
+- problema provavel no Q.get_n vs qu->n
+- depois ainda tem que unir reuse+snap
                 if (QUEUE.get_n == qu->n) {
                     QUEUE.get   = QUEUE.unget;
                     QUEUE.get_n = 0;
@@ -462,9 +465,15 @@ _QUEUE_get = get;
 
         void queue_drop (void) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
-            if (QUEUE.get_n > 0) {
-                tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
-                qu->n = QUEUE.get_n;
+            tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
+            if (qu->evt == CEU_IN__WCLOCK) {
+                if (QUEUE.get_n == 0) {     // not tracking yet
+                    // ready to be dumped
+                } else {                    // tracking N->1
+                    assert(QUEUE.get > 1);
+                    qu->n = QUEUE.get_n-1;
+                    QUEUE.get += sizeof(tceu_queue_dt); // save it
+                }
             }
             QUEUE.get_n = 0;
 #endif
@@ -519,13 +528,13 @@ _QUEUE_get = get;
         int SNAP_put = 0;
         char* SNAP_data;
 
-        void snap_put (u32 queue, u32 time) {
+        void snap_put (u32 time) {
             assert(SNAP_put < TM_SNAP_N);
             SNAP[SNAP_put].data  = *((CEU_App*)SNAP_data);
-            SNAP[SNAP_put].queue = queue;
+            SNAP[SNAP_put].queue = QUEUE.put;
             SNAP[SNAP_put].time  = time;
             SNAP_put++;
-printf("SNAP\n");
+printf("PUT\n");
         }
 
 #ifdef TM_SNAP
@@ -547,11 +556,10 @@ printf("SNAP\n");
                 if (SNAP[i].time <= time) {
                     *((CEU_App*)SNAP_data) = SNAP[i].data;
                     QUEUE.get = SNAP[i].queue;
-// TODO
-QUEUE.unget = 0;
 #ifdef TM_QUEUE_WCLOCK_REUSE
-QUEUE.get_n = 0;
+                    QUEUE.get_n = 0;
 #endif
+printf("GET\n");
                     return SNAP[i].time;
                 }
             }
