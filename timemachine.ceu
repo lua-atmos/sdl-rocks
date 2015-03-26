@@ -406,6 +406,7 @@ _QUEUE_get = get;
                 return NULL;
             } else {
                 assert(QUEUE.tot > 0);
+                QUEUE.unget = QUEUE.get;
                 tceu_queue* qu = (tceu_queue*) &QUEUE.buf[QUEUE.get];
                 if (qu->evt == CEU_IN__WCLOCK) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
