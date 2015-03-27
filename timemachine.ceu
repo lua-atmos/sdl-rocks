@@ -111,6 +111,7 @@ do
         par/or do
             finalize with
                 _CEU_TIMEMACHINE_ON = 0;
+_printf("DROP: %d => %d\n", this.time_total, time_now);
                 this.time_total = time_now;     // drop future
                 _queue_drop();
 #ifdef TM_SNAP
@@ -350,7 +351,7 @@ _QUEUE_get = get;
             u32  put;
 #ifdef TM_QUEUE_WCLOCK_REUSE
             u32  put_old;
-            u32  get_n;
+            u8   get_n;
 #endif
         } tceu_queue_state;
     end
@@ -363,7 +364,7 @@ _QUEUE_get = get;
             , 0 //u32  QUEUE_put     = 0;
 #ifdef TM_QUEUE_WCLOCK_REUSE
             , 0 //u32  QUEUE_put_old = 0;
-            , 0 //u32  QUEUE_get_n   = 0;
+            , 0 //u8   QUEUE_get_n   = 0;
 #endif
         };
 
@@ -415,12 +416,10 @@ _QUEUE_get = get;
                 tceu_queue* qu = (tceu_queue*) &QUEUE.buf[QUEUE.get];
                 if (qu->evt == CEU_IN__WCLOCK) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
-                    if (QUEUE.get_n == 0) {     // not yet tracking current
-                        tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
-                        QUEUE.get_n = qu->n;
-                    }
-                    QUEUE.get_n--;
-                    if (QUEUE.get_n == 0) {     // reached last DT
+                    tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
+                    QUEUE.get_n++;
+                    if (QUEUE.get_n == qu->n) {     // reached last DT
+                        QUEUE.get_n = 0;
                         QUEUE.get += sizeof(tceu_queue_dt);
                     }
 #else
@@ -431,6 +430,7 @@ _QUEUE_get = get;
                     QUEUE.get_n = 0;
 #endif
                     QUEUE.get += sizeof(tceu_queue) + qu->sz;
+                    assert(QUEUE.get_n == 0);
                 }
 //printf("GET: get=%d, evt=%d, getn=%d\n", QUEUE_get, qu->evt, QUEUE_get_n);
                 return qu;
@@ -441,22 +441,19 @@ _QUEUE_get = get;
 #ifdef TM_QUEUE_WCLOCK_REUSE
             if (QUEUE.get_n > 0) {
                 tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
-TM com reuse
-ta falhando no backwards normal (mesmo s/ o ALT-setas)
-- problema provavel no Q.get_n vs qu->n
-- depois ainda tem que unir reuse+snap
-                if (QUEUE.get_n == qu->n) {
-                    QUEUE.get   = QUEUE.unget;
-                    QUEUE.get_n = 0;
-                } else {
-                    QUEUE.get_n++;
+                assert(qu->evt == CEU_IN__WCLOCK);
+                QUEUE.get_n--;                  // unget
+                if (QUEUE.get_n == 0) {
+                    QUEUE.get = QUEUE.unget;    // underflow, drop current
                 }
             } else {
                 QUEUE.get = QUEUE.unget;
-                tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
-                if (qu->evt == CEU_IN__WCLOCK) {
-                    QUEUE.get_n = qu->n;
-                }
+            }
+
+            // jump to last DT in a WCLOCK slot
+            tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
+            if (qu->evt == CEU_IN__WCLOCK) {
+                QUEUE.get_n = qu->n - 1;
             }
 #else
             QUEUE.get = QUEUE.unget;
@@ -467,12 +464,12 @@ ta falhando no backwards normal (mesmo s/ o ALT-setas)
 #ifdef TM_QUEUE_WCLOCK_REUSE
             tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
             if (qu->evt == CEU_IN__WCLOCK) {
-                if (QUEUE.get_n == 0) {     // not tracking yet
-                    // ready to be dumped
-                } else {                    // tracking N->1
-                    assert(QUEUE.get > 1);
-                    qu->n = QUEUE.get_n-1;
-                    QUEUE.get += sizeof(tceu_queue_dt); // save it
+printf("drop-k %d => %d\n", qu->n, QUEUE.get_n);
+                if (QUEUE.get_n == 0) {
+                                                        // drop current slot
+                } else {
+                    qu->n = QUEUE.get_n;                // replace with new max
+                    QUEUE.get += sizeof(tceu_queue_dt); // keep current slot
                 }
             }
             QUEUE.get_n = 0;
@@ -488,6 +485,9 @@ ta falhando no backwards normal (mesmo s/ o ALT-setas)
 
         void queue_toend (void) {
             QUEUE.get = QUEUE.unget = QUEUE.put;
+#ifdef TM_QUEUE_WCLOCK_REUSE
+            QUEUE.get_n = 0;
+#endif
         }
 
         void queue_dump (void) {
@@ -534,7 +534,6 @@ ta falhando no backwards normal (mesmo s/ o ALT-setas)
             SNAP[SNAP_put].queue = QUEUE.put;
             SNAP[SNAP_put].time  = time;
             SNAP_put++;
-printf("PUT\n");
         }
 
 #ifdef TM_SNAP
@@ -559,7 +558,6 @@ printf("PUT\n");
 #ifdef TM_QUEUE_WCLOCK_REUSE
                     QUEUE.get_n = 0;
 #endif
-printf("GET\n");
                     return SNAP[i].time;
                 }
             }
