@@ -199,8 +199,8 @@ do
         end
     end
 
-    TM_AWAIT_SEEK(global:tm_);
     emit global:tm_.go_off;
+    TM_AWAIT_SEEK(global:tm_);
     emit global:in_tm => false;
     global:blur = false;
 
@@ -218,8 +218,9 @@ with
             emit tm.go_on;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
-            emit uitm.go_off;
             emit tm.go_off;
+            TM_AWAIT_SEEK(tm);
+            emit uitm.go_off;
             emit in_tm => false;
         else/if sym==_SDLK_LALT and _TIME1>0 then
             _TIME1 = _TIME1 - 1;

@@ -111,7 +111,7 @@ do
         par/or do
             finalize with
                 _CEU_TIMEMACHINE_ON = 0;
-_printf("DROP: %d => %d\n", this.time_total, time_now);
+//_printf("DROP: %d => %d\n", this.time_total, time_now);
                 this.time_total = time_now;     // drop future
                 _queue_drop();
 #ifdef TM_SNAP
@@ -119,6 +119,7 @@ _printf("DROP: %d => %d\n", this.time_total, time_now);
 #endif
             end
             await this.go_off;
+            TM_AWAIT_SEEK(this);
             emit this.io.go_off;
         with
             var int speed = 0;
@@ -376,26 +377,27 @@ _QUEUE_get = get;
             if (evt == CEU_IN__WCLOCK) {
 #ifdef TM_QUEUE_WCLOCK_REUSE
                 assert(*((s32*)buf) == (1000/CEU_FPS));
-                tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put_old];
-                if (sz==0 && QUEUE.put!=QUEUE.put_old && qu->evt==CEU_IN__WCLOCK && qu->n<255) {
+                tceu_queue_dt* qo = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put_old];
+                if (qo->evt==CEU_IN__WCLOCK && QUEUE.put!=QUEUE.put_old && qo->n<255 && sz==0) {
                     /* sz==1 means "break now" when reaching a SNAP boundary */
+                    /* QUEUE.put==QUEUE.put_old means "break now" (either before init or after drop */
                     QUEUE.put = QUEUE.put_old;
-                    qu->n++;
+                    qo->n++;
                 } else {
-                    tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put];
-                    qu->evt = CEU_IN__WCLOCK;
-                    qu->n   = 1;
+                    tceu_queue_dt* qn = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put];
+                    qn->evt = CEU_IN__WCLOCK;
+                    qn->n   = 1;
                 }
 #else
-                tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put];
-                qu->evt = evt;
-                qu->dt  = *((s32*)buf);
+                tceu_queue_dt* qn = (tceu_queue_dt*) &QUEUE.buf[QUEUE.put];
+                qn->evt = evt;
+                qn->dt  = *((s32*)buf);
 #endif
             } else {
-                tceu_queue* qu = (tceu_queue*) &QUEUE.buf[QUEUE.put];
-                qu->evt = evt;
-                qu->sz  = sz;
-                memcpy(qu->buf, buf, sz);
+                tceu_queue* qn = (tceu_queue*) &QUEUE.buf[QUEUE.put];
+                qn->evt = evt;
+                qn->sz  = sz;
+                memcpy(qn->buf, buf, sz);
             }
 
 #ifdef TM_QUEUE_WCLOCK_REUSE
@@ -430,7 +432,6 @@ _QUEUE_get = get;
                     QUEUE.get_n = 0;
 #endif
                     QUEUE.get += sizeof(tceu_queue) + qu->sz;
-                    assert(QUEUE.get_n == 0);
                 }
 //printf("GET: get=%d, evt=%d, getn=%d\n", QUEUE_get, qu->evt, QUEUE_get_n);
                 return qu;
@@ -443,17 +444,14 @@ _QUEUE_get = get;
                 tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
                 assert(qu->evt == CEU_IN__WCLOCK);
                 QUEUE.get_n--;                  // unget
-                if (QUEUE.get_n == 0) {
-                    QUEUE.get = QUEUE.unget;    // underflow, drop current
-                }
             } else {
                 QUEUE.get = QUEUE.unget;
-            }
 
-            // jump to last DT in a WCLOCK slot
-            tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
-            if (qu->evt == CEU_IN__WCLOCK) {
-                QUEUE.get_n = qu->n - 1;
+                // jump to last DT in a WCLOCK slot
+                tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
+                if (qu->evt == CEU_IN__WCLOCK) {
+                    QUEUE.get_n = qu->n - 1;
+                }
             }
 #else
             QUEUE.get = QUEUE.unget;
@@ -464,7 +462,7 @@ _QUEUE_get = get;
 #ifdef TM_QUEUE_WCLOCK_REUSE
             tceu_queue_dt* qu = (tceu_queue_dt*) &QUEUE.buf[QUEUE.get];
             if (qu->evt == CEU_IN__WCLOCK) {
-printf("drop-k %d => %d\n", qu->n, QUEUE.get_n);
+//printf("drop-k %d => %d\n", qu->n, QUEUE.get_n);
                 if (QUEUE.get_n == 0) {
                                                         // drop current slot
                 } else {
@@ -486,6 +484,7 @@ printf("drop-k %d => %d\n", qu->n, QUEUE.get_n);
         void queue_toend (void) {
             QUEUE.get = QUEUE.unget = QUEUE.put;
 #ifdef TM_QUEUE_WCLOCK_REUSE
+            QUEUE.put_old = QUEUE.put;
             QUEUE.get_n = 0;
 #endif
         }
