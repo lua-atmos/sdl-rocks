@@ -81,8 +81,8 @@ var App app;
 */
 
 #define TM_QUEUE_WCLOCK_REUSE
-//#define TM_SNAP
-#define TM_SNAP_MS 10000  /* 10s = 30*10 = at most 300 frames to traverse */
+#define TM_SNAP
+#define TM_SNAP_MS 10000 /* [10000] 10s = 30*10 = at most 300 frames to traverse */
                          /* 0 means "do not take snaps" */
 #define TM_SNAP_N  6*60  /* 10s*6*60=1h  (360*56K-rocks = 1.8Mb) */
 
