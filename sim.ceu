@@ -106,7 +106,11 @@ do
                     var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYDOWN do
                         _queue_put(_CEU_IN_SDL_KEYDOWN,
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key
+#ifdef TM_SNAP
+                                            , 0
+#endif
+                                  )
                             finalize with
                                 nothing;
                             end;
@@ -115,7 +119,11 @@ do
                     var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYUP do
                         _queue_put(_CEU_IN_SDL_KEYUP,
-                                   sizeof(_SDL_KeyboardEvent), (byte*)key)
+                                   sizeof(_SDL_KeyboardEvent), (byte*)key
+#ifdef TM_SNAP
+                                        , 0
+#endif
+                                  )
                             finalize with
                                 nothing;
                             end;
