@@ -80,6 +80,7 @@ var App app;
             // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 */
 
+#define TM_SNAP_ONLY
 #define TM_QUEUE_WCLOCK_REUSE
 #define TM_SNAP
 #define TM_SNAP_MS 10000 /* [10000] 10s = 30*10 = at most 300 frames to traverse */
@@ -90,10 +91,14 @@ var App app;
 #include "ui-timemachine.ceu"
 
 _printf("APP %ld\n", sizeof(_CEU_App));
+#ifndef TM_SNAP_ONLY
 _printf("DT  %ld\n", sizeof(_tceu_queue_dt));
 _printf("QUE %ld\n", sizeof(_tceu_queue));
+#endif
 _printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
 _printf("QUEUE_MAX %d\n", TM_QUEUE_MAX);
+
+#ifndef TM_SNAP_ONLY
 
 class IOTimeMachine with
     interface IIOTimeMachine;
@@ -153,9 +158,13 @@ do
 end
 var IOTimeMachine io;
 
+#endif
+
 var TimeMachine tm with
     this.app = app;
+#ifndef TM_SNAP_ONLY
     this.io  = io;
+#endif
 end;
 var UITimeMachine uitm with
     this.tm = tm;
