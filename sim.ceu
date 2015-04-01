@@ -67,7 +67,9 @@ var App app;
 #define TM_INPUT_REDRAW SDL_REDRAW
 //#define TM_DELAY(v)     _SDL_Delay(v)
 
-#define TM_QUEUE_MAX (10*60*60 * (2+8+32))
+#if 0
+#define TM_QUEUE
+#define TM_QUEUE_N (10*60*60 * (2+8+32))
                      /* 10e/s for 1h */
     /*  sizeof(tceu_queue)=8
         sizeof(SDL_KeyboardEvent)=32
@@ -79,26 +81,30 @@ var App app;
             // 1h of events with 2 events/frame
             // 3600*1000 = 3600000 =>/30 = 120000 =>2 = 240000 = 240K events
 */
-
-#define TM_SNAP_ONLY
 #define TM_QUEUE_WCLOCK_REUSE
+#endif
+
+#if 0
 #define TM_SNAP
+#ifdef TM_QUEUE
 #define TM_SNAP_MS 10000 /* [10000] 10s = 30*10 = at most 300 frames to traverse */
                          /* 0 means "do not take snaps" */
+#endif
 #define TM_SNAP_N  6*60  /* 10s*6*60=1h  (360*56K-rocks = 1.8Mb) */
+#endif
+
+#if 1
+#define TM_DIFF
+#define TM_DIFF_N 1000000
+#endif
+
+_printf("APP %ld\n", sizeof(_CEU_App));
+_printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
 
 #include "timemachine.ceu"
 #include "ui-timemachine.ceu"
 
-_printf("APP %ld\n", sizeof(_CEU_App));
-#ifndef TM_SNAP_ONLY
-_printf("DT  %ld\n", sizeof(_tceu_queue_dt));
-_printf("QUE %ld\n", sizeof(_tceu_queue));
-#endif
-_printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
-_printf("QUEUE_MAX %d\n", TM_QUEUE_MAX);
-
-#ifndef TM_SNAP_ONLY
+#ifdef TM_QUEUE
 
 class IOTimeMachine with
     interface IIOTimeMachine;
@@ -158,11 +164,11 @@ do
 end
 var IOTimeMachine io;
 
-#endif
+#endif  // TM_QUEUE
 
 var TimeMachine tm with
     this.app = app;
-#ifndef TM_SNAP_ONLY
+#ifdef TM_QUEUE
     this.io  = io;
 #endif
 end;
