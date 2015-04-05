@@ -17,6 +17,10 @@ native do
     SDL_Texture* TEX_NUM[10];
 end
 
+#ifdef CEU_TIMEMACHINE
+global do
+#endif
+
 /*
  * Load (and destroy) each image used in the program.
  * The "finalize" clause ensures that each image is properly destroyed on 
@@ -125,3 +129,7 @@ end
 loop i in 10 do
     _assert(_TEX_NUM[i] != null);
 end
+
+#ifdef CEU_TIMEMACHINE
+end
+#endif

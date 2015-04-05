@@ -11,6 +11,10 @@ native do
     Mix_Chunk* SND_START     = NULL;    // every battle
 end
 
+#ifdef CEU_TIMEMACHINE
+global do
+#endif
+
 /*
  * Open (and close) the "Mix" library.
  * The "finalize" clause if attached to the global scope of the program (which 
@@ -65,3 +69,7 @@ _assert(_SND_ROCK      != null);
 _assert(_SND_HIT_DEC   != null);
 _assert(_SND_EXPLOSION != null);
 _assert(_SND_START     != null);
+
+#ifdef CEU_TIMEMACHINE
+end
+#endif

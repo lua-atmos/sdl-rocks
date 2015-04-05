@@ -30,6 +30,10 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #endif
 
+#ifdef CEU_TIMEMACHINE
+#define _rand() _drand()
+#endif
+
 /*
  * Max number of instances for the graphical objects in the game.
  * _OBJ_N sums up all of them to hold the maximum number of objects that can be 
@@ -203,10 +207,12 @@ end
  * GAME EXECUTION STARTS HERE
  */
 
+#ifndef CEU_TIMEMACHINE
 native do
     ##include <time.h>
 end
 _srand(_time(null));    // initialize the game "randomizer"
+#endif
 
 /*
  * Create the game window and renderer.
@@ -230,6 +236,10 @@ native do
     int REN_W, REN_H;
 end
 
+#ifdef CEU_TIMEMACHINE
+global do
+#endif
+
 var _SDL_Window&? win;
     finalize
         win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
@@ -246,6 +256,10 @@ finalize
 with
     _SDL_DestroyRenderer(_REN);
 end
+
+#ifdef CEU_TIMEMACHINE
+end
+#endif
 
 /*
  * Allocate all fonts, textures and sounds used in the game.
@@ -571,7 +585,7 @@ with
                  * automatically destroyed.
                  */
                 var int period = MS;
-                every (_drand() % period)ms do
+                every (_rand() % period)ms do
                     if period > 50 then
                         period = period - 10;
                     end
@@ -702,7 +716,7 @@ with
                                 else
                                     dir = -1;   // right if shot by FIRE2
                                 end
-                                var int pct = _drand() % 100;
+                                var int pct = _rand() % 100;
                                 if pct < 35 then
                                     /*
                                      * Spawn two smaller rocks.
