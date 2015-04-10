@@ -30,14 +30,20 @@ input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
 input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #endif
 
+/*
+ * Ignore all code inside "CEU_TIMEMACHINE" ifdef's.
+ * These are related to time manipulation inside the game, which is an
+ * experimental concept in the language.
+ */
 #ifdef CEU_TIMEMACHINE
 #define _rand() _drand()
 #endif
 
 /*
  * Max number of instances for the graphical objects in the game.
- * _OBJ_N sums up all of them to hold the maximum number of objects that can be 
- * active at a time.
+ * Each ship can handle three fire shots at the same time.
+ * The maximum number of simultaneous meteors, bonuses, and bombs is 30.
+ * OBJ_NN sums all ships, shots and graphical objects.
  */
 #define _OBJ_SHIP_N     1       // x2       // spaceship
 #define _OBJ_FIRE_N     3       // x2       // spaceship simultaneous shots
@@ -45,7 +51,11 @@ input _SDL_KeyboardEvent* SDL_KEYDOWN;
 #define _OBJ_NN + 2*_OBJ_SHIP_N  \
                 + 2*_OBJ_FIRE_N  \
                 +   _OBJ_N
-#define MS 2000
+
+/*
+ * Starting period between the creation of a new meteor.
+ */
+#define _ROCKS_MS 2000
 
 /*
  * Céu relies on C to declare globals, enums, and functions.
@@ -152,7 +162,7 @@ end
 #include "points.ceu"           // (Ignore it for now.)
 
 /*
- * Notice:
+ * PS:
  * Internal event identifiers in interfaces use the prefix "go_" or "ok_" when 
  * they have a fixed "emit->await" direction usage:
  * "go_": client emits the event, while the instance awaits it.
@@ -195,6 +205,7 @@ interface Object with
     event void      go_hit;   // Signal that the object has collided.
 end
 
+/* TODO: read "NObject" this as a synonym for "Object" */
 interface NObject with
     interface Object;
     var char[0] nope;
@@ -237,8 +248,14 @@ native do
 end
 
 #ifdef CEU_TIMEMACHINE
-global do
+global do   // ignore all code inside "CEU_TIMEMACHINE" ifdef's
 #endif
+
+/*
+ * Create (and destroy) the game window.
+ * The "finalize" clause ensures that the window is properly destroyed on 
+ * program termination.
+ */
 
 var _SDL_Window&? win;
     finalize
@@ -251,6 +268,12 @@ var _SDL_Window&? win;
     end
 _SDL_GetWindowSize(&win, &_REN_W, &_REN_H);
 
+/*
+ * Create (and destroy) the game renderer.
+ * The "finalize" clause ensures that the renderer is properly destroyed on 
+ * program termination.
+ */
+
 finalize
     _REN = _SDL_CreateRenderer(&win, -1, 0);
 with
@@ -258,7 +281,7 @@ with
 end
 
 #ifdef CEU_TIMEMACHINE
-end
+end         // ignore all code inside "CEU_TIMEMACHINE" ifdef's
 #endif
 
 /*
@@ -271,6 +294,8 @@ end
 #include "texs.ceu"
 #include "snds.ceu"
 
+/* Ignore all code inside "CEU_TIMEMACHINE" ifdef's. */
+#ifdef CEU_TIMEMACHINE
 class T with
 do
 end
@@ -299,6 +324,7 @@ _printf("SIZES | T=%ld               \n \
     , sizeof(_CEU_Missile)
     , sizeof(_CEU_Bomb)
 );
+#endif
 
 /*
  * The outermost "par/or" that handles all game activities in parallel.
@@ -525,7 +551,12 @@ with
                 this.lim_y2 = _REN_H - dim/2;
             end;
 
+            /*
+             * All dynamically spawned meteors, bonuses, and bombs reside in 
+             * this pool.
+             */
             pool NObject[_OBJ_N] all;
+                /* TODO: read "NObject" this as a synonym for "Object" */
 
             /*
              * The game innermost "par/or" only terminates when one of the 
@@ -539,40 +570,6 @@ with
                 await ship2.ok_killed;      // if ship2 is destroyed,
                 emit points1.go_inc;        //  increment points1
             with
-/*
-                // TODO: too ugly!!
-                loop do
-                    var int x,y;
-                    var int id;
-                    par/or do
-                        await ship1.ok_missile;
-                        x = ship1.rect.x;
-                        y = ship1.rect.y;
-                        id = _OBJ_FIRE1;
-                    with
-                        await ship2.ok_missile;
-                        x = ship2.rect.x;
-                        y = ship2.rect.y;
-                        id = _OBJ_FIRE2;
-                    end
-                    var int i=0;
-                    loop (Object*)o in all do
-                        if i == 3 then
-                            break;
-                        end
-                        i = i + 1;
-                        if o:id == _OBJ_ROCK then
-                            spawn Missile in all with
-                                this.rect.x = x;
-                                this.rect.y = y;
-                                this.id = id;
-                                this.obj_to_follow = o;
-                            end;
-                        end
-                    end
-                end
-            with
-*/
                 /*
                  * Period to create a new meteor in the game.
                  * It starts with 2s but goes down continuously.
@@ -584,7 +581,7 @@ with
                  * "battle block" will restart and all meteors will be 
                  * automatically destroyed.
                  */
-                var int period = MS;
+                var int period = _ROCKS_MS;
                 every (_rand() % period)ms do
                     if period > 50 then
                         period = period - 10;
@@ -603,9 +600,12 @@ with
                  */
                 every SDL_DT do
 
-// TODO: smart pools iterator
+                    /*
+                     * Prepare the vector "objs" with all alive objects.
+                     */
                     var Object*[_OBJ_NN] objs;
-                    var int     objs_n = 0;
+                        // (TODO: smart pools iterator)
+                    var int objs_n = 0;
                     objs[objs_n] = &ship1;
                     objs_n = objs_n + 1;
                     objs[objs_n] = &ship2;
