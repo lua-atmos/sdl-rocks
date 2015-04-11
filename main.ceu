@@ -5,7 +5,7 @@
 #include "c.ceu"            // standard C functions (e.g. assert)
 #include "sdl.ceu"          // basic functions (e.g. SDL_CreateWindow)
 #include "sdl-gfx.ceu"      // drawing primitives (e.g.  bezierRGBA)
-#include "sdl-colors.ceu"   // most commonly used colors (e.g. colors.white)
+#include "sdl-colors.ceu"   // most commonly used colors (e.g. SDL_COLOR_WHITE)
 
 /*
  * External events used in this file.
@@ -877,9 +877,10 @@ with
         var char[5] str;
         _sprintf(str, "%d", fps);
         var _SDL_Texture&? tex;
+        var SDL_Color white = SDL_COLOR_WHITE;
         finalize
             tex = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                    &_colors.white, null);
+                                    (_SDL_Color*)&white, null);
         with
             _SDL_DestroyTexture(&tex);
         end

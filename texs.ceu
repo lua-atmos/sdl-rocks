@@ -27,6 +27,8 @@ global do
  * program termination.
  */
 
+var SDL_Color white = SDL_COLOR_WHITE;
+
 finalize
    _TEX_BG = _IMG_LoadTexture(_REN, "imgs/bg.png");
 with
@@ -35,7 +37,7 @@ end
 
 finalize
    _TEX_TAP = _SDL_text2texture(_REN, _FONT_BIG, "= TAP TO START =",
-                             &_colors.white, null);
+                                (_SDL_Color*)&white, null);
 with
    _SDL_DestroyTexture(_TEX_TAP);
 end
@@ -66,28 +68,28 @@ end
 
 finalize
    _TEX_BONUS_LIFE = _SDL_text2texture(_REN, _FONT_SMALL, "+1",
-                                        &_colors.white, null);
+                                       (_SDL_Color*)&white, null);
 with
    _SDL_DestroyTexture(_TEX_BONUS_LIFE);
 end
 
 finalize
     _TEX_BONUS_SHIELD = _SDL_text2texture(_REN, _FONT_SMALL, "S",
-                                        &_colors.white, null);
+                                          (_SDL_Color*)&white, null);
 with
    _SDL_DestroyTexture(_TEX_BONUS_SHIELD);
 end
 
 finalize
    _TEX_BONUS_HITS = _SDL_text2texture(_REN, _FONT_SMALL, "H",
-                                        &_colors.white, null);
+                                       (_SDL_Color*)&white, null);
 with
    _SDL_DestroyTexture(_TEX_BONUS_HITS);
 end
 
 finalize
    _TEX_BONUS_FIRE = _SDL_text2texture(_REN, _FONT_SMALL, "F",
-                                        &_colors.white, null);
+                                       (_SDL_Color*)&white, null);
 with
    _SDL_DestroyTexture(_TEX_BONUS_FIRE);
 end
@@ -97,7 +99,7 @@ loop i in 3 do
     _sprintf(str, "%d", i+1);
     finalize
         _TEX_BOMB[i] = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                         &_colors.white, null);
+                                         (_SDL_Color*)&white, null);
     with
         // finalize below
     end
@@ -116,7 +118,7 @@ loop i in 10 do
     _sprintf(str, "%d", i);
     finalize
         _TEX_NUM[i] = _SDL_text2texture(_REN, _FONT_BIG, str,
-                                        &_colors.white, null);
+                                        (_SDL_Color*)&white, null);
     with
         // finalize below
     end
