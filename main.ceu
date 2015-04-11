@@ -156,10 +156,10 @@ end
  * We provide an implementation in "points.ceu": TextPoints.
  */
 interface Points with
-    var   _SDL_Point pos;       // The (centered) position to show the points.
-    event void       go_inc;    // Increments the number of points.
+    var   SDL_Point pos;       // The (centered) position to show the points.
+    event void      go_inc;    // Increments the number of points.
 end
-#include "points.ceu"           // (Ignore it for now.)
+#include "points.ceu"          // (Ignore it for now.)
 
 /*
  * PS:
@@ -200,9 +200,9 @@ end
  * The objects know how to animate and redraw themselves.
  */
 interface Object with
-    var   int       id;       // Object type identifier (e.g. _OBJ_SHIP1)
-    var   _SDL_Rect rect;     // Position (x,y) and dimension (w,h).
-    event void      go_hit;   // Signal that the object has collided.
+    var   int      id;       // Object type identifier (e.g. _OBJ_SHIP1)
+    var   SDL_Rect rect;     // Position (x,y) and dimension (w,h).
+    event void     go_hit;   // Signal that the object has collided.
 end
 
 /* TODO: read "NObject" this as a synonym for "Object" */
@@ -368,15 +368,11 @@ with
      * Each player's points is incremented when the ship of the opponent is 
      * destroyed.
      */
-    var _SDL_Point p1;
-        p1.x = _REN_W/15;
-        p1.y = _REN_H - _REN_H/10;
+    var SDL_Point p1 = SDL_Point(_REN_W/15, _REN_H-_REN_H/10);
     var TextPoints points1 with
         this.pos = p1;      // fixed position
     end;
-    var _SDL_Point p2;
-        p2.x = _REN_W - _REN_W/15;
-        p2.y = _REN_H - _REN_H/10;
+    var SDL_Point p2 = SDL_Point(_REN_W-_REN_W/15, _REN_H-_REN_H/10);
     var TextPoints points2 with
         this.pos = p2;      // fixed position
     end;
@@ -394,10 +390,10 @@ with
          * "texs.ceu") and await the user interaction.
          */
         do
-            var _SDL_Rect r;
-            _SDL_QueryTexture(_TEX_TAP, null, null, &r.w, &r.h);
-                r.x = _REN_W/2 - r.w/2;     // center on screen
-                r.y = _REN_H/2 - r.h/2;     // center on screen
+            var int w,h;
+            _SDL_QueryTexture(_TEX_TAP, null, null, &w, &h);
+            var SDL_Rect r = SDL_Rect(_REN_W/2-w/2, _REN_H/2-h/2, w,h);
+                                        // center on screen
 
             /*
              * We use three trails in the "par/or" for the blinking message:
@@ -419,7 +415,7 @@ with
                     await 500ms;
                     watching 500ms do
                         every SDL_REDRAW do
-                            _SDL_RenderCopy(_REN, _TEX_TAP, null, &r);
+                            _SDL_RenderCopy(_REN, _TEX_TAP, null, (_SDL_Rect*)&r);
                         end
                     end
                 end
@@ -466,24 +462,12 @@ with
              * - fire_2: Fire the 2nd player's ship shots.
              */
             var TouchController controller1 with
-                this.move_r.x = 0;
-                this.move_r.y = 0;
-                this.move_r.w = _REN_W/2;
-                this.move_r.h = _REN_H/2;
-                this.fire_r.x = 0;
-                this.fire_r.y = _REN_H/2;
-                this.fire_r.w = _REN_W/2;
-                this.fire_r.h = _REN_H/2;
+                this.move_r = SDL_Rect(0,0, _REN_W/2,_REN_H/2);
+                this.fire_r = SDL_Rect(0,_REN_H/2, _REN_W/2,_REN_H/2);
             end;
             var TouchController controller2 with
-                this.move_r.x = _REN_W/2;
-                this.move_r.y = _REN_H/2;
-                this.move_r.w = _REN_W/2;
-                this.move_r.h = _REN_H/2;
-                this.fire_r.x = _REN_W/2;
-                this.fire_r.y = 0;
-                this.fire_r.w = _REN_W/2;
-                this.fire_r.h = _REN_H/2;
+                this.move_r = SDL_Rect(_REN_W/2,_REN_H/2, _REN_W/2,_REN_H/2);
+                this.fire_r = SDL_Rect(_REN_W/2,0, _REN_W/2,_REN_H/2);
             end;
 #else
             /*
@@ -647,10 +631,10 @@ with
                              * decrement half of w,h to find their respective 
                              * rectangles.
                              */
-                            var _SDL_Rect r1 = o1:rect;
+                            var SDL_Rect r1 = o1:rect;
                                 r1.x = r1.x - r1.w/2;
                                 r1.y = r1.y - r1.h/2;
-                            var _SDL_Rect r2 = o2:rect;
+                            var SDL_Rect r2 = o2:rect;
                                 r2.x = r2.x - r2.w/2;
                                 r2.y = r2.y - r2.h/2;
 
@@ -659,7 +643,7 @@ with
                              * intersection.
                              * (Otherwise, go to the next pair of objects).
                              */
-                            if not _SDL_HasIntersection(&r1, &r2) then
+                            if not _SDL_HasIntersection((_SDL_Rect*)&r1, (_SDL_Rect*)&r2) then
                                 continue;
                             end
 
@@ -899,11 +883,7 @@ with
         with
             _SDL_DestroyTexture(&tex);
         end
-        var _SDL_Rect r;
-            r.x = 200;
-            r.y = 200;
-            r.w = 30;
-            r.h = 30;
+        var SDL_Rect r = (200,200, 30,30);
 
         /*
          * During 1 second, show the previous FPS and increment the current 
@@ -914,7 +894,7 @@ with
         watching 1s do
             every SDL_REDRAW do
                 c = c + 1;
-                _SDL_RenderCopy(_REN, &tex, null, &r);
+                _SDL_RenderCopy(_REN, &tex, null, (_SDL_Rect*)&r);
             end
         end
         fps = c;

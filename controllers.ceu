@@ -99,8 +99,8 @@ input _SDL_TouchFingerEvent* SDL_FINGERUP;
  */
 class TouchController with
     interface Controller;
-    var _SDL_Rect move_r;       // rectangular area for ship movement
-    var _SDL_Rect fire_r;       // rectangular area for ship firing
+    var SDL_Rect move_r;       // rectangular area for ship movement
+    var SDL_Rect fire_r;       // rectangular area for ship firing
 
     /*
      * Interface fields can be redeclared to define default values:
@@ -129,11 +129,11 @@ do
             /*
              * Step 1: await touch until matching "move_r".
              */
-            var _SDL_Point pt1;         // hold starting point
+            var SDL_Point pt1;         // hold starting point
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
-                    _SDL_Rect_vs_Point(&move_r,
-                                       _SDL_Touch2Point(&pt1,e1,_REN_W,_REN_H));
+                    _SDL_Rect_vs_Point((_SDL_Rect*)&move_r,
+                                       _SDL_Touch2Point((_SDL_Point*)&pt1,e1,_REN_W,_REN_H));
 
             var int id = e1:fingerId;   // hold starting finger id
 
@@ -196,10 +196,10 @@ do
          */
         loop do
             // Await for the first finger touch at "fire_r".
-            var _SDL_Point pt;
+            var SDL_Point pt;
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
-                    _SDL_Rect_vs_Point(&fire_r,
+                    _SDL_Rect_vs_Point((_SDL_Rect*)&fire_r,
                                        _SDL_Touch2Point(&pt,e1,_REN_W,_REN_H));
             var int id = e1:fingerId;   // hold the finger id
 
@@ -212,7 +212,7 @@ do
                 // "ok_shield" | "ok_missile" <- pressing another finger
                 var _SDL_TouchFingerEvent* e2 =
                     await SDL_FINGERDOWN until
-                        _SDL_Rect_vs_Point(&fire_r,
+                        _SDL_Rect_vs_Point((_SDL_Rect*)&fire_r,
                                            _SDL_Touch2Point(&pt,e2,_REN_W,_REN_H));
                 //par/or do
                     await SDL_FINGERUP until (e2:fingerId != id);
@@ -233,10 +233,10 @@ do
          */
         loop do
             // Start from "fire_r":
-            var _SDL_Point pt1;
+            var SDL_Point pt1;
             var _SDL_TouchFingerEvent* e1 =
                 await SDL_FINGERDOWN until
-                    _SDL_Rect_vs_Point(&fire_r,
+                    _SDL_Rect_vs_Point((_SDL_Rect*)&fire_r,
                                        _SDL_Touch2Point(&pt1,e1,_REN_W,_REN_H));
 
             var int id = e1:fingerId;   // hold the finger id
@@ -248,8 +248,8 @@ do
                 loop do
                     var _SDL_TouchFingerEvent* e2 =
                         await SDL_FINGERMOTION until (e2:fingerId == id);
-                    var _SDL_Point pt2;
-                        _SDL_Touch2Point(&pt2, e2, _REN_W, _REN_H);
+                    var SDL_Point pt2;
+                        _SDL_Touch2Point((_SDL_Point*)&pt2, e2, _REN_W, _REN_H);
                     var int dy = pt1.y - pt2.y;
                     if (dy > _REN_H/2) or (dy < -_REN_H/2) then
                         pt1 = pt2;

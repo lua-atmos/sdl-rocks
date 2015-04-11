@@ -128,10 +128,7 @@ do
      * The image has 6 frames through its Y-axis.
      * Initialize the clipping rectangle from the frame (0,dim).
      */
-    var _SDL_Rect clip_r;
-        clip_r.x =  0;
-        clip_r.w = dim;
-        clip_r.h = dim;
+    var SDL_Rect clip_r = SDL_Rect(0,0, dim,dim);
 
     /*
      * Temporary ship states:
@@ -214,7 +211,7 @@ do
              * - w: thin
              * - h: depends on "n_hits"
              */
-            var _SDL_Rect hits_r;
+            var SDL_Rect hits_r;
                 if this.dir > 0 then
                     hits_r.x = this.lim_x1 + _REN_W/100;    // left side
                 else
@@ -253,7 +250,7 @@ do
         p_shields = n_shields;
 #endif
 
-        var _SDL_Rect shields_r;
+        var SDL_Rect shields_r;
             if this.dir > 0 then
                 shields_r.x = this.lim_x1 + 3*_REN_W/100;   // left side
             else
@@ -361,14 +358,15 @@ end
          * - Increase fire width on every bonus "F" (event "go_F").
          */
         var int n_fires = _SHIP_FIRES_MAX;
-        var _SDL_Rect fires_r;
-            if this.dir > 0 then
-                fires_r.x = this.lim_x1 + 2*_REN_W/100; // left side
-            else
-                fires_r.x = this.lim_x2 - 2*_REN_W/100; // right side
-            end
-            fires_r.w = _REN_W/100;                     // very thin
-            fires_r.y = this.lim_y1 + _REN_H/100;       // top of screen
+        var SDL_Rect fires_r = SDL_Rect(0,
+                                this.lim_y1 + _REN_H/100, // top of screen
+                                _REN_W/100,               // very thin
+                                0);
+        if this.dir > 0 then
+            fires_r.x = this.lim_x1 + 2*_REN_W/100; // left side
+        else
+            fires_r.x = this.lim_x2 - 2*_REN_W/100; // right side
+        end
 
          // Fire width offset (bonus).
         var int fire_w = 0;
@@ -485,12 +483,9 @@ end
                 clip_r.y = dim*1;
             end
             // redraw sprite
-            var _SDL_Rect r;
-                r.x = this.rect.x - dim/2;
-                r.y = this.rect.y - dim/2;
-                r.w = dim;
-                r.h = dim;
-            _SDL_RenderCopy(_REN, &this.tex, &clip_r, &r);
+            var SDL_Rect r = SDL_Rect(this.rect.x-dim/2, this.rect.y-dim/2,
+                                      dim,dim);
+            _SDL_RenderCopy(_REN, &this.tex, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
         end
     end
 
@@ -526,11 +521,7 @@ do
     this.rect.w = dim;
     this.rect.h = dim;
 
-    var _SDL_Rect clip_r;
-        clip_r.x =  0;
-        clip_r.y =  0;
-        clip_r.w = this.rect.w;
-        clip_r.h = this.rect.h;
+    var SDL_Rect clip_r = SDL_Rect(0,0, this.rect.w,this.rect.h);
 
     var float vx = _rand()%(_REN_W/5) + 1;
     var float vy = _rand()%(_REN_H/5) + 1;
@@ -563,12 +554,11 @@ do
         end
     with
         every SDL_REDRAW do
-            var _SDL_Rect r;
-                r.x = this.rect.x - this.rect.w/2;
-                r.y = this.rect.y - this.rect.h/2;
-                r.w = this.rect.w;
-                r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_ROCK, &clip_r, &r);
+            var SDL_Rect r = SDL_Rect(this.rect.x-this.rect.w/2,
+                                      this.rect.y-this.rect.h/2,
+                                      this.rect.w,
+                                      this.rect.h);
+            _SDL_RenderCopy(_REN, _TEX_ROCK, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
         end
     with
         await go_hit;
@@ -587,11 +577,7 @@ do
     this.rect.w = dim;
     this.rect.h = dim;
 
-    var _SDL_Rect clip_r;
-        clip_r.x =  0;
-        clip_r.y =  0;
-        clip_r.w = this.rect.w;
-        clip_r.h = this.rect.h;
+    var SDL_Rect clip_r = SDL_Rect(0,0, this.rect.w,this.rect.h);
 
     var float vx = (_rand()%(_REN_W/10) + 1) * this.dir;
     var float vy = (_rand()%(_REN_H/10) + 1);
@@ -615,12 +601,11 @@ do
         end
     with
         every SDL_REDRAW do
-            var _SDL_Rect r;
-                r.x = this.rect.x - this.rect.w/2;
-                r.y = this.rect.y - this.rect.h/2;
-                r.w = this.rect.w;
-                r.h = this.rect.h;
-            _SDL_RenderCopy(_REN, _TEX_rock, &clip_r, &r);
+            var SDL_Rect r = SDL_Rect(this.rect.x - this.rect.w/2,
+                                      this.rect.y - this.rect.h/2,
+                                      this.rect.w,
+                                      this.rect.h);
+            _SDL_RenderCopy(_REN, _TEX_rock, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
         end
     with
         await go_hit;
@@ -656,11 +641,11 @@ do
             _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
                                     0x00,0x77,0x00,0xFF);
 
-            var _SDL_Rect r;
-                _SDL_QueryTexture(&this.tex, null, null, &r.w, &r.h);
-                r.x = this.rect.x - r.w/2;
-                r.y = this.rect.y - r.h/2;
-            _SDL_RenderCopy(_REN, &this.tex, null, &r);
+            var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
+                                      this.rect.y - r.h/2,
+                                      0,0);
+            _SDL_QueryTexture(&this.tex, null, null, &r.w, &r.h);
+            _SDL_RenderCopy(_REN, &this.tex, null, (_SDL_Rect*)&r);
         end
     with
         await go_hit;
@@ -775,12 +760,11 @@ do
                                     0xFF,0x00,0x00,0xFF);
 
             if timer >= 0 then
-                var _SDL_Rect r;
-                    _SDL_QueryTexture(_TEX_BOMB[timer], null, null,
-                                                              &r.w, &r.h);
-                    r.x = this.rect.x - r.w/2;
-                    r.y = this.rect.y - r.h/2;
-                _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, &r);
+                var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
+                                          this.rect.y - r.h/2,
+                                          0,0);
+                _SDL_QueryTexture(_TEX_BOMB[timer], null, null, &r.w, &r.h);
+                _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, (_SDL_Rect*)&r);
             end
         end
     end
