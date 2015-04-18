@@ -594,15 +594,15 @@ with
                     objs_n = objs_n + 1;
                     objs[objs_n] = &ship2;
                     objs_n = objs_n + 1;
-                    loop (Object*)o in ship1.fires do
+                    loop o in ship1.fires do
                         objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
-                    loop (Object*)o in ship2.fires do
+                    loop o in ship2.fires do
                         objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
-                    loop (Object*)o in all do
+                    loop o in all do
                         objs[objs_n] = o;
                         objs_n = objs_n + 1;
                     end
