@@ -392,7 +392,7 @@ end
                 end
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
-                var Fire* new = spawn Fire in fires with
+                var Fire*? new = spawn Fire in fires with
                     this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
                     this.dir  = dir;        // same orientation
                     this.vy   = vy;         // same speed
