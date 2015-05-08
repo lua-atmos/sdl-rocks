@@ -309,7 +309,6 @@ _printf("SIZES | T=%ld               \n \
                  RockBig=%ld         \n \
                  RockSmall=%ld       \n \
                  Bonus=%ld           \n \
-                 Missile=%ld         \n \
                  Bomb=%ld            \n \
     "
     , sizeof(_CEU_T)
@@ -321,7 +320,6 @@ _printf("SIZES | T=%ld               \n \
     , sizeof(_CEU_RockBig)
     , sizeof(_CEU_RockSmall)
     , sizeof(_CEU_Bonus)
-    , sizeof(_CEU_Missile)
     , sizeof(_CEU_Bomb)
 );
 #endif

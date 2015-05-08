@@ -183,7 +183,7 @@ do
             loop do
                 await this.go_hit until not (this.controller.isImmortal or
                                              hasShield);
-                //n_hits = n_hits - 1;
+                n_hits = n_hits - 1;
 
                 if n_hits <= 0 then
                     break;  // escapes the "loop" and consequently the "par/or"
@@ -399,7 +399,7 @@ end
                     this.rect = rect;       // same position
                     this.w    = fire_w;     // current ship's fire width offset
                 end;
-                if new != null then
+                if new? then
                     // Play shoot sound effect if spawn was successful:
                     _Mix_PlayChannel(-1, _SND_FIRE, 0);
                     n_fires = n_fires - 1;
@@ -652,6 +652,8 @@ do
     end
 end
 
+#if 0
+// not used anymore
 class Missile with
     interface NObject;
     var int id = 0;
@@ -703,6 +705,7 @@ do
         await go_hit;
     end
 end
+#endif
 
 class Bomb with
     interface NObject;
