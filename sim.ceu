@@ -112,7 +112,10 @@ var App app;
 _printf("APP %ld\n", sizeof(_CEU_App));
 _printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
 
+//#define TM_INPUT_NORMAL
+#define TM_INPUT_10MIN
 #include "input.ceu"
+
 #include "timemachine.ceu"
 
 #define _UITM_REN _REN
@@ -277,11 +280,10 @@ with
         end
         _SDL_RenderPresent(_UITM_REN);
     end
-#if 1
+#if defined(TM_INPUT_NORMAL)
 with
     loop do
         var _SDL_KeyboardEvent* key;
-#if 0
         // press LCTRL during 1s (w/o releasing it)
         loop do
             key = await SDL_KEYDOWN_
@@ -294,9 +296,7 @@ with
                 break;
             end
         end
-#endif
 
-do
         _assert(_CEU_TIMEMACHINE_ON == 0);
         _CEU_TIMEMACHINE_ON = 1;
         finalize with
@@ -307,14 +307,29 @@ do
             key = await SDL_KEYDOWN_
                   until key:keysym.sym == _SDLK_LCTRL;
         with
-            do Input with
-                this.visible = false;
-            end;
+            var Input _;
             await FOREVER;
         end
-end
-        await FOREVER;
     end
+#elif defined(TM_INPUT_10MIN)
+with
+    do
+        _assert(_CEU_TIMEMACHINE_ON == 0);
+        _CEU_TIMEMACHINE_ON = 1;
+        finalize with
+            _CEU_TIMEMACHINE_ON = 0;
+        end
+        do Input with
+            this.visible = false;
+        end;
+    end
+    async do
+        var _SDL_KeyboardEvent e_key;
+        e_key.type = _SDL_KEYDOWN;
+        e_key.keysym.sym = _SDLK_ESCAPE;
+        emit SDL_KEYDOWN_ => &e_key;
+    end
+    await FOREVER;
 #endif
 with
     var int fps = 0;                // previous FPS
