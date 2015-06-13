@@ -8,7 +8,6 @@ class Input with
     event void ok;
 do
     par do
-        var _SDL_KeyboardEvent* key;
         every key in SDL_KEYDOWN_ do
             visible = true;
             if key:keysym.sym==_SDLK_LEFT then

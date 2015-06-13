@@ -42,11 +42,7 @@ end
 class App with
     event int ok;
 do
-#if 0
-    var uint seed = _time(null);    // random
-#else
-    var uint seed = 0;              // deterministic
-#endif
+    var uint seed = _time(null);
     _RAND_SEED := &seed;    // App is supposed to live until "sim" is alive
     _srand(seed);
     #define srand(x)
@@ -112,10 +108,6 @@ var App app;
 _printf("APP %ld\n", sizeof(_CEU_App));
 _printf("KEY %ld\n", sizeof(_SDL_KeyboardEvent));
 
-//#define TM_INPUT_NORMAL
-#define TM_INPUT_10MIN
-#include "input.ceu"
-
 #include "timemachine.ceu"
 
 #define _UITM_REN _REN
@@ -131,7 +123,6 @@ do
             // starts off
             watching this.go_on do
                 par do
-                    var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYDOWN do
                         _queue_put(_CEU_IN_SDL_KEYDOWN,
                                    sizeof(_SDL_KeyboardEvent), (byte*)key
@@ -140,11 +131,10 @@ do
 #endif
                                   )
                             finalize with
-                                nothing;
+                                nothing;    // events are mem'copied
                             end;
                     end
                 with
-                    var _SDL_KeyboardEvent* key;
                     every key in SDL_KEYUP do
                         _queue_put(_CEU_IN_SDL_KEYUP,
                                    sizeof(_SDL_KeyboardEvent), (byte*)key
@@ -193,20 +183,25 @@ var UITimeMachine uitm with
     this.tm = tm;
 end;
 
-//event void go_restart;
-interface Global with
-    var TimeMachine& tm_;
-    var bool blur;
+class G with
+    var   TimeMachine& tm_;
+    event bool in_tm;
+    var   bool blur;
+do
 end
-var bool blur = false;
-var TimeMachine& tm_ = tm;
+var G g with
+    this.blur = false;
+    this.tm_  = tm;
+end;
 
 class TimeKeyController with
     var int   k_alt, k_left, k_right;
     event void ok;
+    var G& g;
 do
-    global:blur = true;
-    emit global:tm_.go_on;
+    g.blur = true;
+    emit g.in_tm => true;
+    emit g.tm_.go_on;
 
     par/or do
         var _SDL_KeyboardEvent* key = await SDL_KEYUP_
@@ -216,29 +211,30 @@ do
             var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
             var int sym2 = key:keysym.sym;
             if sym2 == this.k_left then
-                if global:tm_.time_total-global:tm_.time_now < 2000 then
-                    emit global:tm_.go_backward => 2;
+                if g.tm_.time_total-g.tm_.time_now < 2000 then
+                    emit g.tm_.go_backward => 2;
                 end
             else/if sym2 == this.k_right then
-                emit global:tm_.go_forward => 2;
+                emit g.tm_.go_forward => 2;
             end
             par/or do
                 key = await SDL_KEYUP_ until key:keysym.sym == sym2;
             with
-                var int time_now;
-                every time_now in global:tm_.ok_seek do
-                    if global:tm_.time_total-time_now >= 2000 then
+                loop do
+                    var int time_now = await g.tm_.ok_seek;
+                    if g.tm_.time_total-time_now >= 2000 then
                         break;
                     end
                 end
             end
-            emit global:tm_.go_pause;
+            emit g.tm_.go_pause;
         end
     end
 
-    emit global:tm_.go_off;
-    TM_AWAIT_SEEK(global:tm_);
-    global:blur = false;
+    emit g.tm_.go_off;
+    TM_AWAIT_SEEK(g.tm_);
+    emit g.in_tm => false;
+    g.blur = false;
 
     emit this.ok;
 end
@@ -250,18 +246,21 @@ with
         var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_;
         var int sym = key:keysym.sym;
         if sym == _SDLK_ESCAPE then
+            emit g.in_tm => true;
             emit tm.go_on;
             emit uitm.go_on;
             key = await SDL_KEYDOWN_ until key:keysym.sym == _SDLK_ESCAPE;
             emit tm.go_off;
             TM_AWAIT_SEEK(tm);
             emit uitm.go_off;
+            emit g.in_tm => false;
         else/if sym==_SDLK_LALT and _TIME1>0 then
             _TIME1 = _TIME1 - 1;
             do TimeKeyController with
                 this.k_alt   = _SDLK_LALT;
                 this.k_left  = _SDLK_a;
                 this.k_right = _SDLK_d;
+                this.g       = g;
             end;
         else/if sym==_SDLK_RALT and _TIME2>0 then
             _TIME2 = _TIME2 - 1;
@@ -269,67 +268,59 @@ with
                 this.k_alt   = _SDLK_RALT;
                 this.k_left  = _SDLK_LEFT;
                 this.k_right = _SDLK_RIGHT;
+                this.g       = g;
             end;
         end
     end
 with
     every SDL_REDRAW do
         emit uitm.go_redraw;
-        if blur then
+        if g.blur then
             _boxRGBA(_REN, 0, 0, _REN_W, _REN_H, 0xAA,0x88,0x88,0x88);
         end
         _SDL_RenderPresent(_UITM_REN);
     end
-#if defined(TM_INPUT_NORMAL)
+#if 0
 with
     loop do
-        var _SDL_KeyboardEvent* key;
-        // press LCTRL during 1s (w/o releasing it)
-        loop do
-            key = await SDL_KEYDOWN_
-                  until key:keysym.sym == _SDLK_LCTRL;
-            par/or do
-                key = await SDL_KEYUP_
-                      until key:keysym.sym == _SDLK_LCTRL;
+        var _SDL_KeyboardEvent* key = await SDL_KEYDOWN_
+                                      until key:keysym.sym == _SDLK_LCTRL;
+        var bool ok =
+            par do
+                key = await SDL_KEYUP_ until key:keysym.sym == _SDLK_LCTRL;
+                escape false;
             with
                 await 1s;
-                break;
+                escape true;
+            end;
+        if not ok then
+            continue;
+        end
+
+        _assert(_CEU_TIMEMACHINE_ON == 0);
+        _CEU_TIMEMACHINE_ON = 1;
+        finalize with
+            _CEU_TIMEMACHINE_ON = 0;
+        end
+
+        pause/if in_tm do
+            par/or do
+                loop do
+                    key = await SDL_KEYDOWN_
+                          until key:keysym.sym == _SDLK_LCTRL;
+                    par/or do
+                        key = await SDL_KEYUP_
+                              until key:keysym.sym == _SDLK_LCTRL;
+                    with
+                        await 1s;
+                        break;
+                    end
+                end
+            with
+                #include "input.ceu"
             end
         end
-
-        _assert(_CEU_TIMEMACHINE_ON == 0);
-        _CEU_TIMEMACHINE_ON = 1;
-        finalize with
-            _CEU_TIMEMACHINE_ON = 0;
-        end
-
-        par/or do
-            key = await SDL_KEYDOWN_
-                  until key:keysym.sym == _SDLK_LCTRL;
-        with
-            var Input _;
-            await FOREVER;
-        end
     end
-#elif defined(TM_INPUT_10MIN)
-with
-    do
-        _assert(_CEU_TIMEMACHINE_ON == 0);
-        _CEU_TIMEMACHINE_ON = 1;
-        finalize with
-            _CEU_TIMEMACHINE_ON = 0;
-        end
-        do Input with
-            this.visible = false;
-        end;
-    end
-    async do
-        var _SDL_KeyboardEvent e_key;
-        e_key.type = _SDL_KEYDOWN;
-        e_key.keysym.sym = _SDLK_ESCAPE;
-        emit SDL_KEYDOWN_ => &e_key;
-    end
-    await FOREVER;
 #endif
 with
     var int fps = 0;                // previous FPS

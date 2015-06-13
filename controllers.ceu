@@ -33,7 +33,6 @@ do
          * Await for key (down) presses in a loop to set the correspondent 
          * acceleration.
          */
-        var _SDL_KeyboardEvent* key;
         every key in SDL_KEYDOWN do
             if key:keysym.sym == this.k_up then
                 this.ay = -(float)_REN_H/5000;
@@ -58,7 +57,6 @@ do
          * Await for key (up) releases in a loop to unset the correspondent 
          * acceleration.
          */
-        var _SDL_KeyboardEvent* key;
         every key in SDL_KEYUP do
             if key:keysym.sym == this.k_up
             or key:keysym.sym == this.k_down then
@@ -73,7 +71,6 @@ do
          * Await for "k_immortal" (down) presses in a loop to toggle the 
          * "isImmortal" mode.
          */
-        var _SDL_KeyboardEvent* key;
         every key in SDL_KEYDOWN do
             if key:keysym.sym == this.k_immortal then
                 this.isImmortal = not this.isImmortal;

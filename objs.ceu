@@ -21,8 +21,8 @@ do
      * When any of the positions "sx" or "sy" go out of the screen, escape the 
      * loop and terminate this body.
      */
-    var int dt;
-    every dt in SDL_DT do
+    loop do
+        var int dt = await SDL_DT;
         vx = vx + ax*dt;
         sx = sx + this.vx*dt/1000;  // Sx = Sx + vx*dt
         obj.rect.x = sx;
@@ -301,7 +301,6 @@ end
                     par do
                         var float d = this.rect.w;
                         var float v = 40 * this.rect.w;
-                        var int dt;
                         every dt in SDL_DT do
                             d = d + v*dt/1000;
                             this.rect.w = (int)d;
@@ -435,7 +434,6 @@ end
         var float vx = 0;
         var float sy = this.rect.y;
 
-        var int dt;
         every dt in SDL_DT do
             // Speeds are limited to a maximum:
             vx = vx + this.controller.ax*dt;
@@ -495,7 +493,6 @@ end
         par do
             var float d = dim;
             var float v = 40 * dim;
-            var int dt;
             every dt in SDL_DT do
                 d = d + v*dt/1000;
                 this.rect.w = (int)d;
@@ -547,7 +544,6 @@ do
     with
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
-        var int dt;
         every dt in SDL_DT do
             x = x + v*dt/1000;
             clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
@@ -594,7 +590,6 @@ do
     with
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
-        var int dt;
         every dt in SDL_DT do
             x = x + v*dt/1000;
             clip_r.x = (int)(x/this.rect.w)*this.rect.w % (6*this.rect.w);
@@ -750,7 +745,6 @@ do
         watching 200ms do
             var float d = this.rect.w;
             var float v = 40 * this.rect.w;
-            var int dt;
             every dt in SDL_DT do
                 d = d + v*dt/1000;
                 this.rect.w = (int)d;
