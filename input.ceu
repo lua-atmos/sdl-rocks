@@ -8,6 +8,7 @@ class Input with
     event void ok;
 do
     par do
+#ifdef CEU_TIMEMACHINE
         every key in SDL_KEYDOWN_ do
             visible = true;
             if key:keysym.sym==_SDLK_LEFT then
@@ -23,6 +24,9 @@ do
                 visible = false;
             end
         end
+#else
+        await FOREVER;
+#endif
     with
         // Simulate forever.
         var int time = 0;

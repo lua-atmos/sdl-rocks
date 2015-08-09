@@ -96,7 +96,7 @@ do
             _SDL_QueryTexture(_UITM_TEXS[i], null, null, &ri.w, &ri.h);
             ri.x = rc.x + (i+1)*dx - ri.w/2;
             ri.y = rc.y + (rc.h-ri.h)/2;
-            rcs[i] = ri;
+            rcs = rcs .. [ri];
         end
     end
 
