@@ -241,9 +241,9 @@ do
         var int& p_shields;
 #ifdef CEU_TIMEMACHINE
         if id == _OBJ_SHIP1 then
-            p_shields = &&_TIME1;
+            p_shields = &_TIME1;
         else
-            p_shields = &&_TIME2;
+            p_shields = &_TIME2;
         end
 #else
         var int n_shields = 0;

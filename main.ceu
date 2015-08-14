@@ -943,12 +943,14 @@ with
     every SDL_REDRAW do
         _SDL_RenderPresent(_REN);
     end
+#ifndef CEU_TIMEMACHINE
 #if 1
 with
     #include "input.ceu"
     do Input with
         this.visible = false;
     end;
+#endif
 #endif
 end
 
