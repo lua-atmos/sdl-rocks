@@ -65,7 +65,7 @@ do
      */
     par/or do
         do MoveObject with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = _REN_W/3 * dir;
             this.vy  = vy;
         end;
@@ -120,7 +120,7 @@ do
      * Sets w/h from it.
      */
     var int dim;    // dim = w
-        _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
+        _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -241,13 +241,13 @@ do
         var int& p_shields;
 #ifdef CEU_TIMEMACHINE
         if id == _OBJ_SHIP1 then
-            p_shields = &_TIME1;
+            p_shields = &&_TIME1;
         else
-            p_shields = &_TIME2;
+            p_shields = &&_TIME2;
         end
 #else
         var int n_shields = 0;
-        p_shields = n_shields;
+        p_shields = &n_shields;
 #endif
 
         var SDL_Rect shields_r;
@@ -391,7 +391,7 @@ end
                 end
 
                 // Spawn the shot (limited to _OBJ_FIRE_N instances):
-                var Fire*? new = spawn Fire in fires with
+                var Fire&&? new = spawn Fire in fires with
                     this.id   = id + 2;     // SHIP1, SHIP2, FIRE1, FIRE2
                     this.dir  = dir;        // same orientation
                     this.vy   = vy;         // same speed
@@ -483,7 +483,7 @@ end
             // redraw sprite
             var SDL_Rect r = SDL_Rect(this.rect.x-dim/2, this.rect.y-dim/2,
                                       dim,dim);
-            _SDL_RenderCopy(_REN, &this.tex, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
+            _SDL_RenderCopy(_REN, &&this.tex, (_SDL_Rect&&)&&clip_r, (_SDL_Rect&&)&&r);
         end
     end
 
@@ -514,7 +514,7 @@ class RockBig with
     var int id = _OBJ_ROCK;
 do
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEX_ROCK, null, null, null, &dim);
+        _SDL_QueryTexture(_TEX_ROCK, null, null, null, &&dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -537,7 +537,7 @@ do
     par/or do
         await (_rand() % 5000)ms;
         do MoveObject with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
@@ -554,7 +554,7 @@ do
                                       this.rect.y-this.rect.h/2,
                                       this.rect.w,
                                       this.rect.h);
-            _SDL_RenderCopy(_REN, _TEX_ROCK, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
+            _SDL_RenderCopy(_REN, _TEX_ROCK, (_SDL_Rect&&)&&clip_r, (_SDL_Rect&&)&&r);
         end
     with
         await go_hit;
@@ -569,7 +569,7 @@ do
     _assert(this.dir != 0);
 
     var int dim;    // dim = h
-        _SDL_QueryTexture(_TEX_rock, null, null, null, &dim);
+        _SDL_QueryTexture(_TEX_rock, null, null, null, &&dim);
     this.rect.w = dim;
     this.rect.h = dim;
 
@@ -583,7 +583,7 @@ do
 
     par/or do
         do MoveObject with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
@@ -600,7 +600,7 @@ do
                                       this.rect.y - this.rect.h/2,
                                       this.rect.w,
                                       this.rect.h);
-            _SDL_RenderCopy(_REN, _TEX_rock, (_SDL_Rect*)&clip_r, (_SDL_Rect*)&r);
+            _SDL_RenderCopy(_REN, _TEX_rock, (_SDL_Rect&&)&&clip_r, (_SDL_Rect&&)&&r);
         end
     with
         await go_hit;
@@ -627,7 +627,7 @@ do
 
     par/or do
         do MoveObject with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
@@ -639,8 +639,8 @@ do
             var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
                                       this.rect.y - r.h/2,
                                       0,0);
-            _SDL_QueryTexture(&this.tex, null, null, &r.w, &r.h);
-            _SDL_RenderCopy(_REN, &this.tex, null, (_SDL_Rect*)&r);
+            _SDL_QueryTexture(&&this.tex, null, null, &&r.w, &&r.h);
+            _SDL_RenderCopy(_REN, &&this.tex, null, (_SDL_Rect&&)&&r);
         end
     with
         await go_hit;
@@ -652,7 +652,7 @@ end
 class Missile with
     interface NObject;
     var int id = 0;
-    var Object* obj_to_follow = null;
+    var Object&& obj_to_follow = null;
 do
     _assert(this.id != 0);
     _assert(this.obj_to_follow != null);
@@ -668,7 +668,7 @@ do
         var float vy = 0;
 
         var MoveObject move with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
@@ -722,7 +722,7 @@ do
 
     par/or do
         do MoveObject with
-            this.obj = outer;
+            this.obj = &outer;
             this.vx  = vx;
             this.vy  = vy;
         end;
@@ -760,8 +760,8 @@ do
                 var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
                                           this.rect.y - r.h/2,
                                           0,0);
-                _SDL_QueryTexture(_TEX_BOMB[timer], null, null, &r.w, &r.h);
-                _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, (_SDL_Rect*)&r);
+                _SDL_QueryTexture(_TEX_BOMB[timer], null, null, &&r.w, &&r.h);
+                _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, (_SDL_Rect&&)&&r);
             end
         end
     end

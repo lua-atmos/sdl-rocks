@@ -25,9 +25,9 @@ input void SDL_QUIT;
 input int  SDL_DT;
 input void SDL_REDRAW;
 #ifdef __ANDROID__
-input _SDL_TouchFingerEvent* SDL_FINGERDOWN;
+input _SDL_TouchFingerEvent&& SDL_FINGERDOWN;
 #else
-input _SDL_KeyboardEvent* SDL_KEYDOWN;
+input _SDL_KeyboardEvent&& SDL_KEYDOWN;
 #endif
 
 /*
@@ -189,11 +189,11 @@ end
  * Helper function.
  *  (Ignore it for now.)
  */
-function (int id, Object** o1, Object** o2)=>int getVS do
+function (int id, Object&& && o1, Object&& && o2)=>int getVS do
     if (*o1):id == id then
         return 1;
     else/if (*o2):id == id then
-        var Object* tmp = *o1;
+        var Object&& tmp = *o1;
         *o1 = *o2;
         *o2 = tmp;
             // tmp is an alias to "o1"
@@ -259,14 +259,14 @@ global do   // ignore all code inside "CEU_TIMEMACHINE" ifdef's
 
 var _SDL_Window&? win;
     finalize
-        win = _SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
-                                          _SDL_WINDOWPOS_CENTERED,
-                                          1280, 800,
-                                          _SDL_WINDOW_SHOWN);
+        win = &_SDL_CreateWindow("Rocks!", _SDL_WINDOWPOS_CENTERED,
+                                           _SDL_WINDOWPOS_CENTERED,
+                                           1280, 800,
+                                           _SDL_WINDOW_SHOWN);
     with
-        _SDL_DestroyWindow(&win!);
+        _SDL_DestroyWindow(&&win!);
     end
-_SDL_GetWindowSize(&win!, &_REN_W, &_REN_H);
+_SDL_GetWindowSize(&&win!, &&_REN_W, &&_REN_H);
 
 /*
  * Create (and destroy) the game renderer.
@@ -275,7 +275,7 @@ _SDL_GetWindowSize(&win!, &_REN_W, &_REN_H);
  */
 
 finalize
-    _REN = _SDL_CreateRenderer(&win!, -1, 0);
+    _REN = _SDL_CreateRenderer(&&win!, -1, 0);
 with
     _SDL_DestroyRenderer(_REN);
 end
@@ -344,11 +344,11 @@ with
      * rendered first.
      */
     var _SDL_Rect r;
-        _SDL_QueryTexture(_TEX_BG, null, null, &r.w, &r.h); // query image w,h
+        _SDL_QueryTexture(_TEX_BG, null, null, &&r.w, &&r.h); // query image w,h
         r.x = (_REN_W - r.w) / 2;                           // center of X-axis
         r.y = (_REN_H - r.h) / 2;                           // center of Y-axis
     every SDL_REDRAW do
-        _SDL_RenderCopy(_REN, _TEX_BG, null, &r);
+        _SDL_RenderCopy(_REN, _TEX_BG, null, &&r);
     end
 with
     /*
@@ -389,7 +389,7 @@ with
          */
         do
             var int w,h;
-            _SDL_QueryTexture(_TEX_TAP, null, null, &w, &h);
+            _SDL_QueryTexture(_TEX_TAP, null, null, &&w, &&h);
             var SDL_Rect r = SDL_Rect(_REN_W/2-w/2, _REN_H/2-h/2, w,h);
                                         // center on screen
 
@@ -413,7 +413,7 @@ with
                     await 500ms;
                     watching 500ms do
                         every SDL_REDRAW do
-                            _SDL_RenderCopy(_REN, _TEX_TAP, null, (_SDL_Rect*)&r);
+                            _SDL_RenderCopy(_REN, _TEX_TAP, null, (_SDL_Rect&&)&&r);
                         end
                     end
                 end
@@ -501,15 +501,15 @@ with
              * screen limits.
              */
             var int dim; // ship dimensions are squared (WxW):
-                _SDL_QueryTexture(_TEX_SHIP1, null, null, &dim, null);
+                _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
 
             var Ship ship1 with
                 this.id     = _OBJ_SHIP1;
-                this.tex    = _TEX_SHIP1;
+                this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP1);
                 this.dir    = 1;            // positive increase (on X-axis)
                 this.rect.x = dim;          // starting X position
                 this.rect.y = _REN_H/2;     // starting Y position
-                this.controller = controller1;
+                this.controller = &controller1;
 
                 // ship1 cannot cross the left-half screen boundaries:
                 this.lim_x1 = dim/2;
@@ -520,11 +520,11 @@ with
 
             var Ship ship2 with
                 this.id     = _OBJ_SHIP2;
-                this.tex    = _TEX_SHIP2;
+                this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP2);
                 this.dir    = -1;            // positive increase (on X-axis)
                 this.rect.x = _REN_W - dim;  // starting X postion
                 this.rect.y = _REN_H/2;      // starting Y postion
-                this.controller = controller2;
+                this.controller = &controller2;
 
                 // ship2 cannot cross the right-half screen boundaries:
                 this.lim_x1 = _REN_W/2 + dim/2;
@@ -585,7 +585,7 @@ with
                     /*
                      * Prepare the vector "objs" with all alive objects.
                      */
-                    var Object*?[_OBJ_NN] objs = [&ship1, &ship2];
+                    var Object&&?[_OBJ_NN] objs = [&&ship1, &&ship2];
                     loop o in ship1.fires do
                         objs = objs .. [o];
                     end
@@ -600,7 +600,7 @@ with
                      * Outer loop: "o1" iterates through [0, $objs[
                      */
                     loop/_OBJ_NN i in $objs do
-                        var Object*? o1 = objs[i];
+                        var Object&&? o1 = objs[i];
                         if not o1? then
                             continue;
                         end
@@ -621,7 +621,7 @@ with
                          * any two objects alive.
                          */
                         loop/_OBJ_NN j in $objs-i-1 do
-                            var Object*? o2 = objs[i+1+j];
+                            var Object&&? o2 = objs[i+1+j];
                             if not o2? then
                                 continue;
                             end
@@ -645,7 +645,7 @@ with
                              * intersection.
                              * (Otherwise, go to the next pair of objects).
                              */
-                            if not _SDL_HasIntersection((_SDL_Rect*)&r1, (_SDL_Rect*)&r2) then
+                            if not _SDL_HasIntersection((_SDL_Rect&&)&&r1, (_SDL_Rect&&)&&r2) then
                                 continue;
                             end
 
@@ -666,16 +666,16 @@ with
                              *  SHIP vs BONUSES:       play _SND_BONUS
                              */
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_FIRE1, &oo1, &oo2) or
-                                   getVS(_OBJ_FIRE2, &oo1, &oo2) then
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_FIRE1, &&oo1, &&oo2) or
+                                   getVS(_OBJ_FIRE2, &&oo1, &&oo2) then
                                     if (oo2:id >= _OBJ_ROCK) and
                                        (oo2:id <= _OBJ_BONUS_FIRE) then
                                         _Mix_PlayChannel(-1, _SND_ROCK, 0);
                                     end
-                                else/if getVS(_OBJ_SHIP1, &oo1, &oo2) or
-                                        getVS(_OBJ_SHIP2, &oo1, &oo2) then
+                                else/if getVS(_OBJ_SHIP1, &&oo1, &&oo2) or
+                                        getVS(_OBJ_SHIP2, &&oo1, &&oo2) then
                                     if (oo2:id >= _OBJ_BONUS_LIFE) and
                                        (oo2:id <= _OBJ_BONUS_FIRE) then
                                         _Mix_PlayChannel(-1, _SND_BONUS, 0);
@@ -697,9 +697,9 @@ with
                              * handling extra effects.)
                              */
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_ROCK, &oo1, &oo2) and
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_ROCK, &&oo1, &&oo2) and
                                    (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
                                     var int dir;    // which direction to spawn?
                                     if oo2:id == _OBJ_FIRE1 then
@@ -739,7 +739,7 @@ with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.id     = _OBJ_BONUS_LIFE;
-                                            this.tex    = _TEX_BONUS_LIFE;
+                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_LIFE);
                                             this.dir    = -dir;
                                         end;
                                     else/if pct < 55 then
@@ -747,7 +747,7 @@ with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.id     = _OBJ_BONUS_HITS;
-                                            this.tex    = _TEX_BONUS_HITS;
+                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_HITS);
                                             this.dir    = -dir;
                                         end;
                                     else/if pct < 70 then
@@ -755,7 +755,7 @@ with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.id     = _OBJ_BONUS_SHIELD;
-                                            this.tex    = _TEX_BONUS_SHIELD;
+                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_SHIELD);
                                             this.dir    = -dir;
                                         end;
                                     else/if pct < 85 then
@@ -763,7 +763,7 @@ with
                                             this.rect.x = (int) oo2:rect.x;
                                             this.rect.y = (int) oo2:rect.y;
                                             this.id     = _OBJ_BONUS_FIRE;
-                                            this.tex    = _TEX_BONUS_FIRE;
+                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_FIRE);
                                             this.dir    = -dir;
                                         end;
                                     else
@@ -788,9 +788,9 @@ with
                              * Increment the player's total points.
                              */
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_BONUS_LIFE, &oo1, &oo2) then
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_BONUS_LIFE, &&oo1, &&oo2) then
                                     if oo2:id == _OBJ_SHIP1 then
                                         emit points1.go_inc;
                                     else/if oo2:id == _OBJ_SHIP2 then
@@ -804,12 +804,12 @@ with
                              * Increment the player's total points.
                              */
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_BONUS_HITS, &oo1, &oo2) then
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_BONUS_HITS, &&oo1, &&oo2) then
                                     if (oo2:id == _OBJ_SHIP1) or
                                        (oo2:id == _OBJ_SHIP2) then
-                                        var Ship* ship = (Ship*) oo2;
+                                        var Ship&& ship = (Ship&&) oo2;
                                         emit ship:go_H;
                                     end
                                 end
@@ -817,12 +817,12 @@ with
 
                             // BonusShield vs Ship: go_S
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_BONUS_SHIELD, &oo1, &oo2) then
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_BONUS_SHIELD, &&oo1, &&oo2) then
                                     if oo2:id == _OBJ_SHIP1 or
                                        oo2:id == _OBJ_SHIP2 then
-                                        var Ship* ship = (Ship*) oo2;
+                                        var Ship&& ship = (Ship&&) oo2;
                                         emit ship:go_S;
                                     end
                                 end
@@ -830,12 +830,12 @@ with
 
                             // BonusFire vs Ship: fire.rect.w++
                             do
-                                var Object* oo1 = o1!;
-                                var Object* oo2 = o2!;
-                                if getVS(_OBJ_BONUS_FIRE, &oo1, &oo2) then
+                                var Object&& oo1 = o1!;
+                                var Object&& oo2 = o2!;
+                                if getVS(_OBJ_BONUS_FIRE, &&oo1, &&oo2) then
                                     if oo2:id == _OBJ_SHIP1 or
                                        oo2:id == _OBJ_SHIP2 then
-                                        var Ship* ship = (Ship*) oo2;
+                                        var Ship&& ship = (Ship&&) oo2;
                                         emit ship:go_F;
                                     end
                                 end
@@ -910,10 +910,10 @@ with
         var _SDL_Texture&? tex;
         var SDL_Color white = SDL_COLOR_WHITE;
         finalize
-            tex = _SDL_text2texture(_REN, _FONT_SMALL, str,
-                                    (_SDL_Color*)&white, null);
+            tex = &_SDL_text2texture(_REN, _FONT_SMALL, str,
+                                     (_SDL_Color&&)&&white, null);
         with
-            _SDL_DestroyTexture(&tex);
+            _SDL_DestroyTexture(&&tex!);
         end
         var SDL_Rect r = (200,200, 30,30);
 
@@ -926,7 +926,7 @@ with
         watching 1s do
             every SDL_REDRAW do
                 c = c + 1;
-                _SDL_RenderCopy(_REN, &tex, null, (_SDL_Rect*)&r);
+                _SDL_RenderCopy(_REN, &&tex, null, (_SDL_Rect&&)&&r);
             end
         end
         fps = c;

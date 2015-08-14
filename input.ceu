@@ -32,7 +32,7 @@ do
         var int time = 0;
         loop do
             // To emit external events, we need to be inside an "async" block.
-            var int& t = time;
+            var int& t = &time;
             async(t, dt, visible) do
                 /*
                  * 1. make some time elapse (0->99)ms
@@ -80,7 +80,7 @@ do
                     e_key.keysym.sym = _SDLK_PERIOD;
                 end
                 e_key.type = _SDL_KEYDOWN;
-                emit SDL_KEYDOWN => &e_key;
+                emit SDL_KEYDOWN => &&e_key;
 
                 if visible or t>10*60*1000 then
                     if not visible then
