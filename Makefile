@@ -15,6 +15,12 @@ sim:
 		-lSDL2_mixer -lSDL2_ttf -lSDL2_gfx -lm \
 		-o rocks.exe
 
+test:
+	ceu --cpp-args "-I . $(CFLAGS) -DSIMULATION_TEST" main.ceu
+	gcc -g -Os -DSIMULATION_TEST $(CFLAGS) main.c -lSDL2 -lSDL2_image \
+		-lSDL2_mixer -lSDL2_ttf -lSDL2_gfx -lm \
+		-o rocks.exe
+
 FILES = controllers.ceu fnts.ceu main.ceu objs.ceu points.ceu snds.ceu texs.ceu
 
 count:

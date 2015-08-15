@@ -1,4 +1,10 @@
 /*
+// must be defined externally
+#define SIMULATION          // random input, goes forever
+#define SIMULATION_TEST     // deterministic input, 1h
+*/
+
+/*
  * Include the standard declarations & definitions for the SDL binding for Céu:
  * (Ignore them for now.)
  */
@@ -218,13 +224,6 @@ end
  * GAME EXECUTION STARTS HERE
  */
 
-#ifndef CEU_TIMEMACHINE
-native do
-    ##include <time.h>
-end
-_srand(_time(null));    // initialize the game "randomizer"
-#endif
-
 /*
  * Create the game window and renderer.
  * Both allocations relies on Céu's finalization mechanism to safely relese 
@@ -324,6 +323,17 @@ _printf("SIZES | T=%ld               \n \
 );
 #endif
 
+#ifndef CEU_TIMEMACHINE
+native do
+    ##include <time.h>
+end
+#ifdef SIMULATION_TEST
+_srand(0);              // deterministic tests
+#else
+_srand(_time(null));    // initialize the game "randomizer"
+#endif
+#endif
+
 /*
  * The outermost "par/or" that handles all game activities in parallel.
  */
@@ -374,6 +384,12 @@ with
     var TextPoints points2 with
         this.pos = p2;      // fixed position
     end;
+
+#ifdef SIMULATION_TEST
+    finalize with
+        _printf("SCORE = %d vs %d\n", points1.v, points2.v);
+    end
+#endif
 
     /*
      * The "main loop" of the game.
@@ -944,7 +960,7 @@ with
         _SDL_RenderPresent(_REN);
     end
 #ifndef CEU_TIMEMACHINE
-#if 1
+#if defined(SIMULATION) || defined(SIMULATION_TEST)
 with
     #include "input.ceu"
     do Input with

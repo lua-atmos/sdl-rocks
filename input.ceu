@@ -3,11 +3,15 @@
  */
 
 class Input with
+#ifdef SIMULATION_TEST
+    var   int  dt;      /* not used */
+#else
     var   int  dt      = (1000/_CEU_FPS);
+#endif
     var   bool visible = true;
     event void ok;
 do
-    par do
+    par/or do
 #ifdef CEU_TIMEMACHINE
         every key in SDL_KEYDOWN_ do
             visible = true;
@@ -37,6 +41,13 @@ do
                 /*
                  * 1. make some time elapse (0->99)ms
                  */
+#ifdef SIMULATION_TEST
+                var int dt = _rand() % 100;
+                emit (dt)ms;
+                emit SDL_DT => dt;
+                //emit SDL_REDRAW;
+                t = t + dt;
+#else
                 var int n = 5; //_rand() % 5;   // (0->4 * MS) for each event
                 loop i in n do
                     emit (1000/_CEU_FPS)ms;
@@ -47,6 +58,7 @@ do
                     end
                     t = t + (1000/_CEU_FPS);
                 end
+#endif
 
                 /*
                  * 2. Choose a random key from those used in the game and emit it.
@@ -82,6 +94,7 @@ do
                 e_key.type = _SDL_KEYDOWN;
                 emit SDL_KEYDOWN => &&e_key;
 
+#ifndef SIMULATION_TEST
                 if visible or t>10*60*1000 then
                     if not visible then
                         _printf("10min\n");
@@ -89,10 +102,16 @@ do
                     t = 0;
                     emit SDL_REDRAW;
                 end
+#endif
             end
             if t == 0 then
                 emit this.ok;
             end
+#ifdef SIMULATION_TEST
+            if t>60*60*1000 then
+                    break;
+            end
+#endif
         end
     end
 end
