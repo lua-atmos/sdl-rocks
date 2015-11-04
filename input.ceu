@@ -4,7 +4,7 @@
 
 class Input with
 #ifdef SIMULATION_TEST
-    var   int  dt;      /* not used */
+    var   int  dt      = 0;      /* not used */
 #else
     var   int  dt      = (1000/_CEU_FPS);
 #endif
@@ -63,7 +63,7 @@ do
                 /*
                  * 2. Choose a random key from those used in the game and emit it.
                  */
-                var _SDL_KeyboardEvent e_key;
+                var _SDL_KeyboardEvent e_key = _SDL_KeyboardEvent();
                 var int pct = _rand() % 100;
                 var int key;
                 if pct < 10 then

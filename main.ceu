@@ -353,7 +353,7 @@ with
      * those that react to "SDL_REDRAW"), the background image will always be 
      * rendered first.
      */
-    var _SDL_Rect r;
+    var _SDL_Rect r = _SDL_Rect(0,0,0,0);
         _SDL_QueryTexture(_TEX_BG, null, null, &&r.w, &&r.h); // query image w,h
         r.x = (_REN_W - r.w) / 2;                           // center of X-axis
         r.y = (_REN_H - r.h) / 2;                           // center of Y-axis
@@ -404,7 +404,7 @@ with
          * "texs.ceu") and await the user interaction.
          */
         do
-            var int w,h;
+            var int w=0,h=0;
             _SDL_QueryTexture(_TEX_TAP, null, null, &&w, &&h);
             var SDL_Rect r = SDL_Rect(_REN_W/2-w/2, _REN_H/2-h/2, w,h);
                                         // center on screen
@@ -516,15 +516,14 @@ with
              * orientation (left/right orientation), initial position, and 
              * screen limits.
              */
-            var int dim; // ship dimensions are squared (WxW):
+            var int dim=0; // ship dimensions are squared (WxW):
                 _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
 
             var Ship ship1 with
                 this.id     = _OBJ_SHIP1;
                 this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP1);
                 this.dir    = 1;            // positive increase (on X-axis)
-                this.rect.x = dim;          // starting X position
-                this.rect.y = _REN_H/2;     // starting Y position
+                this.rect   = SDL_Rect(dim,_REN_H/2,0,0); // w/h set inside
                 this.controller = &controller1;
 
                 // ship1 cannot cross the left-half screen boundaries:
@@ -538,8 +537,7 @@ with
                 this.id     = _OBJ_SHIP2;
                 this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP2);
                 this.dir    = -1;            // positive increase (on X-axis)
-                this.rect.x = _REN_W - dim;  // starting X postion
-                this.rect.y = _REN_H/2;      // starting Y postion
+                this.rect   = SDL_Rect(_REN_W-dim,_REN_H/2,0,0); // w/h set inside
                 this.controller = &controller2;
 
                 // ship2 cannot cross the right-half screen boundaries:
@@ -584,7 +582,9 @@ with
                     if period > 50 then
                         period = period - 10;
                     end
-                    spawn RockBig in all;
+                    spawn RockBig in all with
+                        this.rect = SDL_Rect(0,0,0,0);  // all set inside
+                    end;
                 end
             with
                 /*
@@ -736,9 +736,8 @@ with
                                         var int y = (int) oo2:rect.y;
                                         loop ii in 2 do
                                             spawn RockSmall in all with
-                                                this.rect.x = x;
-                                                this.rect.y = y;
-                                                this.dir    = dir;
+                                                this.rect = SDL_Rect(x,y,0,0);
+                                                this.dir  = dir;
                                             end;
                                         end
 
@@ -752,35 +751,39 @@ with
                                          */
                                     else/if pct < 40 then
                                         spawn Bonus in all with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
-                                            this.id     = _OBJ_BONUS_LIFE;
-                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_LIFE);
-                                            this.dir    = -dir;
+                                            this.rect = SDL_Rect(oo2:rect.x,
+                                                                 oo2:rect.y,
+                                                                 0,0);
+                                            this.id   = _OBJ_BONUS_LIFE;
+                                            this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_LIFE);
+                                            this.dir  = -dir;
                                         end;
                                     else/if pct < 55 then
                                         spawn Bonus in all with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
-                                            this.id     = _OBJ_BONUS_HITS;
-                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_HITS);
-                                            this.dir    = -dir;
+                                            this.rect = SDL_Rect(oo2:rect.x,
+                                                                 oo2:rect.y,
+                                                                 0,0);
+                                            this.id   = _OBJ_BONUS_HITS;
+                                            this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_HITS);
+                                            this.dir  = -dir;
                                         end;
                                     else/if pct < 70 then
                                         spawn Bonus in all with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
+                                            this.rect = SDL_Rect(oo2:rect.x,
+                                                                 oo2:rect.y,
+                                                                 0,0);
                                             this.id     = _OBJ_BONUS_SHIELD;
                                             this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_SHIELD);
                                             this.dir    = -dir;
                                         end;
                                     else/if pct < 85 then
                                         spawn Bonus in all with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
-                                            this.id     = _OBJ_BONUS_FIRE;
-                                            this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_FIRE);
-                                            this.dir    = -dir;
+                                            this.rect = SDL_Rect(oo2:rect.x,
+                                                                 oo2:rect.y,
+                                                                 0,0);
+                                            this.id   = _OBJ_BONUS_FIRE;
+                                            this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_FIRE);
+                                            this.dir  = -dir;
                                         end;
                                     else
                                         /*
@@ -791,9 +794,10 @@ with
                                          * "battle block".)
                                          */
                                         spawn Bomb in all with
-                                            this.rect.x = (int) oo2:rect.x;
-                                            this.rect.y = (int) oo2:rect.y;
-                                            this.dir    = dir;
+                                            this.rect = SDL_Rect(oo2:rect.x,
+                                                                 oo2:rect.y,
+                                                                 0,0);
+                                            this.dir  = dir;
                                         end;
                                     end
                                 end

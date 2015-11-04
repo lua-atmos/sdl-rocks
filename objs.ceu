@@ -119,7 +119,7 @@ do
      * Take the ship image width (it has a squared dimension).
      * Sets w/h from it.
      */
-    var int dim;    // dim = w
+    var int dim=0;    // dim = w
         _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
     this.rect.w = dim;
     this.rect.h = dim;
@@ -211,14 +211,17 @@ do
              * - w: thin
              * - h: depends on "n_hits"
              */
-            var SDL_Rect hits_r;
-                if this.dir > 0 then
-                    hits_r.x = this.lim_x1 + _REN_W/100;    // left side
-                else
-                    hits_r.x = this.lim_x2 - _REN_W/100;    // right side
-                end
-                hits_r.w = _REN_W/100;                      // very thin
-                hits_r.y = this.lim_y1 + _REN_H/100;        // top of screen
+            var int x;
+            if this.dir > 0 then
+                x = this.lim_x1 + _REN_W/100;    // left side
+            else
+                x = this.lim_x2 - _REN_W/100;    // right side
+            end
+            var SDL_Rect hits_r =
+                SDL_Rect(x,
+                         this.lim_y1 + _REN_H/100,  // top of screen
+                         _REN_W/100,                // very thin
+                         0);                        // set below
 
             every SDL_REDRAW do
                 hits_r.h = n_hits * _REN_H/20;
@@ -250,14 +253,17 @@ do
         p_shields = &n_shields;
 #endif
 
-        var SDL_Rect shields_r;
-            if this.dir > 0 then
-                shields_r.x = this.lim_x1 + 3*_REN_W/100;   // left side
-            else
-                shields_r.x = this.lim_x2 - 3*_REN_W/100;   // right side
-            end
-            shields_r.w = _REN_W/100;                       // very thin
-            shields_r.y = this.lim_y1 + _REN_H/100;         // top of screen
+        var int x;
+        if this.dir > 0 then
+            x = this.lim_x1 + 3*_REN_W/100;         // left side
+        else
+            x = this.lim_x2 - 3*_REN_W/100;         // right side
+        end
+        var SDL_Rect shields_r =
+                SDL_Rect(x,
+                         this.lim_y1 + _REN_H/100,  // top of screen
+                         _REN_W/100,                // very thin
+                         0);
 
         par do
             // Increment "n_shields" on every "S" bonus:
@@ -513,7 +519,7 @@ class RockBig with
     interface NObject;
     var int id = _OBJ_ROCK;
 do
-    var int dim;    // dim = h
+    var int dim=0;    // dim = h
         _SDL_QueryTexture(_TEX_ROCK, null, null, null, &&dim);
     this.rect.w = dim;
     this.rect.h = dim;
@@ -568,7 +574,7 @@ class RockSmall with
 do
     _assert(this.dir != 0);
 
-    var int dim;    // dim = h
+    var int dim=0;    // dim = h
         _SDL_QueryTexture(_TEX_rock, null, null, null, &&dim);
     this.rect.w = dim;
     this.rect.h = dim;
@@ -636,10 +642,11 @@ do
             _filledCircleRGBA(_REN, this.rect.x,this.rect.y,this.rect.w/2,
                                     0x00,0x77,0x00,0xFF);
 
-            var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
-                                      this.rect.y - r.h/2,
-                                      0,0);
-            _SDL_QueryTexture(&&this.tex, null, null, &&r.w, &&r.h);
+            var int w=0, h=0;
+            _SDL_QueryTexture(&&this.tex, null, null, &&w, &&h);
+            var SDL_Rect r = SDL_Rect(this.rect.x - w/2,
+                                      this.rect.y - h/2,
+                                      w,h);
             _SDL_RenderCopy(_REN, &&this.tex, null, (_SDL_Rect&&)&&r);
         end
     with
@@ -757,10 +764,11 @@ do
                                     0xFF,0x00,0x00,0xFF);
 
             if timer >= 0 then
-                var SDL_Rect r = SDL_Rect(this.rect.x - r.w/2,
-                                          this.rect.y - r.h/2,
-                                          0,0);
-                _SDL_QueryTexture(_TEX_BOMB[timer], null, null, &&r.w, &&r.h);
+                var int w=0, h=0;
+                _SDL_QueryTexture(_TEX_BOMB[timer], null, null, &&w, &&h);
+                var SDL_Rect r = SDL_Rect(this.rect.x - w/2,
+                                          this.rect.y - h/2,
+                                          w,h);
                 _SDL_RenderCopy(_REN, _TEX_BOMB[timer], null, (_SDL_Rect&&)&&r);
             end
         end
