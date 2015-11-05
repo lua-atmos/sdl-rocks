@@ -9,7 +9,6 @@ class MoveObject with
     var   float   vy = 0;   // requested speed in Y
     var   float   ax = 0;   // requested accel in X
     var   float   ay = 0;   // requested accel in Y
-    event void    ok;       // signalled when the object leaves the screen
 do
     // Convert the current position of the object to "float" to keep precision
     // in animations:
@@ -39,9 +38,6 @@ do
             break;                  // went out of the screen
         end
     end
-
-    // Tell the world that the object left the screen.
-    emit this.ok;
 end
 
 /*
@@ -55,6 +51,7 @@ class Fire with
     var int dir;        // fire orientation (left=1/right=-1)
     var int vy;         // inherit "vy" from the shooting ship
     var int w;          // fire width (may increase with "F" bonus)
+    var bool can_hit = true; // can hit since the beginning
 do
     // Set width & height.
     this.rect.w = _REN_W/50 + _REN_W*this.w/100;
@@ -114,6 +111,8 @@ class Ship with
     event void ok_killed;           // emitted om ship's death (hits=0)
 
     pool Fire[_OBJ_FIRE_N] fires;   // holds all fire shoots
+
+    var bool can_hit = true;        // can hit since the beginning
 do
     /*
      * Take the ship image width (it has a squared dimension).
@@ -518,6 +517,7 @@ end
 class RockBig with
     interface NObject;
     var int id = _OBJ_ROCK;
+    var bool can_hit = false;  // can hit only after a while
 do
     var int dim=0;    // dim = h
         _SDL_QueryTexture(_TEX_ROCK, null, null, null, &&dim);
@@ -541,12 +541,17 @@ do
     end
 
     par/or do
-        await (_rand() % 5000)ms;
-        do MoveObject with
-            this.obj = &outer;
-            this.vx  = vx;
-            this.vy  = vy;
-        end;
+        await (_rand() % 5000)ms;   // ignore hits/moving as it appears
+        this.can_hit = true;        // now ready for collisions
+        par/or do
+            do MoveObject with
+                this.obj = &outer;
+                this.vx  = vx;
+                this.vy  = vy;
+            end;
+        with
+            await go_hit;
+        end
     with
         var float v = _sqrt(vx*vx + vy*vy);
         var float x = 0;
@@ -562,8 +567,6 @@ do
                                       this.rect.h);
             _SDL_RenderCopy(_REN, _TEX_ROCK, (_SDL_Rect&&)&&clip_r, (_SDL_Rect&&)&&r);
         end
-    with
-        await go_hit;
     end
 end
 
@@ -571,6 +574,7 @@ class RockSmall with
     interface NObject;
     var int id = _OBJ_rock;
     var int dir = 0;
+    var bool can_hit = true; // can hit since the beginning
 do
     _assert(this.dir != 0);
 
@@ -618,6 +622,7 @@ class Bonus with
     var int id  = 0;
     var int dir = 0;
     var _SDL_Texture& tex;
+    var bool can_hit = true; // can hit since the beginning
 do
     _assert(this.id  != 0);
     _assert(this.dir != 0);
@@ -713,6 +718,7 @@ class Bomb with
     interface NObject;
     var int id = _OBJ_BOMB;
     var int dir = 0;
+    var bool can_hit = true; // can hit since the beginning
 do
     _assert(this.dir != 0);
 
