@@ -604,14 +604,14 @@ with
                      */
                     var Object&&?[_OBJ_NN] objs = [&&ship1, &&ship2];
                     loop o in ship1.fires do
-                        objs = objs .. [o];
+                        objs = [] .. objs .. [o];
                     end
                     loop o in ship2.fires do
-                        objs = objs .. [o];
+                        objs = [] .. objs .. [o];
                     end
                     loop o in all do
                         if o:can_hit then
-                            objs = objs .. [o];
+                            objs = [] .. objs .. [o];
                         end
                     end
 
