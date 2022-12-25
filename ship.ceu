@@ -1,0 +1,8 @@
+task Ship (id, path, dir, pos, ctrl) {
+    spawn {
+        every :draw {
+            pico_output_draw_image(pos.0,pos.1, path)
+        }
+    }
+    await false
+}

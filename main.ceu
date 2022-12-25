@@ -30,7 +30,7 @@ spawn {
 
         ;;;
          ; Instantiate the players' points (points1, points2) and place them
-         ; at the ; bottom of the screen, in opposite sides (p1, p2):
+         ; at the bottom of the screen, in opposite sides (p1, p2):
          ;      +------------------------+
          ;      |                        |
          ;      |                        |
@@ -38,11 +38,16 @@ spawn {
          ;      +------------------------+
          ; Each player's points is incremented when the ship of the opponent is 
          ; destroyed.
+         ; The points outlive each individual battle, so it is placed here,
+         ; outside the nested gameplay.
         ;;;
 
         var p1 = "0"
         var p2 = "0"
 
+        ;; We spawn the points exhibition so that it coexists with the gameplay.
+        ;; Since it is spawned first, the points will be rendered first, such
+        ;; they may be covered by moving objects in the gameplay, as desired.
         spawn {
             var dx = win.0 / 15
             var x1 = (-win.0 / 2) + dx
@@ -55,162 +60,108 @@ spawn {
         }
 
         ;;;
-         ; - The "main loop" of the game.
+         ; - The "main loop" with the gameplay.
          ; It is restarted whenever one of the ships is destroyed.
          ; As the points do not reset between iterations, they need to be defined 
          ; before entering the loop.
         ;;;
 
         while true {
-            await false
+            ;;;
+             ; - Shows the centered and blinking "= TAP TO START =" message,
+             ;   and awaits the user interaction.
+            ;;;
+;;;
+            awaiting :keydown {
+                while true {
+                    await 500ms
+                    awaiting 500ms {
+                        every :draw {
+                            pico_output_draw_text(0, 0, "= TAP TO START =")
+                        }
+                    }
+                }
+            }
+;;;
+
+            ;; TODO: sound
+
+            ;;;
+             ; - The "battle block" with the gameplay holds the spaceships,
+             ;   controllers, and all dynamic objects, such as meteors,
+             ;   bonuses, and ship shots.
+             ; This means that they are all properly released/reallocated
+             ; after each individual battle.
+            ;;;
+            do {
+                ;;;
+                 ; - Creates the two ships.
+                 ; They differ in ids (:ship1 vs :ship2), initial positions,
+                 ; screen limits, key controllers, and image orientations
+                 ; (i.e., pointing :right or :left).
+                ;;;
+
+                ^["ship.ceu"]
+                var pos1 = [(-win.0/2)+(win.0/10), 0]
+                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, [], [])
+                var pos2 = [( win.0/2)-(win.0/10), 0]
+                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, [], [])
+                await false
+            }
         }
 ;;;;
-            /*
-             * Show the blinking "= TAP TO START =" message (_TEX_TAP, loaded in 
-             * "texs.ceu") and await the user interaction.
-             */
+
+                var ship1 = (spawn Ship(:ship1, "imgs/ship1.gif", :right, pos, lims, ctrl))
+                    where {
+                        var pos = [-win.0/2, 0]
+                        var lims = [
+                            [], []
+                        ]
+                        var ctrl = [
+                            `:number SDLK_w`,
+                            `:number SDLK_s`,
+                            `:number SDLK_a`,
+                            `:number SDLK_d`,
+                            `:number SDLK_z`,
+                            `:number SDLK_x`,
+                            `:number SDLK_c`,
+                            `:number SDLK_1`,
+                        ]
+                    }
+
+                var ship2 = (spawn Ship(:ship2, "imgs/ship2.gif", :left, pos, ctrl))
+                    where {
+                        var pos = [ win.0/2, 0]
+                        var lims = [
+                            [], []
+                        ]
+                        var ctrl = [
+                            `:number SDLK_UP`,
+                            `:number SDLK_DOWN`,
+                            `:number SDLK_LEFT`,
+                            `:number SDLK_RIGHT`,
+                            `:number SDLK_SEMICOLON`,
+                            `:number SDLK_PERIOD`,
+                            `:number SDLK_COMMA`,
+                            `:number SDLK_0`,
+                        ]
+                    }
+            }
+        }
             do
-                var int w=0,h=0;
-                _SDL_QueryTexture(_TEX_TAP, null, null, &&w, &&h);
-                var SDL_Rect r = SDL_Rect(_REN_W/2-w/2, _REN_H/2-h/2, w,h);
-                                            // center on screen
 
-                /*
-                 * We use three trails in the "par/or" for the blinking message:
-                 * 1. Await the user interaction and terminate the "par/or".
-                 * 2. Toggle between on/off every 500ms.
-                 * 3. Draw (or hide) the message every frame.
-                 */
-                par/or do
-                    // Await the user interaction to proceed to the battle.
-                    await 1s; // delay 1 second to prevent a lazy player to 
-                              // activate it while reacting to the preivous battle
-    #if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
-                    await SDL_FINGERDOWN;
-    #else
-                    await SDL_KEYDOWN;
-    #endif
-                with
-                    loop do
-                        await 500ms;
-                        watching 500ms do
-                            every SDL_REDRAW do
-                                _SDL_RenderCopy(_REN, _TEX_TAP, null, (_SDL_Rect&&)&&r);
-                            end
-                        end
-                    end
-                end
-                // After the user interaction, play the starting sound effect 
-                // (_SND_START, loaded in "snds.ceu").
-                _Mix_PlayChannel(-1, _SND_START, 0);
-            end
-                /*
-                 * The "do-end" termination makes all memory needed for data (e.g.  
-                 * r, on?) and control (runtime flags for the awaits and par's) 
-                 * available for use in susequent blocks.
-                 */
-
-            /*
-             * The "battle block" holds the spaceships, controllers, and all 
-             * dynamic objects, such as meteors, bonuses, and ship shots.
-             * This means that they are all properly released/reallocated on each
-             * battle.
-             */
-            do
-                /*
-                 * We provide different controllers for the Android and Desktop 
-                 * versions of the game.
-                 */
-    #if defined(__ANDROID__) && !defined(CEU_TIMEMACHINE)
-                /*
-                 * The touch controller needs to know the area in which it should 
-                 * respond to user input in the tablet:
-                 *        +------------------------------------+
-                 *      P |                  |                 | P
-                 *      L |     move_1       |     fire_2      | L
-                 *      A |                  |                 | A
-                 *      Y |------------------|------------------ Y
-                 *      E |                  |                 | E
-                 *      R |     fire_1       |     move_2      | R
-                 *      1 |                  |                 | 2
-                 *        +------------------------------------+
-                 * Each quadrant in the tablet is responsive for one of the four 
-                 * activities in the game:
-                 * - move_1: Move the 1st player's ship.
-                 * - fire_1: Fire the 1st player's ship shots.
-                 * - move_2: Move the 2nd player's ship.
-                 * - fire_2: Fire the 2nd player's ship shots.
-                 */
-                var TouchController controller1 with
-                    this.move_r = SDL_Rect(0,0, _REN_W/2,_REN_H/2);
-                    this.fire_r = SDL_Rect(0,_REN_H/2, _REN_W/2,_REN_H/2);
-                end;
-                var TouchController controller2 with
-                    this.move_r = SDL_Rect(_REN_W/2,_REN_H/2, _REN_W/2,_REN_H/2);
-                    this.fire_r = SDL_Rect(_REN_W/2,0, _REN_W/2,_REN_H/2);
-                end;
-    #else
-                /*
-                 * The keyboard controller needs to know the keycodes for each kind 
-                 * of action:
-                 */
-                var KeyController controller1 with
-                    this.k_up       = _SDLK_w;
-                    this.k_down     = _SDLK_s;
-                    this.k_left     = _SDLK_a;
-                    this.k_right    = _SDLK_d;
-                    this.k_fire     = _SDLK_z;
-                    this.k_shield   = _SDLK_x;
-                    this.k_missile  = _SDLK_c;
-                    this.k_immortal = _SDLK_1;
-                end;
-                var KeyController controller2 with
-                    this.k_up       = _SDLK_UP;
-                    this.k_down     = _SDLK_DOWN;
-                    this.k_left     = _SDLK_LEFT;
-                    this.k_right    = _SDLK_RIGHT;
-                    this.k_fire     = _SDLK_SEMICOLON;
-                    this.k_shield   = _SDLK_PERIOD;
-                    this.k_missile  = _SDLK_COMMA;
-                    this.k_immortal = _SDLK_0;
-                end;
-    #endif
-
-                /*
-                 * Create the two ships.
-                 * They differ in their "id" (SHIP1 vs SHIP2), image texture and 
-                 * orientation (left/right orientation), initial position, and 
-                 * screen limits.
-                 */
                 var int dim=0; // ship dimensions are squared (WxW):
                     _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
 
                 var Ship ship1 with
-                    this.id     = _OBJ_SHIP1;
                     this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP1);
-                    this.dir    = 1;            // positive increase (on X-axis)
                     this.rect   = SDL_Rect(dim,_REN_H/2,0,0); // w/h set inside
-                    this.controller = &controller1;
 
-                    // ship1 cannot cross the left-half screen boundaries:
-                    this.lim_x1 = dim/2;
-                    this.lim_x2 = _REN_W/2 - dim/2;
-                    this.lim_y1 = dim/2;
-                    this.lim_y2 = _REN_H - dim/2;
                 end;
 
                 var Ship ship2 with
-                    this.id     = _OBJ_SHIP2;
                     this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP2);
-                    this.dir    = -1;            // positive increase (on X-axis)
                     this.rect   = SDL_Rect(_REN_W-dim,_REN_H/2,0,0); // w/h set inside
-                    this.controller = &controller2;
-
-                    // ship2 cannot cross the right-half screen boundaries:
-                    this.lim_x1 = _REN_W/2 + dim/2;
-                    this.lim_x2 = _REN_W - dim/2;
-                    this.lim_y1 = dim/2;
-                    this.lim_y2 = _REN_H - dim/2;
                 end;
 
                 /*
