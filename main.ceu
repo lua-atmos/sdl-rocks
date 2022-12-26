@@ -12,180 +12,142 @@ pico_state_set_font("tiny.ttf", win.1/15)
 
 
 spawn {
-    par {
-        ;;;
-         ; - Draw the background image on every frame.
-         ; We draw at position (0,0), which is the center of the screen, in which
-         ; the center of the image is drawn.
-         ; Given that this trail is the first to appear in the source code, the
-         ; background image will always be rendered first.
-        ;;;
+    ;;;
+    ;; - Spawn a task to draw the background image on every frame.
+    ;; We draw at position (0,0), which is the center of the screen, in which
+    ;; the center of the image is drawn.
+    ;; Given that this task is the first to appear in the source code, the
+    ;; background image will always be rendered first.
+    ;;;
+    every :draw {
+        pico_state_set_image_crop()
+        pico_output_draw_image(0,0, "imgs/bg.png")
+    }
+}
+
+group {
+    ;;;
+    ;; Instantiate the players' points (points1, points2) and place them
+    ;; at the bottom of the screen, in opposite sides (p1, p2):
+    ;;      +------------------------+
+    ;;      |                        |
+    ;;      |                        |
+    ;;      | p1                  p2 |
+    ;;      +------------------------+
+    ;; Each player's points is incremented when the ship of the opponent is 
+    ;; destroyed.
+    ;; The points outlive each individual battle, so it is placed here,
+    ;; outside the nested gameplay.
+    ;;;
+
+    var p1 = "0"
+    var p2 = "0"
+
+    ;; We spawn the points exhibition so that it coexists with the gameplay.
+    ;; Since it is spawned first, the points will be rendered first, such
+    ;; they may be covered by moving objects in the gameplay, as desired.
+    spawn {
+        var dx = win.0 / 15
+        var x1 = (-win.0 / 2) + dx
+        var x2 = ( win.0 / 2) - dx
+        var y  = (-win.1 /2 ) + (win.1 / 15)
         every :draw {
-            pico_state_set_image_crop()
-            pico_output_draw_image(0,0, "imgs/bg.png")
+            pico_output_draw_text(x1, y, p1)
+            pico_output_draw_text(x2, y, p2)
         }
-    } with {
-        await false
-    } with {
-        ;; The "main trail" is where all game action takes place.
+    }
+}
 
+spawn {
+    ;;;
+    ;; - The "main loop" with the gameplay.
+    ;; It is restarted whenever one of the ships is destroyed.
+    ;; As the points do not reset between iterations, they need to be defined 
+    ;; before entering the loop.
+    ;;;
+
+    while true {
         ;;;
-         ; Instantiate the players' points (points1, points2) and place them
-         ; at the bottom of the screen, in opposite sides (p1, p2):
-         ;      +------------------------+
-         ;      |                        |
-         ;      |                        |
-         ;      | p1                  p2 |
-         ;      +------------------------+
-         ; Each player's points is incremented when the ship of the opponent is 
-         ; destroyed.
-         ; The points outlive each individual battle, so it is placed here,
-         ; outside the nested gameplay.
+        ;; - Shows the centered and blinking "= TAP TO START =" message,
+        ;;   and awaits the user interaction.
         ;;;
-
-        var p1 = "0"
-        var p2 = "0"
-
-        ;; We spawn the points exhibition so that it coexists with the gameplay.
-        ;; Since it is spawned first, the points will be rendered first, such
-        ;; they may be covered by moving objects in the gameplay, as desired.
-        spawn {
-            var dx = win.0 / 15
-            var x1 = (-win.0 / 2) + dx
-            var x2 = ( win.0 / 2) - dx
-            var y  = (-win.1 /2 ) + (win.1 / 15)
-            every :draw {
-                pico_output_draw_text(x1, y, p1)
-                pico_output_draw_text(x2, y, p2)
-            }
-        }
-
-        ;;;
-         ; - The "main loop" with the gameplay.
-         ; It is restarted whenever one of the ships is destroyed.
-         ; As the points do not reset between iterations, they need to be defined 
-         ; before entering the loop.
-        ;;;
-
-        while true {
-            ;;;
-             ; - Shows the centered and blinking "= TAP TO START =" message,
-             ;   and awaits the user interaction.
-            ;;;
-;;;
-            awaiting :keydown {
-                while true {
-                    await 500ms
-                    awaiting 500ms {
-                        every :draw {
-                            pico_output_draw_text(0, 0, "= TAP TO START =")
-                        }
+;;
+        awaiting :keydown {
+            while true {
+                await 500ms
+                awaiting 500ms {
+                    every :draw {
+                        pico_output_draw_text(0, 0, "= TAP TO START =")
                     }
                 }
             }
-;;;
-
-            ;; TODO: sound
-
-            ;;;
-             ; - The "battle block" with the gameplay holds the spaceships,
-             ;   controllers, and all dynamic objects, such as meteors,
-             ;   bonuses, and ship shots.
-             ; This means that they are all properly released/reallocated
-             ; after each individual battle.
-            ;;;
-            do {
-                ;;;
-                 ; - Creates the two ships.
-                 ; They differ in ids (:ship1 vs :ship2), initial positions,
-                 ; screen limits, key controllers, and image orientations
-                 ; (i.e., pointing :right or :left).
-                ;;;
-
-                ^["ship.ceu"]
-                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
-                    where {
-                        var pos1 = [(-win.0/2)+(win.0/10), 0]
-                        var ctrl1 = spawn Control(mov1) where {
-                                        var mov1 = @[
-                                            left  = :Key.A,
-                                            right = :Key.D,
-                                            up    = :Key.W,
-                                            down  = :Key.S,
-                                        ]
-                                    }
-                    }
-                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, ctrl2)
-                    where {
-                        var pos2 = [( win.0/2)-(win.0/10), 0]
-                        var ctrl2 = spawn Control(mov2) where {
-                                        var mov2 = @[
-                                            left  = :Key.Left,
-                                            right = :Key.Right,
-                                            up    = :Key.Up,
-                                            down  = :Key.Down,
-                                        ]
-                                    }
-                    }
-                await false
-            }
         }
+;;
+
+        ;; TODO: sound
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;; - The "battle block" with the gameplay holds the spaceships,
+        ;;   controllers, and all dynamic objects, such as meteors,
+        ;;   bonuses, and ship shots.
+        ;; This means that they are all properly released/reallocated
+        ;; after each individual battle.
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+        ;;;
+        ;; - Creates the two ships.
+        ;; They differ in ids (:ship1 vs :ship2), initial positions,
+        ;; screen limits, key controllers, and image orientations
+        ;; (i.e., pointing :right or :left).
+        ;; Note that a `group` does not nest a new scope, which is useful
+        ;; to group declarations that remain visible outside it.
+        ;;;
+        group {
+            ^["ship.ceu"]
+            var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
+                where {
+                    var pos1 = [(-win.0/2)+(win.0/10), 0]
+                    var ctrl1 = spawn Control(mov1) where {
+                                    var mov1 = @[
+                                        left  = :Key.A,
+                                        right = :Key.D,
+                                        up    = :Key.W,
+                                        down  = :Key.S,
+                                    ]
+                                }
+                }
+            ;;`SDLK_z`, ;;`SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
+            ;;`SDLK_SEMICOLON`, ;;`SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
+            var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, ctrl2)
+                where {
+                    var pos2 = [( win.0/2)-(win.0/10), 0]
+                    var ctrl2 = spawn Control(mov2) where {
+                                    var mov2 = @[
+                                        left  = :Key.Left,
+                                        right = :Key.Right,
+                                        up    = :Key.Up,
+                                        down  = :Key.Down,
+                                    ]
+                                }
+                }
+        }
+
+        ;;;
+        ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
+        ;;   this pool.
+        ;;;
+        var objs = coroutines()
+
+        awaiting (evt==ship1) or (evt==ship2) {
+            await false
+        }
+        println(ship1.status, ship2.status)
+    }
+}
+
+pico_loop ()
+
 ;;;;
-
-                var ship1 = (spawn Ship(:ship1, "imgs/ship1.gif", :right, pos, lims, ctrl1))
-                    where {
-                        var pos = [-win.0/2, 0]
-                        var lims = [
-                            [], []
-                        ]
-                            ;;`:number SDLK_z`,
-                            ;;`:number SDLK_x`,
-                            ;;`:number SDLK_c`,
-                            ;;`:number SDLK_1`,
-                    }
-
-                var ship2 = (spawn Ship(:ship2, "imgs/ship2.gif", :left, pos, ctrl))
-                    where {
-                        var pos = [ win.0/2, 0]
-                        var lims = [
-                            [], []
-                        ]
-                        var ctrl2 = [:Key.w, :Key.s, :Key.a, :Key.d]
-                        var ctrl = [
-                            `:number SDLK_UP`,
-                            `:number SDLK_DOWN`,
-                            `:number SDLK_LEFT`,
-                            `:number SDLK_RIGHT`,
-                            `:number SDLK_SEMICOLON`,
-                            `:number SDLK_PERIOD`,
-                            `:number SDLK_COMMA`,
-                            `:number SDLK_0`,
-                        ]
-                    }
-            }
-        }
-            do
-
-                var int dim=0; // ship dimensions are squared (WxW):
-                    _SDL_QueryTexture(_TEX_SHIP1, null, null, &&dim, null);
-
-                var Ship ship1 with
-                    this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP1);
-                    this.rect   = SDL_Rect(dim,_REN_H/2,0,0); // w/h set inside
-
-                end;
-
-                var Ship ship2 with
-                    this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_SHIP2);
-                    this.rect   = SDL_Rect(_REN_W-dim,_REN_H/2,0,0); // w/h set inside
-                end;
-
-                /*
-                 * All dynamically spawned meteors, bonuses, and bombs reside in 
-                 * this pool.
-                 */
-                pool NObject[_OBJ_N] all;
-                    /* TODO: read "NObject" this as a synonym for "Object" */
 
                 /*
                  * The game innermost "par/or" only terminates when one of the 
@@ -614,8 +576,6 @@ spawn {
      * - MENU: control-sides, reset-points
      * - start at 1/2 speed of previous match
      */
-;;;;
     }
 }
-
-pico_loop ()
+;;;;

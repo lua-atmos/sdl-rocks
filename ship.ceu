@@ -42,7 +42,9 @@ task Ship (id, path, dir, pos, control) {
     var size = pico_state_get_size_image(path)
     var vel = [0,0]
     var dy = size.1 / FRAMES
-    par {
+    paror {
+        await 5s
+    } with {
         every :draw {
             pico_state_set_image_crop(0,frame*dy,size.0,dy)
                 where {
