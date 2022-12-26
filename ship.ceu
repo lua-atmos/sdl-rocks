@@ -1,7 +1,12 @@
 task Ship (id, path, dir, pos, ctrl) {
+    var size = pico_state_get_size_image(path)
+    var dy = size.1 / 4
+    var frame = 0
     spawn {
         every :draw {
+            pico_state_set_image_crop(0,frame*dy,size.0,dy)
             pico_output_draw_image(pos.0,pos.1, path)
+            pico_state_set_image_crop()
         }
     }
     await false

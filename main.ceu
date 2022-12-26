@@ -102,10 +102,14 @@ spawn {
                 ;;;
 
                 ^["ship.ceu"]
-                var pos1 = [(-win.0/2)+(win.0/10), 0]
                 var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, [], [])
-                var pos2 = [( win.0/2)-(win.0/10), 0]
+                    where {
+                        var pos1 = [(-win.0/2)+(win.0/10), 0]
+                    }
                 var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, [], [])
+                    where {
+                        var pos2 = [( win.0/2)-(win.0/10), 0]
+                    }
                 await false
             }
         }
