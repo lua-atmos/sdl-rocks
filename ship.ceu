@@ -44,20 +44,11 @@ task Ship (id, path, dir, pos, control) {
     var dy = size.1 / FRAMES
     par {
         every :draw {
-            do {
-                pico_state_set_image_crop(0,frame*dy,size.0,dy)
-                pico_output_draw_image(pos.0,pos.1, path)
-            } where {
-                var frame = control.pub.toframe(dir)
-            }
-;;;
             pico_state_set_image_crop(0,frame*dy,size.0,dy)
                 where {
-                    var dy = size.1 / FRAMES
                     var frame = control.pub.toframe()
                 }
             pico_output_draw_image(pos.0,pos.1, path)
-;;;
         }
     } with {
         every :frame {
