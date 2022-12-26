@@ -21,6 +21,7 @@ spawn {
          ; background image will always be rendered first.
         ;;;
         every :draw {
+            pico_state_set_image_crop()
             pico_output_draw_image(0,0, "imgs/bg.png")
         }
     } with {
@@ -102,35 +103,33 @@ spawn {
                 ;;;
 
                 ^["ship.ceu"]
-                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, [], [])
+                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, [], ctrl1)
                     where {
                         var pos1 = [(-win.0/2)+(win.0/10), 0]
+                        var ctrl1 = spawn Control([:Key.a, :Key.d, :Key.w, :Key.s])
                     }
-                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, [], [])
+;;;
+                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, [], ctrl2)
                     where {
                         var pos2 = [( win.0/2)-(win.0/10), 0]
+                        var ctrl2 = spawn Control([:Key.a, :Key.d, :Key.w, :Key.s])
                     }
+;;;
                 await false
             }
         }
 ;;;;
 
-                var ship1 = (spawn Ship(:ship1, "imgs/ship1.gif", :right, pos, lims, ctrl))
+                var ship1 = (spawn Ship(:ship1, "imgs/ship1.gif", :right, pos, lims, ctrl1))
                     where {
                         var pos = [-win.0/2, 0]
                         var lims = [
                             [], []
                         ]
-                        var ctrl = [
-                            `:number SDLK_w`,
-                            `:number SDLK_s`,
-                            `:number SDLK_a`,
-                            `:number SDLK_d`,
-                            `:number SDLK_z`,
-                            `:number SDLK_x`,
-                            `:number SDLK_c`,
-                            `:number SDLK_1`,
-                        ]
+                            ;;`:number SDLK_z`,
+                            ;;`:number SDLK_x`,
+                            ;;`:number SDLK_c`,
+                            ;;`:number SDLK_1`,
                     }
 
                 var ship2 = (spawn Ship(:ship2, "imgs/ship2.gif", :left, pos, ctrl))
@@ -139,6 +138,7 @@ spawn {
                         var lims = [
                             [], []
                         ]
+                        var ctrl2 = [:Key.w, :Key.s, :Key.a, :Key.d]
                         var ctrl = [
                             `:number SDLK_UP`,
                             `:number SDLK_DOWN`,

@@ -1,13 +1,28 @@
-task Ship (id, path, dir, pos, ctrl) {
+task Control (mov) {
+    set pub = [0,0]     ;; [ax,ay]
+    every :keydown {
+        ifs evt.1 {
+            is mov.0 -> set pub.0 = -win.0/300
+            is mov.1 -> set pub.0 =  win.0/300
+            is mov.2 -> set pub.1 =  win.1/300
+            is mov.3 -> set pub.1 = -win.1/300
+        }
+    }
+}
+
+task Ship (id, path, dir, pos, lims, ctrl) {
     var size = pico_state_get_size_image(path)
     var dy = size.1 / 4
     var frame = 0
-    spawn {
+    par {
         every :draw {
             pico_state_set_image_crop(0,frame*dy,size.0,dy)
             pico_output_draw_image(pos.0,pos.1, path)
-            pico_state_set_image_crop()
+        }
+    } with {
+        every :frame {
+            set pos.0 = pos.0 + ctrl.pub.0
+            set pos.1 = pos.1 + ctrl.pub.1
         }
     }
-    await false
 }
