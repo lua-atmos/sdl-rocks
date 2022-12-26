@@ -10,10 +10,10 @@ task Control (mov) {
     var key
     set pub = @[
         acc = @[x=0,y=0],
-        toframe = func () {
+        toframe = func (dir) {
             ifs key {
-                is mov.left  -> 0
-                is mov.right -> 1
+                is mov.left  -> ((dir==:right) and 0) or 1
+                is mov.right -> ((dir==:left)  and 0) or 1
                 is mov.up    -> 2
                 is mov.down  -> 3
                 else -> 0
@@ -33,30 +33,42 @@ task Control (mov) {
     } with {
         every :keyup {
             set key = nil
-            set pub.acc = [0,0]
+            set pub.acc = @[x=0,y=0]
         }
     }
 }
 
-task Ship (id, path, dir, pos, lims, control) {
+task Ship (id, path, dir, pos, control) {
     var size = pico_state_get_size_image(path)
     var vel = [0,0]
+    var dy = size.1 / FRAMES
     par {
         every :draw {
             do {
                 pico_state_set_image_crop(0,frame*dy,size.0,dy)
                 pico_output_draw_image(pos.0,pos.1, path)
             } where {
-                var dy = size.1 / FRAMES
-                var frame = control.pub.toframe()
+                var frame = control.pub.toframe(dir)
             }
+;;;
+            pico_state_set_image_crop(0,frame*dy,size.0,dy)
+                where {
+                    var dy = size.1 / FRAMES
+                    var frame = control.pub.toframe()
+                }
+            pico_output_draw_image(pos.0,pos.1, path)
+;;;
         }
     } with {
         every :frame {
-            set vel.0 = between(-MAX.0, MAX.0, vel.0 + control.pub.acc.x)
-            set vel.1 = between(-MAX.1, MAX.1, vel.1 + control.pub.acc.y)
-            set pos.0 = pos.0 + vel.0
-            set pos.1 = pos.1 + vel.1
+            set vel.0 = between(-MAX.0, MAX.0, vel.0+control.pub.acc.x)
+            set vel.1 = between(-MAX.1, MAX.1, vel.1+control.pub.acc.y)
+            set pos.0 = if dir==:right {
+                            between((-win.0/2)+size.0, 0-size.0, pos.0+vel.0)
+                        } else {
+                            between(0+size.0,  (win.0/2)-size.0, pos.0+vel.0)
+                        }
+            set pos.1 = between((-win.1/2)+dy, (win.1/2)-dy, pos.1+vel.1)
         }
     }
 }

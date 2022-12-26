@@ -103,25 +103,30 @@ spawn {
                 ;;;
 
                 ^["ship.ceu"]
-                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, [], ctrl1)
+                var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
                     where {
                         var pos1 = [(-win.0/2)+(win.0/10), 0]
-                        var ctrl1 = spawn Control(mov) where {
-                                        var mov = @[
-                                            left  = :Key.a,
-                                            right = :Key.d,
-                                            up    = :Key.w,
-                                            down  = :Key.s,
+                        var ctrl1 = spawn Control(mov1) where {
+                                        var mov1 = @[
+                                            left  = :Key.A,
+                                            right = :Key.D,
+                                            up    = :Key.W,
+                                            down  = :Key.S,
                                         ]
                                     }
                     }
-;;;
-                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, [], ctrl2)
+                var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, ctrl2)
                     where {
                         var pos2 = [( win.0/2)-(win.0/10), 0]
-                        var ctrl2 = spawn Control([:Key.a, :Key.d, :Key.w, :Key.s])
+                        var ctrl2 = spawn Control(mov2) where {
+                                        var mov2 = @[
+                                            left  = :Key.Left,
+                                            right = :Key.Right,
+                                            up    = :Key.Up,
+                                            down  = :Key.Down,
+                                        ]
+                                    }
                     }
-;;;
                 await false
             }
         }
