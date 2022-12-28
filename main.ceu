@@ -10,6 +10,7 @@ var win = pico_state_get_size()
 
 pico_state_set_font("tiny.ttf", win.1/15)
 
+var ROCK_MS = 500
 
 spawn {
     ;;;
@@ -140,12 +141,37 @@ spawn {
         ;;;
         var objs = coroutines()
 
+        ;;;
+        ;; - The game innermost "awaiting" terminates when either of the two
+        ;;   ships is destroyed.
+        ;; - We then proceed to increment the points before restarting the
+        ;;   outer loop for the next battle.
+        ;;;
         awaiting (evt==ship1) or (evt==ship2) {
+            ;;;
+            ;; - Spawns new meteros in the game.
+            ;; It starts with 2s but goes down continuously.
+            ;; The "spawn" creates a dynamic instance of "RockBig".
+            ;; All instances are limited to the closest outer "do-end" 
+            ;; block (in this case, the "battle block").
+            ;; When the block terminates, all instances are automatically 
+            ;; destroyed, i.e., when one of the ships is destroyed, the 
+            ;; "battle block" will restart and all meteors will be 
+            ;; automatically destroyed.
+            ;;;
+            spawn {
+                var period = ROCK_MS;
+                ;;every (`:number rand()` % period)ms
+                every 500ms {
+                    set period = max(50, period-10)
+                    ;;spawn in objs, ROCK()
+                }
+            }
             await false
         }
         ifs {
-            (ship1.status == :terminating) -> set points2 = tostring(tonumber(points2)+1)
-            (ship2.status == :terminating) -> set points1 = tostring(tonumber(points1)+1)
+            (ship1.status == :terminated) -> set points2 = tostring(tonumber(points2)+1)
+            (ship2.status == :terminated) -> set points1 = tostring(tonumber(points1)+1)
         }
         await 1s
     }
@@ -154,39 +180,6 @@ spawn {
 pico_loop ()
 
 ;;;;
-
-                /*
-                 * The game innermost "par/or" only terminates when one of the 
-                 * ships is destroyed. It is responsible for spawning new meteors 
-                 * and checking collisions on every frame.
-                 */
-                par/or do
-                    await ship1.ok_killed;      // if ship1 is destroyed,
-                    emit points2.go_inc;        //  increment points2
-                with
-                    await ship2.ok_killed;      // if ship2 is destroyed,
-                    emit points1.go_inc;        //  increment points1
-                with
-                    /*
-                     * Period to create a new meteor in the game.
-                     * It starts with 2s but goes down continuously.
-                     * The "spawn" creates a dynamic instance of "RockBig".
-                     * All instances are limited to the closest outer "do-end" 
-                     * block (in this case, the "battle block").
-                     * When the block terminates, all instances are automatically 
-                     * destroyed, i.e., when one of the ships is destroyed, the 
-                     * "battle block" will restart and all meteors will be 
-                     * automatically destroyed.
-                     */
-                    var int period = _ROCKS_MS;
-                    every (_rand() % period)ms do
-                        if period > 50 then
-                            period = period - 10;
-                        end
-                        spawn RockBig in all with
-                            this.rect = SDL_Rect(0,0,0,0);  // all set inside
-                        end;
-                    end
                 with
                     /*
                      * Collision detection loop:
