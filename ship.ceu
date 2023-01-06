@@ -6,7 +6,7 @@ func between (MIN, MAX, v) {
     max(MIN, min(MAX, v))
 }
 
-task Control (mov) {
+task Control (mov) :awakes {
     var key
     set pub = @[
         acc = @[x=0,y=0],
@@ -38,7 +38,7 @@ task Control (mov) {
     }
 }
 
-task Ship (id, path, dir, pos, control) {
+task Ship (id, path, dir, pos, control) :awakes {
     var size = pico_state_get_size_image(path)
     var vel = [0,0]
     var dy = size.1 / FRAMES

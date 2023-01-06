@@ -26,7 +26,7 @@ spawn {
     }
 }
 
-group {
+do :unnest {
     ;;;
     ;; Instantiate the players' points (points1, points2) and place them
     ;; at the bottom of the screen, in opposite sides (points1, points2):
@@ -105,7 +105,7 @@ spawn {
         ;; screen limits, key controllers, and image orientations
         ;; (i.e., pointing :right or :left).
         ;;;
-        group {
+		do :unnest {
             ^["ship.ceu"]
             var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
                 where {
