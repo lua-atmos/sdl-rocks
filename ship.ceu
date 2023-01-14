@@ -8,7 +8,7 @@ func between (MIN, MAX, v) {
 
 task Control (mov) :awakes {
     var key
-    set pub = @[
+    set task.pub = @[
         acc = @[x=0,y=0],
         toframe = func (dir) {
             ifs key {
@@ -23,17 +23,17 @@ task Control (mov) :awakes {
     par {
         every :keydown {
             ifs evt.1 {
-                is mov.left  -> set pub.acc.x = -win.0/ACC_DIV
-                is mov.right -> set pub.acc.x =  win.0/ACC_DIV
-                is mov.up    -> set pub.acc.y =  win.1/ACC_DIV
-                is mov.down  -> set pub.acc.y = -win.1/ACC_DIV
+                is mov.left  -> set task.pub.acc.x = -win.0/ACC_DIV
+                is mov.right -> set task.pub.acc.x =  win.0/ACC_DIV
+                is mov.up    -> set task.pub.acc.y =  win.1/ACC_DIV
+                is mov.down  -> set task.pub.acc.y = -win.1/ACC_DIV
             }
             set key = evt.1
         }
     } with {
         every :keyup {
             set key = nil
-            set pub.acc = @[x=0,y=0]
+            set task.pub.acc = @[x=0,y=0]
         }
     }
 }
