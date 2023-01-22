@@ -1,16 +1,16 @@
 ^["pico.ceu"]
 
-pico_state_set_title("The Rocks! Game")
-pico_state_set_size_pixel(1,1)
-pico_state_set_size(641,481)
-pico_state_set_grid(false)
-pico_state_set_auto(false)
+pico-state-set-title("The Rocks! Game")
+pico-state-set-size-pixel([1,1])
+pico-state-set-size([641,481])
+pico-state-set-grid(false)
+pico-state-set-auto(false)
 
-var win = pico_state_get_size()
+var win :WH = pico-state-get-size()
 
-pico_state_set_font("tiny.ttf", win.1/15)
+pico-state-set-font("tiny.ttf", win.h/15)
 
-var ROCK_MS = 500
+var ROCK-MS = 2000
 
 spawn {
     ;;;
@@ -20,9 +20,9 @@ spawn {
     ;; Given that this task is the first to appear in the source code, the
     ;; background image will always be rendered first.
     ;;;
-    every :draw {
-        pico_state_set_image_crop()
-        pico_output_draw_image(0,0, "imgs/bg.png")
+    every :Pico.Draw {
+        pico-state-set-image-crop()
+        pico-output-draw-image([0,0], "imgs/bg.png")
     }
 }
 
@@ -52,13 +52,13 @@ do :unnest {
     ;; they may be covered by moving objects in the gameplay, as desired.
     ;;;
     spawn {
-        var dx = win.0 / 15
-        var x1 = (-win.0 / 2) + dx
-        var x2 = ( win.0 / 2) - dx
-        var y  = (-win.1 /2 ) + (win.1 / 15)
-        every :draw {
-            pico_output_draw_text(x1, y, points1)
-            pico_output_draw_text(x2, y, points2)
+        var dx = win.w / 15
+        var y  = (-win.h /2 ) + (win.h / 15)
+        var p1 = [(-win.w / 2) + dx, y]
+        var p2 = [( win.w / 2) - dx, y]
+        every :Pico.Draw {
+            pico-output-draw-text(p1, points1)
+            pico-output-draw-text(p2, points2)
         }
     }
 }
@@ -77,12 +77,12 @@ spawn {
         ;;   and awaits the user interaction.
         ;;;
 ;;
-        awaiting :keydown {
+        awaiting :Pico.Key.Dn {
             while true {
-                await 500ms
-                awaiting 500ms {
-                    every :draw {
-                        pico_output_draw_text(0, 0, "= TAP TO START =")
+                await 500:ms
+                awaiting 500:ms {
+                    every :Pico.Draw {
+                        pico-output-draw-text([0,0], "= TAP TO START =")
                     }
                 }
             }
@@ -109,13 +109,13 @@ spawn {
             ^["ship.ceu"]
             var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
                 where {
-                    var pos1 = [(-win.0/2)+(win.0/10), 0]
+                    var pos1 = [(-win.w/2)+(win.w/10), 0]
                     var ctrl1 = spawn Control(mov1) where {
                                     var mov1 = @[
-                                        left  = :Key.A,
-                                        right = :Key.D,
-                                        up    = :Key.W,
-                                        down  = :Key.S,
+                                        left  = :Key-A,
+                                        right = :Key-D,
+                                        up    = :Key-W,
+                                        down  = :Key-S,
                                     ]
                                 }
                 }
@@ -123,13 +123,13 @@ spawn {
             ;;`SDLK_SEMICOLON`, ;;`SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
             var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, ctrl2)
                 where {
-                    var pos2 = [( win.0/2)-(win.0/10), 0]
+                    var pos2 = [( win.w/2)-(win.w/10), 0]
                     var ctrl2 = spawn Control(mov2) where {
                                     var mov2 = @[
-                                        left  = :Key.Left,
-                                        right = :Key.Right,
-                                        up    = :Key.Up,
-                                        down  = :Key.Down,
+                                        left  = :Key-Left,
+                                        right = :Key-Right,
+                                        up    = :Key-Up,
+                                        down  = :Key-Down,
                                     ]
                                 }
                 }
@@ -139,7 +139,7 @@ spawn {
         ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
         ;;   this pool.
         ;;;
-        var objs = coroutines()
+        var objs = tasks()
 
         ;;;
         ;; - The game innermost "awaiting" terminates when either of the two
@@ -160,11 +160,10 @@ spawn {
             ;; automatically destroyed.
             ;;;
             spawn {
-                var period = ROCK_MS;
-                ;;every (`:number rand()` % period)ms
-                every 500ms {
+                var period = ROCK-MS;
+                every (random-next() % period) :ms {
                     set period = max(50, period-10)
-                    ;;spawn in objs, ROCK()
+                    ;;spawn in objs, Rock-Big()
                 }
             }
             await false
@@ -173,11 +172,11 @@ spawn {
             (ship1.status == :terminated) -> set points2 = tostring(tonumber(points2)+1)
             (ship2.status == :terminated) -> set points1 = tostring(tonumber(points1)+1)
         }
-        await 1s
+        await 1:s
     }
 }
 
-pico_loop ()
+pico-loop ()
 
 ;;;;
                 with

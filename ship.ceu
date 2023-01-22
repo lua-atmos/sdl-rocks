@@ -1,12 +1,12 @@
-var ACC_DIV = 3000
+var ACC-DIV = 3000
 var FRAMES  = 4
-var MAX     = [win.0/200, win.1/200]
+var MAX :XY = [win.w/200, win.h/200]
 
 func between (MIN, MAX, v) {
     max(MIN, min(MAX, v))
 }
 
-task Control (mov) :awakes {
+task Control (mov) {
     var key
     set task.pub = @[
         acc = @[x=0,y=0],
@@ -21,47 +21,47 @@ task Control (mov) :awakes {
         },
     ]
     par {
-        every :keydown {
-            ifs evt.1 {
-                is mov.left  -> set task.pub.acc.x = -win.0/ACC_DIV
-                is mov.right -> set task.pub.acc.x =  win.0/ACC_DIV
-                is mov.up    -> set task.pub.acc.y =  win.1/ACC_DIV
-                is mov.down  -> set task.pub.acc.y = -win.1/ACC_DIV
+        every :Pico.Key.Dn {
+            ifs evt.key {
+                is mov.left  -> set task.pub.acc.x = -win.w/ACC-DIV
+                is mov.right -> set task.pub.acc.x =  win.w/ACC-DIV
+                is mov.up    -> set task.pub.acc.y =  win.h/ACC-DIV
+                is mov.down  -> set task.pub.acc.y = -win.h/ACC-DIV
             }
-            set key = evt.1
+            set key = evt.key
         }
     } with {
-        every :keyup {
+        every :Pico.Key.Up {
             set key = nil
             set task.pub.acc = @[x=0,y=0]
         }
     }
 }
 
-task Ship (id, path, dir, pos, control) :awakes {
-    var size = pico_state_get_size_image(path)
-    var vel = [0,0]
-    var dy = size.1 / FRAMES
-    paror {
-        await 5s
+task Ship (id, path, dir, pos:XY, control) {
+    var dim:WH = pico-state-get-size-image(path)
+    var vel:XY = [0,0]
+    var dy = dim.h / FRAMES
+    par-or {
+        await 5:s
     } with {
-        every :draw {
-            pico_state_set_image_crop(0,frame*dy,size.0,dy)
+        every :Pico.Draw {
+            pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
                     var frame = control.pub.toframe()
                 }
-            pico_output_draw_image(pos.0,pos.1, path)
+            pico-output-draw-image(pos, path)
         }
     } with {
-        every :frame {
-            set vel.0 = between(-MAX.0, MAX.0, vel.0+control.pub.acc.x)
-            set vel.1 = between(-MAX.1, MAX.1, vel.1+control.pub.acc.y)
-            set pos.0 = if dir==:right {
-                            between((-win.0/2)+size.0, 0-size.0, pos.0+vel.0)
+        every :Pico.Frame {
+            set vel.x = between(-MAX.x, MAX.x, vel.x+control.pub.acc.x)
+            set vel.y = between(-MAX.y, MAX.y, vel.y+control.pub.acc.y)
+            set pos.x = if dir==:right {
+                            between((-win.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
                         } else {
-                            between(0+size.0,  (win.0/2)-size.0, pos.0+vel.0)
+                            between(0+dim.w,  (win.w/2)-dim.w, pos.x+vel.x)
                         }
-            set pos.1 = between((-win.1/2)+dy, (win.1/2)-dy, pos.1+vel.1)
+            set pos.y = between((-win.h/2)+dy, (win.h/2)-dy, pos.y+vel.y)
         }
     }
 }
