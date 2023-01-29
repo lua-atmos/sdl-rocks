@@ -1,5 +1,5 @@
 var ACC-DIV = 3000
-var FRAMES  = 4
+var SHIP-FRAMES = 4
 var MAX :XY = [win.w/200, win.h/200]
 
 func between (MIN, MAX, v) {
@@ -38,12 +38,14 @@ task Control (mov) {
     }
 }
 
-task Ship (id, path, dir, pos:XY, control) {
+task Ship (id, path, dir, pos:XY, control) :Rect {
     var dim:WH = pico-state-get-size-image(path)
     var vel:XY = [0,0]
-    var dy = dim.h / FRAMES
+    var dy = dim.h / SHIP-FRAMES
+    set task.pub = [pos, [dim.w,dy]]
+
     par-or {
-        await 5:s
+        await :collided
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])

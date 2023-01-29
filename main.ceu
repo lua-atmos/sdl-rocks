@@ -9,12 +9,13 @@ pico-state-set-auto(false)
 var win :WH = pico-state-get-size()
 
 pico-state-set-font("tiny.ttf", win.h/15)
+random-seed()
 
-var ROCK-MS = 2000
+var ROCK-MS = 5000
 
-spawn {
+spawn {         ;; BACKGROUND
     ;;;
-    ;; - Spawn a task to draw the background image on every frame.
+    ;; Spawn a task to draw the background image on every frame.
     ;; We draw at position (0,0), which is the center of the screen, in which
     ;; the center of the image is drawn.
     ;; Given that this task is the first to appear in the source code, the
@@ -26,14 +27,14 @@ spawn {
     }
 }
 
-do :unnest {
+do :unnest {    ;; POINTS
     ;;;
-    ;; Instantiate the players' points (points1, points2) and place them
-    ;; at the bottom of the screen, in opposite sides (points1, points2):
+    ;; Instantiate the players' points (points-1, points-2) and place them
+    ;; at the bottom of the screen, in opposite sides (points-1, points-2):
     ;;      +------------------------+
     ;;      |                        |
     ;;      |                        |
-    ;;      | points1        points2 |
+    ;;      | points-1      points-2 |
     ;;      +------------------------+
     ;; Each player's points is incremented when the ship of the opponent is 
     ;; destroyed.
@@ -43,8 +44,8 @@ do :unnest {
     ;; useful to group declarations that remain visible outside.
     ;;;
 
-    var points1 = "0"
-    var points2 = "0"
+    var points-1 = "0"
+    var points-2 = "0"
 
     ;;;
     ;; We spawn the points exhibition so that it coexists with the gameplay.
@@ -57,13 +58,13 @@ do :unnest {
         var p1 = [(-win.w / 2) + dx, y]
         var p2 = [( win.w / 2) - dx, y]
         every :Pico.Draw {
-            pico-output-draw-text(p1, points1)
-            pico-output-draw-text(p2, points2)
+            pico-output-draw-text(p1, points-1)
+            pico-output-draw-text(p2, points-2)
         }
     }
 }
 
-spawn {
+spawn {         ;; MAIN-LOOP
     ;;;
     ;; - The "main loop" with the gameplay.
     ;; It is restarted whenever one of the ships is destroyed.
@@ -72,22 +73,20 @@ spawn {
     ;;;
 
     while true {
-        ;;;
-        ;; - Shows the centered and blinking "= TAP TO START =" message,
-        ;;   and awaits the user interaction.
-        ;;;
-;;
-        awaiting :Pico.Key.Dn {
+        awaiting :Pico.Key.Dn {     ;; TAP-TO-START
+            ;;;
+            ;; - Shows the centered and blinking "= TAP TO START =" message,
+            ;;   and awaits the user interaction.
+            ;;;
             while true {
-                await 500:ms
                 awaiting 500:ms {
                     every :Pico.Draw {
                         pico-output-draw-text([0,0], "= TAP TO START =")
                     }
                 }
+                await 500:ms
             }
         }
-;;
 
         ;; TODO: sound
 
@@ -99,18 +98,18 @@ spawn {
         ;; each individual battle.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        ;;;
-        ;; - Creates the two ships.
-        ;; They differ in ids (:ship1 vs :ship2), initial positions,
-        ;; screen limits, key controllers, and image orientations
-        ;; (i.e., pointing :right or :left).
-        ;;;
-		do :unnest {
+		do :unnest {                ;; SHIPS
+            ;;;
+            ;; - Creates the two ships.
+            ;; They differ in ids (:ship-1 vs :ship-2), initial positions,
+            ;; screen limits, key controllers, and image orientations
+            ;; (i.e., pointing :right or :left).
+            ;;;
             ^["ship.ceu"]
-            var ship1 = spawn Ship(:ship1, "imgs/ship1.gif", :right, pos1, ctrl1)
+            var ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1)
                 where {
-                    var pos1 = [(-win.w/2)+(win.w/10), 0]
-                    var ctrl1 = spawn Control(mov1) where {
+                    var pos-1 = [(-win.w/2)+(win.w/10), 0]
+                    var ctl-1 = spawn Control(mov1) where {
                                     var mov1 = @[
                                         left  = :Key-A,
                                         right = :Key-D,
@@ -121,10 +120,10 @@ spawn {
                 }
             ;;`SDLK_z`, ;;`SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
             ;;`SDLK_SEMICOLON`, ;;`SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
-            var ship2 = spawn Ship(:ship2, "imgs/ship2.gif", :left,  pos2, ctrl2)
+            var ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2)
                 where {
-                    var pos2 = [( win.w/2)-(win.w/10), 0]
-                    var ctrl2 = spawn Control(mov2) where {
+                    var pos-2 = [( win.w/2)-(win.w/10), 0]
+                    var ctl-2 = spawn Control(mov2) where {
                                     var mov2 = @[
                                         left  = :Key-Left,
                                         right = :Key-Right,
@@ -139,7 +138,8 @@ spawn {
         ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
         ;;   this pool.
         ;;;
-        var objs = tasks()
+        var dyns = tasks()
+        ^["rocks.ceu"]
 
         ;;;
         ;; - The game innermost "awaiting" terminates when either of the two
@@ -147,11 +147,11 @@ spawn {
         ;; - We then proceed to increment the points before restarting the
         ;;   outer loop for the next battle.
         ;;;
-        awaiting (evt==ship1) or (evt==ship2) {
+        awaiting (evt==ship-1) or (evt==ship-2) {
             ;;;
             ;; - Spawns new meteros in the game.
             ;; It starts with 2s but goes down continuously.
-            ;; The "spawn" creates a dynamic instance of "RockBig".
+            ;; The "spawn" creates a dynamic instance of "Rock-Big".
             ;; All instances are limited to the closest outer "do-end" 
             ;; block (in this case, the "battle block").
             ;; When the block terminates, all instances are automatically 
@@ -162,15 +162,25 @@ spawn {
             spawn {
                 var period = ROCK-MS;
                 every (random-next() % period) :ms {
-                    set period = max(50, period-10)
-                    ;;spawn in objs, Rock-Big()
+                    set period = max(50, period - 10)
+                    spawn in dyns, Rock-Big()
                 }
             }
-            await false
+
+            every :Pico.Frame {
+                while in :tasks dyns, o {
+                    if pico-rect-vs-rect? (ship-1.pub, detrack(o).pub) {
+                        broadcast in ship-1, :collided
+                    }
+                    if pico-rect-vs-rect? (ship-2.pub, detrack(o).pub) {
+                        broadcast in ship-2, :collided
+                    }
+                }
+            }
         }
         ifs {
-            (ship1.status == :terminated) -> set points2 = tostring(tonumber(points2)+1)
-            (ship2.status == :terminated) -> set points1 = tostring(tonumber(points1)+1)
+            (ship-1.status == :terminated) -> set points-2 = tostring(tonumber(points-2)+1)
+            (ship-2.status == :terminated) -> set points-1 = tostring(tonumber(points-1)+1)
         }
         await 1:s
     }
@@ -194,11 +204,11 @@ pico-loop ()
                         /*
                          * Prepare the vector "objs" with all alive objects.
                          */
-                        var Object&&?[_OBJ_NN] objs = [&&ship1, &&ship2];
-                        loop o in ship1.fires do
+                        var Object&&?[_OBJ_NN] objs = [&&ship-1, &&ship-2];
+                        loop o in ship-1.fires do
                             objs = [] .. objs .. [o];
                         end
-                        loop o in ship2.fires do
+                        loop o in ship-2.fires do
                             objs = [] .. objs .. [o];
                         end
                         loop o in all do
@@ -407,9 +417,9 @@ pico-loop ()
                                     var Object&& oo2 = o2!;
                                     if getVS(_OBJ_BONUS_LIFE, &&oo1, &&oo2) then
                                         if oo2:id == _OBJ_SHIP1 then
-                                            emit points1.go_inc;
+                                            emit points-1.go_inc;
                                         else/if oo2:id == _OBJ_SHIP2 then
-                                            emit points2.go_inc;
+                                            emit points-2.go_inc;
                                         end
                                     end
                                 end
