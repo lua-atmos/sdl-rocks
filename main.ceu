@@ -98,6 +98,18 @@ spawn {         ;; MAIN-LOOP
         ;; each individual battle.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+        data :T = [] {
+            :Ship = [] {
+                :L = []
+                :R = []
+            }
+            :Fire = [] {
+                :L = []
+                :R = []
+            }
+            :Rock = []
+        }
+
 		do :unnest {                ;; SHIPS
             ;;;
             ;; - Creates the two ships.
@@ -106,31 +118,19 @@ spawn {         ;; MAIN-LOOP
             ;; (i.e., pointing :right or :left).
             ;;;
             ^["ship.ceu"]
-            var ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1)
+            var fires-1 = tasks(SHIP-FIRES)
+            var ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1, fires-1)
                 where {
                     var pos-1 = [(-win.w/2)+(win.w/10), 0]
-                    var ctl-1 = spawn Control(mov1) where {
-                                    var mov1 = @[
-                                        left  = :Key-A,
-                                        right = :Key-D,
-                                        up    = :Key-W,
-                                        down  = :Key-S,
-                                    ]
-                                }
+                    var ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
                 }
-            ;;`SDLK_z`, ;;`SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
-            ;;`SDLK_SEMICOLON`, ;;`SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
-            var ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2)
+            ;; `SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
+            ;; `SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
+            var fires-2 = tasks(SHIP-FIRES)
+            var ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2, fires-2)
                 where {
                     var pos-2 = [( win.w/2)-(win.w/10), 0]
-                    var ctl-2 = spawn Control(mov2) where {
-                                    var mov2 = @[
-                                        left  = :Key-Left,
-                                        right = :Key-Right,
-                                        up    = :Key-Up,
-                                        down  = :Key-Down,
-                                    ]
-                                }
+                    var ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
                 }
         }
 
@@ -138,7 +138,7 @@ spawn {         ;; MAIN-LOOP
         ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
         ;;   this pool.
         ;;;
-        var dyns = tasks()
+        var rocks = tasks()
         ^["rocks.ceu"]
 
         ;;;
@@ -163,18 +163,29 @@ spawn {         ;; MAIN-LOOP
                 var period = ROCK-MS;
                 every (random-next() % period) :ms {
                     set period = max(50, period - 10)
-                    spawn in dyns, Rock-Big()
+                    spawn in rocks, Rock-Big()
                 }
             }
 
+            func f-to-rect (t) {
+                t.pub
+            }
+
+            ;;;
+            ;; - Collision detection loop:
+            ;;  - "$objs" is the number of alive objects.
+            ;;  - "objs"  contains references to them.
+            ;; We iterate over "objs" to check for collisions between "o1" 
+            ;; vs "o2" for every possible pairs of objects.
+            ;; Then, we check each "id" in the collisions to take the 
+            ;; proper action.
+            ;;;
             every :Pico.Frame {
-                while in :tasks dyns, o {
-                    if pico-rect-vs-rect? (ship-1.pub, detrack(o).pub) {
-                        broadcast in ship-1, :collided
-                    }
-                    if pico-rect-vs-rect? (ship-2.pub, detrack(o).pub) {
-                        broadcast in ship-2, :collided
-                    }
+                var trks = pico-to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
+                var cols = pico-collisions(f-to-rect, trks)
+                while in :vector cols, (_,col) {
+                    broadcast in detrack(col.0), :collided
+                    broadcast in detrack(col.1), :collided
                 }
             }
         }
@@ -190,86 +201,7 @@ pico-loop ()
 
 ;;;;
                 with
-                    /*
-                     * Collision detection loop:
-                     *      - "$objs" is the number of alive objects.
-                     *      - "objs"  contains references to them.
-                     * We iterate over "objs" to check for collisions between "o1" 
-                     * vs "o2" for every possible pairs of objects.
-                     * Then, we check each "id" in the collisions to take the 
-                     * proper action.
-                     */
                     every SDL_DT do
-
-                        /*
-                         * Prepare the vector "objs" with all alive objects.
-                         */
-                        var Object&&?[_OBJ_NN] objs = [&&ship-1, &&ship-2];
-                        loop o in ship-1.fires do
-                            objs = [] .. objs .. [o];
-                        end
-                        loop o in ship-2.fires do
-                            objs = [] .. objs .. [o];
-                        end
-                        loop o in all do
-                            if o:can_hit then
-                                objs = [] .. objs .. [o];
-                            end
-                        end
-
-                        /*
-                         * Outer loop: "o1" iterates through [0, $objs[
-                         */
-                        loop/_OBJ_NN i in $objs do
-                            var Object&&? o1 = objs[i];
-                            if not o1? then
-                                continue;
-                            end
-
-                            /*
-                             * Impossible to emit "o1:go_hit" and "o2:go_hit" 
-                             * in sequence without one aborting the other due 
-                             * to the protecting "watching".
-                             * We must set this flag to "emit o1:go_hit" after 
-                             * "watching *o2" terminates.
-                            */
-                            var bool hit1 = false;
-
-                            /*
-                             * Inner loop: "o2" iterates through [nxt, $objs[
-                             * "nxt" is the index for the next object after "o1".
-                             * These two loops make all possible combinations for 
-                             * any two objects alive.
-                             */
-                            loop/_OBJ_NN j in $objs-i-1 do
-                                var Object&&? o2 = objs[i+1+j];
-                                if not o2? then
-                                    continue;
-                                end
-
-                                /*
-                                 * Take the two current positions and calculate 
-                                 * their surrounding rectangles.
-                                 * The positions are centered, hence the need to 
-                                 * decrement half of w,h to find their respective 
-                                 * rectangles.
-                                 */
-                                var SDL_Rect r1 = o1!:rect;
-                                    r1.x = r1.x - r1.w/2;
-                                    r1.y = r1.y - r1.h/2;
-                                var SDL_Rect r2 = o2!:rect;
-                                    r2.x = r2.x - r2.w/2;
-                                    r2.y = r2.y - r2.h/2;
-
-                                /*
-                                 * Check if the two rectangles have an 
-                                 * intersection.
-                                 * (Otherwise, go to the next pair of objects).
-                                 */
-                                if not _SDL_HasIntersection((_SDL_Rect&&)&&r1, (_SDL_Rect&&)&&r2) then
-                                    continue;
-                                end
-
                                 /*
                                  * "o1" and "o2" collide, now, based on their "id" 
                                  * fields, take the proper actions.

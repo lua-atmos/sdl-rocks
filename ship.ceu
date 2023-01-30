@@ -1,48 +1,42 @@
 var ACC-DIV = 3000
 var SHIP-FRAMES = 4
+var SHIP-FIRES  = 3
 var MAX :XY = [win.w/200, win.h/200]
+
+data :LRUD = [left,right,up,down]
+data :Control = [mov:LRUD, fire]
 
 func between (MIN, MAX, v) {
     max(MIN, min(MAX, v))
 }
 
-task Control (mov) {
-    var key
-    set task.pub = @[
-        acc = @[x=0,y=0],
-        toframe = func (dir) {
-            ifs key {
-                is mov.left  -> ((dir==:right) and 0) or 1
-                is mov.right -> ((dir==:left)  and 0) or 1
-                is mov.up    -> 2
-                is mov.down  -> 3
-                else -> 0
-            }
-        },
-    ]
-    par {
-        every :Pico.Key.Dn {
-            ifs evt.key {
-                is mov.left  -> set task.pub.acc.x = -win.w/ACC-DIV
-                is mov.right -> set task.pub.acc.x =  win.w/ACC-DIV
-                is mov.up    -> set task.pub.acc.y =  win.h/ACC-DIV
-                is mov.down  -> set task.pub.acc.y = -win.h/ACC-DIV
-            }
-            set key = evt.key
-        }
-    } with {
-        every :Pico.Key.Up {
-            set key = nil
-            set task.pub.acc = @[x=0,y=0]
-        }
-    }
-}
-
-task Ship (id, path, dir, pos:XY, control) :Rect {
+task Ship (id, path, dir, pos:XY, ctl:Control, fires) :Rect {
     var dim:WH = pico-state-get-size-image(path)
     var vel:XY = [0,0]
     var dy = dim.h / SHIP-FRAMES
     set task.pub = [pos, [dim.w,dy]]
+
+    ;; Control
+    var acc:XY = [0,0]
+    var key
+    spawn {
+        par {
+            every :Pico.Key.Dn {
+                ifs evt.key {
+                    == ctl.mov.left  -> set acc.x = -win.w/ACC-DIV
+                    == ctl.mov.right -> set acc.x =  win.w/ACC-DIV
+                    == ctl.mov.up    -> set acc.y =  win.h/ACC-DIV
+                    == ctl.mov.down  -> set acc.y = -win.h/ACC-DIV
+                }
+                set key = evt.key
+            }
+        } with {
+            every :Pico.Key.Up {
+                set key = nil
+                set acc = [0,0]
+            }
+        }
+    }
 
     par-or {
         await :collided
@@ -50,14 +44,20 @@ task Ship (id, path, dir, pos:XY, control) :Rect {
         every :Pico.Draw {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
-                    var frame = control.pub.toframe()
+                    var frame = ifs key {
+                        == ctl.mov.left  -> ((dir==:right) and 0) or 1
+                        == ctl.mov.right -> ((dir==:left)  and 0) or 1
+                        == ctl.mov.up    -> 2
+                        == ctl.mov.down  -> 3
+                        else -> 0
+                    }
                 }
             pico-output-draw-image(pos, path)
         }
     } with {
         every :Pico.Frame {
-            set vel.x = between(-MAX.x, MAX.x, vel.x+control.pub.acc.x)
-            set vel.y = between(-MAX.y, MAX.y, vel.y+control.pub.acc.y)
+            set vel.x = between(-MAX.x, MAX.x, vel.x+acc.x)
+            set vel.y = between(-MAX.y, MAX.y, vel.y+acc.y)
             set pos.x = if dir==:right {
                             between((-win.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
                         } else {
