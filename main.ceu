@@ -6,9 +6,9 @@ pico-state-set-size([641,481])
 pico-state-set-grid(false)
 pico-state-set-auto(false)
 
-var win :WH = pico-state-get-size()
+var WIN :WH = pico-state-get-size()
 
-pico-state-set-font("tiny.ttf", win.h/15)
+pico-state-set-font("tiny.ttf", WIN.h/15)
 random-seed()
 
 var ROCK-MS = 5000
@@ -53,11 +53,12 @@ do :unnest {    ;; POINTS
     ;; they may be covered by moving objects in the gameplay, as desired.
     ;;;
     spawn {
-        var dx = win.w / 15
-        var y  = (-win.h /2 ) + (win.h / 15)
-        var p1 = [(-win.w / 2) + dx, y]
-        var p2 = [( win.w / 2) - dx, y]
+        var dx = WIN.w / 15
+        var y  = (-WIN.h /2 ) + (WIN.h / 15)
+        var p1 = [(-WIN.w / 2) + dx, y]
+        var p2 = [( WIN.w / 2) - dx, y]
         every :Pico.Draw {
+            pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
             pico-output-draw-text(p1, points-1)
             pico-output-draw-text(p2, points-2)
         }
@@ -81,6 +82,7 @@ spawn {         ;; MAIN-LOOP
             while true {
                 awaiting 500:ms {
                     every :Pico.Draw {
+                        pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
                         pico-output-draw-text([0,0], "= TAP TO START =")
                     }
                 }
@@ -98,7 +100,7 @@ spawn {         ;; MAIN-LOOP
         ;; each individual battle.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        data :T = [] {
+        data :T = [rect:Rect] {
             :Ship = [] {
                 :L = []
                 :R = []
@@ -121,7 +123,7 @@ spawn {         ;; MAIN-LOOP
             var fires-1 = tasks(SHIP-FIRES)
             var ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1, fires-1)
                 where {
-                    var pos-1 = [(-win.w/2)+(win.w/10), 0]
+                    var pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
                     var ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
                 }
             ;; `SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
@@ -129,7 +131,7 @@ spawn {         ;; MAIN-LOOP
             var fires-2 = tasks(SHIP-FIRES)
             var ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2, fires-2)
                 where {
-                    var pos-2 = [( win.w/2)-(win.w/10), 0]
+                    var pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
                     var ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
                 }
         }
@@ -167,8 +169,8 @@ spawn {         ;; MAIN-LOOP
                 }
             }
 
-            func f-to-rect (t) {
-                t.pub
+            func f-to-rect (t:T) {
+                t.rect
             }
 
             ;;;
@@ -181,11 +183,24 @@ spawn {         ;; MAIN-LOOP
             ;; proper action.
             ;;;
             every :Pico.Frame {
+                ;;var trks = pico-to-tracks(ship-1, ship-2, rocks)
                 var trks = pico-to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
                 var cols = pico-collisions(f-to-rect, trks)
                 while in :vector cols, (_,col) {
-                    broadcast in detrack(col.0), :collided
-                    broadcast in detrack(col.1), :collided
+                    ;;;var col? = do :safe {
+                        var t0 = detrack(col.0).pub
+                        var t1 = detrack(col.1).pub
+                        ifs {
+                            (t0 is :T.Ship) and (t1 is :T.Fire) -> false
+                            (t0 is :T.Fire) and (t1 is :T.Ship) -> false
+                            (t0 is :T.Rock) and (t1 is :T.Rock) -> false
+                            else -> true
+                        }
+                    };;;
+                    ;;if col? {
+                        broadcast in detrack(col.0), :collided
+                        broadcast in detrack(col.1), :collided
+                    ;;}
                 }
             }
         }

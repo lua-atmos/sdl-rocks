@@ -12,38 +12,38 @@ task Move-Object (rct:Rect, vel:XY) {
     }
 }
 
-task Rock-Big () :Rect {
+task Rock-Big () :T {
     var path = "imgs/rock-big.gif"
     var y-sig = random-signal()
 
-    var vx = (1 + (random-next() % (win.w/5))) * random-signal()
-    var vy = (1 + (random-next() % (win.h/5))) * y-sig
+    var vx = (1 + (random-next() % (WIN.w/5))) * random-signal()
+    var vy = (1 + (random-next() % (WIN.h/5))) * y-sig
 
     var dim :WH = pico-state-get-size-image(path)
     var w = dim.w / ROCKS-FRAMES
     var dx = 0
 
-    set task.pub = [[x,y], [w,dim.h]] where {
-        var x = ((random-next() % win.w) / 3) * random-signal()
-        var y = (win.h/2) * -y-sig
+    set task.pub = :T.Rock [[[x,y], [w,dim.h]]] where {
+        var x = ((random-next() % WIN.w) / 3) * random-signal()
+        var y = (WIN.h/2) * -y-sig
     }
 
     par-or {
         await (random-next() % 1000) :ms
-        await spawn Move-Object(task.pub, [vx,vy])
+        await spawn Move-Object(task.pub.rect, [vx,vy])
         await false
         ;; can-hit = true
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[dx,0],[w,dim.h]])
-            pico-output-draw-image(task.pub.pos, path)
+            pico-output-draw-image(task.pub.rect.pos, path)
         }
     } with {
         var v = ((vx**2) + (vy**2)) ** (1/2)
         var x = 0
         every :Pico.Frame {
             set x = x + ((v * evt.ms) / 1000)
-            set dx = (x % dim.w) - (x % task.pub.dim.w)
+            set dx = (x % dim.w) - (x % task.pub.rect.dim.w)
         }
     }
 }

@@ -1,7 +1,9 @@
-var ACC-DIV = 3000
+var ACC-DIV     = 3000
 var SHIP-FRAMES = 4
 var SHIP-FIRES  = 3
-var MAX :XY = [win.w/200, win.h/200]
+var FIRE-DIM    = [WIN.w/50, WIN.h/100]
+var FIRE-COLOR  = [0xFF,0xFF,0x88,0xFF]
+var MAX :XY     = [WIN.w/200, WIN.h/200]
 
 data :LRUD = [left,right,up,down]
 data :Control = [mov:LRUD, fire]
@@ -10,11 +12,19 @@ func between (MIN, MAX, v) {
     max(MIN, min(MAX, v))
 }
 
-task Ship (id, path, dir, pos:XY, ctl:Control, fires) :Rect {
+task Fire (pos:XY) :T {
+    set task.pub = :T.Fire [pos, FIRE-DIM]
+    every :Pico.Draw {
+        pico-state-set-color-draw(FIRE-COLOR)
+        pico-output-draw-rect(task.pub.rect)
+    }
+}
+
+task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
     var dim:WH = pico-state-get-size-image(path)
     var vel:XY = [0,0]
     var dy = dim.h / SHIP-FRAMES
-    set task.pub = [pos, [dim.w,dy]]
+    set task.pub = :T.Ship [[pos, [dim.w,dy]]]
 
     ;; Control
     var acc:XY = [0,0]
@@ -23,10 +33,11 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :Rect {
         par {
             every :Pico.Key.Dn {
                 ifs evt.key {
-                    == ctl.mov.left  -> set acc.x = -win.w/ACC-DIV
-                    == ctl.mov.right -> set acc.x =  win.w/ACC-DIV
-                    == ctl.mov.up    -> set acc.y =  win.h/ACC-DIV
-                    == ctl.mov.down  -> set acc.y = -win.h/ACC-DIV
+                    == ctl.mov.left  -> set acc.x = -WIN.w/ACC-DIV
+                    == ctl.mov.right -> set acc.x =  WIN.w/ACC-DIV
+                    == ctl.mov.up    -> set acc.y =  WIN.h/ACC-DIV
+                    == ctl.mov.down  -> set acc.y = -WIN.h/ACC-DIV
+                    == ctl.fire      -> spawn in fires, Fire(copy(pos))
                 }
                 set key = evt.key
             }
@@ -59,11 +70,11 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :Rect {
             set vel.x = between(-MAX.x, MAX.x, vel.x+acc.x)
             set vel.y = between(-MAX.y, MAX.y, vel.y+acc.y)
             set pos.x = if dir==:right {
-                            between((-win.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
+                            between((-WIN.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
                         } else {
-                            between(0+dim.w,  (win.w/2)-dim.w, pos.x+vel.x)
+                            between(0+dim.w,  (WIN.w/2)-dim.w, pos.x+vel.x)
                         }
-            set pos.y = between((-win.h/2)+dy, (win.h/2)-dy, pos.y+vel.y)
+            set pos.y = between((-WIN.h/2)+dy, (WIN.h/2)-dy, pos.y+vel.y)
         }
     }
 }
