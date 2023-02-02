@@ -1,9 +1,9 @@
-var ACC-DIV     = 3000
-var SHIP-FRAMES = 4
-var SHIP-FIRES  = 3
-var FIRE-DIM    = [WIN.w/50, WIN.h/100]
-var FIRE-COLOR  = [0xFF,0xFF,0x88,0xFF]
-var MAX :XY     = [WIN.w/200, WIN.h/200]
+val ACC-DIV     = 3000
+val SHIP-FRAMES = 4
+val SHIP-FIRES  = 3
+val FIRE-DIM    = [WIN.w/50, WIN.h/100]
+val FIRE-COLOR  = [0xFF,0xFF,0x88,0xFF]
+val MAX :XY     = [WIN.w/200, WIN.h/200]
 
 data :LRUD = [left,right,up,down]
 data :Control = [mov:LRUD, fire]
@@ -13,7 +13,7 @@ func between (MIN, MAX, v) {
 }
 
 task Fire (pos:XY) :T {
-    set task.pub = :T.Fire [pos, FIRE-DIM]
+    set task.pub = :T.Fire [[pos, FIRE-DIM]]
     every :Pico.Draw {
         pico-state-set-color-draw(FIRE-COLOR)
         pico-output-draw-rect(task.pub.rect)
@@ -21,9 +21,9 @@ task Fire (pos:XY) :T {
 }
 
 task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
-    var dim:WH = pico-state-get-size-image(path)
-    var vel:XY = [0,0]
-    var dy = dim.h / SHIP-FRAMES
+    val dim:WH = pico-state-get-size-image(path)
+    val vel:XY = [0,0]
+    val dy = dim.h / SHIP-FRAMES
     set task.pub = :T.Ship [[pos, [dim.w,dy]]]
 
     ;; Control
@@ -55,7 +55,7 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
         every :Pico.Draw {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
-                    var frame = ifs key {
+                    val frame = ifs key {
                         == ctl.mov.left  -> ((dir==:right) and 0) or 1
                         == ctl.mov.right -> ((dir==:left)  and 0) or 1
                         == ctl.mov.up    -> 2

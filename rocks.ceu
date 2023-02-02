@@ -1,4 +1,4 @@
-var ROCKS-FRAMES = 6
+val ROCKS-FRAMES = 6
 
 func random-signal () {
     (((random-next()%2) == 0) and 1) or -1
@@ -6,26 +6,26 @@ func random-signal () {
 
 task Move-Object (rct:Rect, vel:XY) {
     every :Pico.Frame {
-        var dt = evt.ms / 1000
+        val dt = evt.ms / 1000
         set rct.pos.x = rct.pos.x + (vel.x * dt)
         set rct.pos.y = rct.pos.y + (vel.y * dt)
     }
 }
 
 task Rock-Big () :T {
-    var path = "imgs/rock-big.gif"
-    var y-sig = random-signal()
+    val path = "imgs/rock-big.gif"
+    val y-sig = random-signal()
 
-    var vx = (1 + (random-next() % (WIN.w/5))) * random-signal()
-    var vy = (1 + (random-next() % (WIN.h/5))) * y-sig
+    val vx = (1 + (random-next() % (WIN.w/5))) * random-signal()
+    val vy = (1 + (random-next() % (WIN.h/5))) * y-sig
 
-    var dim :WH = pico-state-get-size-image(path)
-    var w = dim.w / ROCKS-FRAMES
+    val dim :WH = pico-state-get-size-image(path)
+    val w = dim.w / ROCKS-FRAMES
     var dx = 0
 
     set task.pub = :T.Rock [[[x,y], [w,dim.h]]] where {
-        var x = ((random-next() % WIN.w) / 3) * random-signal()
-        var y = (WIN.h/2) * -y-sig
+        val x = ((random-next() % WIN.w) / 3) * random-signal()
+        val y = (WIN.h/2) * -y-sig
     }
 
     par-or {
@@ -39,7 +39,7 @@ task Rock-Big () :T {
             pico-output-draw-image(task.pub.rect.pos, path)
         }
     } with {
-        var v = ((vx**2) + (vy**2)) ** (1/2)
+        val v = ((vx**2) + (vy**2)) ** (1/2)
         var x = 0
         every :Pico.Frame {
             set x = x + ((v * evt.ms) / 1000)

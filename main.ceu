@@ -6,12 +6,12 @@ pico-state-set-size([641,481])
 pico-state-set-grid(false)
 pico-state-set-auto(false)
 
-var WIN :WH = pico-state-get-size()
+val WIN :WH = pico-state-get-size()
 
 pico-state-set-font("tiny.ttf", WIN.h/15)
 random-seed()
 
-var ROCK-MS = 5000
+val ROCK-MS = 5000
 
 spawn {         ;; BACKGROUND
     ;;;
@@ -53,10 +53,10 @@ do :unnest {    ;; POINTS
     ;; they may be covered by moving objects in the gameplay, as desired.
     ;;;
     spawn {
-        var dx = WIN.w / 15
-        var y  = (-WIN.h /2 ) + (WIN.h / 15)
-        var p1 = [(-WIN.w / 2) + dx, y]
-        var p2 = [( WIN.w / 2) - dx, y]
+        val dx = WIN.w / 15
+        val y  = (-WIN.h /2 ) + (WIN.h / 15)
+        val p1 = [(-WIN.w / 2) + dx, y]
+        val p2 = [( WIN.w / 2) - dx, y]
         every :Pico.Draw {
             pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
             pico-output-draw-text(p1, points-1)
@@ -120,19 +120,19 @@ spawn {         ;; MAIN-LOOP
             ;; (i.e., pointing :right or :left).
             ;;;
             ^["ship.ceu"]
-            var fires-1 = tasks(SHIP-FIRES)
-            var ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1, fires-1)
+            val fires-1 = tasks(SHIP-FIRES)
+            val ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1, fires-1)
                 where {
-                    var pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
-                    var ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
+                    val pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
+                    val ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
                 }
             ;; `SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
             ;; `SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
-            var fires-2 = tasks(SHIP-FIRES)
-            var ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2, fires-2)
+            val fires-2 = tasks(SHIP-FIRES)
+            val ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2, fires-2)
                 where {
-                    var pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
-                    var ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
+                    val pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
+                    val ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
                 }
         }
 
@@ -140,7 +140,7 @@ spawn {         ;; MAIN-LOOP
         ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
         ;;   this pool.
         ;;;
-        var rocks = tasks()
+        val rocks = tasks()
         ^["rocks.ceu"]
 
         ;;;
@@ -169,8 +169,8 @@ spawn {         ;; MAIN-LOOP
                 }
             }
 
-            func f-to-rect (t:T) {
-                t.rect
+            func f-cmp (p1:T, p2:T) {
+                pico-rect-vs-rect?(p1.rect, p2.rect)
             }
 
             ;;;
@@ -183,30 +183,33 @@ spawn {         ;; MAIN-LOOP
             ;; proper action.
             ;;;
             every :Pico.Frame {
-                ;;var trks = pico-to-tracks(ship-1, ship-2, rocks)
-                var trks = pico-to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
-                var cols = pico-collisions(f-to-rect, trks)
+                ;;var trks = to-tracks(ship-1, ship-2, rocks)
+                val trks = to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
+                val cols = pico-collisions(f-cmp, trks)
                 while in :vector cols, (_,col) {
-                    ;;;var col? = do :safe {
-                        var t0 = detrack(col.0).pub
-                        var t1 = detrack(col.1).pub
+println(col)
+                    val col? = do {
+println(detrack(col.0))
+println(detrack(col.1))
+                        val t0 = detrack(col.0).pub
+                        val t1 = detrack(col.1).pub
                         ifs {
                             (t0 is :T.Ship) and (t1 is :T.Fire) -> false
                             (t0 is :T.Fire) and (t1 is :T.Ship) -> false
                             (t0 is :T.Rock) and (t1 is :T.Rock) -> false
                             else -> true
                         }
-                    };;;
-                    ;;if col? {
+                    }
+                    if col? {
                         broadcast in detrack(col.0), :collided
                         broadcast in detrack(col.1), :collided
-                    ;;}
+                    }
                 }
             }
         }
         ifs {
-            (ship-1.status == :terminated) -> set points-2 = tostring(tonumber(points-2)+1)
-            (ship-2.status == :terminated) -> set points-1 = tostring(tonumber(points-1)+1)
+            (ship-1.status == :terminated) -> set points-2 = to-string(to-number(points-2)+1)
+            (ship-2.status == :terminated) -> set points-1 = to-string(to-number(points-1)+1)
         }
         await 1:s
     }
