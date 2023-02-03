@@ -1,4 +1,5 @@
 val ROCKS-FRAMES = 6
+val ROCKS-AWAIT  = 5000
 
 func random-signal () {
     (((random-next()%2) == 0) and 1) or -1
@@ -24,7 +25,7 @@ task Rock-Big () :T {
         await :collided
         pico-output-sound("snds/rock.wav")
     } with {
-        await (random-next() % 1000) :ms
+        await (random-next() % ROCKS-AWAIT) :ms
         await spawn Move-T(task.pub.rect, [vx,vy])
         ;; can-hit = true
     } with {
