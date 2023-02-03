@@ -112,16 +112,36 @@ spawn {         ;; MAIN-LOOP
             :Rock = []
         }
 
+        task Move-T (rect:Rect, vel:XY) {
+            awaiting out-of-screen() {
+                every :Pico.Frame {
+                    val dt = evt.ms / 1000
+                    set rect.pos.x = rect.pos.x + (vel.x * dt)
+                    set rect.pos.y = rect.pos.y + (vel.y * dt)
+                }
+            } where {
+                func out-of-screen () {
+                    ifs {
+                        rect.pos.x < -(WIN.w/2) -> true
+                        rect.pos.x >  (WIN.w/2) -> true
+                        rect.pos.y < -(WIN.h/2) -> true
+                        rect.pos.y >  (WIN.h/2) -> true
+                        else -> false
+                    }
+                }
+            }
+        }
+
 		do :unnest {                ;; SHIPS
             ;;;
             ;; - Creates the two ships.
             ;; They differ in ids (:ship-1 vs :ship-2), initial positions,
             ;; screen limits, key controllers, and image orientations
-            ;; (i.e., pointing :right or :left).
+            ;; (i.e., pointing :R or :L).
             ;;;
             ^["ship.ceu"]
             val fires-1 = tasks(SHIP-FIRES)
-            val ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :right, pos-1, ctl-1, fires-1)
+            val ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :R, pos-1, ctl-1, fires-1)
                 where {
                     val pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
                     val ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
@@ -129,7 +149,7 @@ spawn {         ;; MAIN-LOOP
             ;; `SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
             ;; `SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
             val fires-2 = tasks(SHIP-FIRES)
-            val ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :left,  pos-2, ctl-2, fires-2)
+            val ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :L,  pos-2, ctl-2, fires-2)
                 where {
                     val pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
                     val ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
@@ -183,27 +203,29 @@ spawn {         ;; MAIN-LOOP
             ;; proper action.
             ;;;
             every :Pico.Frame {
-                ;;var trks = to-tracks(ship-1, ship-2, rocks)
                 val trks = to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
                 val cols = pico-collisions(f-cmp, trks)
+                val bcsts = @[]
                 while in :vector cols, (_,col) {
-println(col)
                     val col? = do {
-println(detrack(col.0))
-println(detrack(col.1))
                         val t0 = detrack(col.0).pub
                         val t1 = detrack(col.1).pub
                         ifs {
-                            (t0 is :T.Ship) and (t1 is :T.Fire) -> false
-                            (t0 is :T.Fire) and (t1 is :T.Ship) -> false
-                            (t0 is :T.Rock) and (t1 is :T.Rock) -> false
+                            (t0 is :T.Ship.R) and (t1 is :T.Fire.R) -> false
+                            (t0 is :T.Fire.R) and (t1 is :T.Ship.R) -> false
+                            (t0 is :T.Ship.L) and (t1 is :T.Fire.L) -> false
+                            (t0 is :T.Fire.L) and (t1 is :T.Ship.L) -> false
+                            (t0 is :T.Rock)   and (t1 is :T.Rock) -> false
                             else -> true
                         }
                     }
                     if col? {
-                        broadcast in detrack(col.0), :collided
-                        broadcast in detrack(col.1), :collided
+                        set bcsts[col.0] = true
+                        set bcsts[col.1] = true
                     }
+                }
+                while in :dict bcsts, (k,_1) {
+                    broadcast in detrack(k), :collided
                 }
             }
         }

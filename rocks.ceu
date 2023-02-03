@@ -4,14 +4,6 @@ func random-signal () {
     (((random-next()%2) == 0) and 1) or -1
 }
 
-task Move-Object (rct:Rect, vel:XY) {
-    every :Pico.Frame {
-        val dt = evt.ms / 1000
-        set rct.pos.x = rct.pos.x + (vel.x * dt)
-        set rct.pos.y = rct.pos.y + (vel.y * dt)
-    }
-}
-
 task Rock-Big () :T {
     val path = "imgs/rock-big.gif"
     val y-sig = random-signal()
@@ -29,9 +21,10 @@ task Rock-Big () :T {
     }
 
     par-or {
+        await :collided
+    } with {
         await (random-next() % 1000) :ms
-        await spawn Move-Object(task.pub.rect, [vx,vy])
-        await false
+        await spawn Move-T(task.pub.rect, [vx,vy])
         ;; can-hit = true
     } with {
         every :Pico.Draw {

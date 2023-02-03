@@ -12,11 +12,20 @@ func between (MIN, MAX, v) {
     max(MIN, min(MAX, v))
 }
 
-task Fire (pos:XY) :T {
-    set task.pub = :T.Fire [[pos, FIRE-DIM]]
-    every :Pico.Draw {
-        pico-state-set-color-draw(FIRE-COLOR)
-        pico-output-draw-rect(task.pub.rect)
+task Fire (dir, pos:XY, vy) :T {
+    set task.pub = tags([[pos, FIRE-DIM]], tag, true) where {
+        val tag = ((dir == :R) and :T.Fire.R) or :T.Fire.L
+    }
+    par-or {
+        await :collided
+    } with {
+        val sig = ((dir==:R) and -1) or 1
+        await spawn Move-T(task.pub.rect, [WIN.w/3,vy*sig])
+    } with {
+        every :Pico.Draw {
+            pico-state-set-color-draw(FIRE-COLOR)
+            pico-output-draw-rect(task.pub.rect)
+        }
     }
 }
 
@@ -24,7 +33,9 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
     val dim:WH = pico-state-get-size-image(path)
     val vel:XY = [0,0]
     val dy = dim.h / SHIP-FRAMES
-    set task.pub = :T.Ship [[pos, [dim.w,dy]]]
+    set task.pub = tags([[pos, [dim.w,dy]]], tag, true) where {
+        val tag = ((dir == :R) and :T.Ship.R) or :T.Ship.L
+    }
 
     ;; Control
     var acc:XY = [0,0]
@@ -37,7 +48,7 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
                     == ctl.mov.right -> set acc.x =  WIN.w/ACC-DIV
                     == ctl.mov.up    -> set acc.y =  WIN.h/ACC-DIV
                     == ctl.mov.down  -> set acc.y = -WIN.h/ACC-DIV
-                    == ctl.fire      -> spawn in fires, Fire(copy(pos))
+                    == ctl.fire      -> spawn in fires, Fire(dir, copy(pos), vel.y)
                 }
                 set key = evt.key
             }
@@ -56,8 +67,8 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
                     val frame = ifs key {
-                        == ctl.mov.left  -> ((dir==:right) and 0) or 1
-                        == ctl.mov.right -> ((dir==:left)  and 0) or 1
+                        == ctl.mov.left  -> ((dir==:R) and 0) or 1
+                        == ctl.mov.right -> ((dir==:L) and 0) or 1
                         == ctl.mov.up    -> 2
                         == ctl.mov.down  -> 3
                         else -> 0
@@ -69,7 +80,7 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
         every :Pico.Frame {
             set vel.x = between(-MAX.x, MAX.x, vel.x+acc.x)
             set vel.y = between(-MAX.y, MAX.y, vel.y+acc.y)
-            set pos.x = if dir==:right {
+            set pos.x = if dir==:R {
                             between((-WIN.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
                         } else {
                             between(0+dim.w,  (WIN.w/2)-dim.w, pos.x+vel.x)
