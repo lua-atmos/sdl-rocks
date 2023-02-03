@@ -140,19 +140,19 @@ spawn {         ;; MAIN-LOOP
             ;; (i.e., pointing :R or :L).
             ;;;
             ^["ship.ceu"]
+
             val fires-1 = tasks(SHIP-FIRES)
-            val ship-1 = spawn Ship(:ship-1, "imgs/ship-1.gif", :R, pos-1, ctl-1, fires-1)
+            val ship-1 = spawn Ship(:L, pos-1, ctl-1, fires-1, "imgs/ship-1.gif")
                 where {
                     val pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
-                    val ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Z]
+                    val ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Shift-Left]
                 }
-            ;; `SDLK_x`, ;;`SDLK_c`, ;;`SDLK_1`,
-            ;; `SDLK_PERIOD`, ;;`SDLK_COMMA`, ;;`SDLK_0`,
+
             val fires-2 = tasks(SHIP-FIRES)
-            val ship-2 = spawn Ship(:ship-2, "imgs/ship-2.gif", :L,  pos-2, ctl-2, fires-2)
+            val ship-2 = spawn Ship(:R, pos-2, ctl-2, fires-2, "imgs/ship-2.gif")
                 where {
                     val pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
-                    val ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Space]
+                    val ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Shift-Right]
                 }
         }
 
@@ -240,322 +240,25 @@ spawn {         ;; MAIN-LOOP
 pico-loop ()
 
 ;;;;
-                with
-                    every SDL_DT do
-                                /*
-                                 * "o1" and "o2" collide, now, based on their "id" 
-                                 * fields, take the proper actions.
-                                 */
-
-                                /*
-                                 * We use "getVS(id,...)" to make "oo1" point to 
-                                 * the object matching "id" and "oo2" to the other 
-                                 * one.
-                                 */
-
-                                /*
-                                 *  Play sound effects for some collisions:
-                                 *  FIRE vs ROCKS/BONUSES: play _SND_ROCK
-                                 *  SHIP vs BONUSES:       play _SND_BONUS
-                                 */
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_FIRE1, &&oo1, &&oo2) or
-                                       getVS(_OBJ_FIRE2, &&oo1, &&oo2) then
-                                        if (oo2:id >= _OBJ_ROCK) and
-                                           (oo2:id <= _OBJ_BONUS_FIRE) then
-                                            _Mix_PlayChannel(-1, _SND_ROCK, 0);
-                                        end
-                                    else/if getVS(_OBJ_SHIP1, &&oo1, &&oo2) or
-                                            getVS(_OBJ_SHIP2, &&oo1, &&oo2) then
-                                        if (oo2:id >= _OBJ_BONUS_LIFE) and
-                                           (oo2:id <= _OBJ_BONUS_FIRE) then
-                                            _Mix_PlayChannel(-1, _SND_BONUS, 0);
-                                        end
-                                    end
-                                end
-
-                                /*
-                                 * FIRE vs ROCKS: spawn random items.
-                                 *  - 35%: spawn 2 small rocks
-                                 *  -  5%: spawn (+1, life)
-                                 *  - 15%: spawn (H, hit point)
-                                 *  - 15%: spawn (S, shield)
-                                 *  - 15%: spawn (F, fire width)
-                                 *  - 15%: spawn (B, bomb)
-                                 * Here we only spawn the items.
-                                 * (All items that should be destroyed in 
-                                 * collisions are handled together below, after 
-                                 * handling extra effects.)
-                                 */
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_ROCK, &&oo1, &&oo2) and
-                                       (oo2:id==_OBJ_FIRE1 or oo2:id==_OBJ_FIRE2) then
-                                        var int dir;    // which direction to spawn?
-                                        if oo2:id == _OBJ_FIRE1 then
-                                            dir =  1;   // left  if shot by FIRE1
-                                        else
-                                            dir = -1;   // right if shot by FIRE2
-                                        end
-                                        var int pct = _rand() % 100;
-                                        if pct < 35 then
-                                            /*
-                                             * Spawn two smaller rocks.
-                                             * They go in the opposite direction of the 
-                                             * ship that hit the rock.
-                                             * (All instances are also scoped to the 
-                                             * "battle block".)
-                                             */
-                                            var int x = (int) oo2:rect.x;
-                                            var int y = (int) oo2:rect.y;
-                                            loop ii in 2 do
-                                                spawn RockSmall in all with
-                                                    this.rect = SDL_Rect(x,y,0,0);
-                                                    this.dir  = dir;
-                                                end;
-                                            end
-
-                                            /*
-                                             * Spawn bonuses.
-                                             * They go in the same direction of the 
-                                             * ship that hit the rock.
-                                             * They differ in "id" and "tex".
-                                             * (All instances are also scoped to the 
-                                             * "battle block".)
-                                             */
-                                        else/if pct < 40 then
-                                            spawn Bonus in all with
-                                                this.rect = SDL_Rect(oo2:rect.x,
-                                                                     oo2:rect.y,
-                                                                     0,0);
-                                                this.id   = _OBJ_BONUS_LIFE;
-                                                this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_LIFE);
-                                                this.dir  = -dir;
-                                            end;
-                                        else/if pct < 55 then
-                                            spawn Bonus in all with
-                                                this.rect = SDL_Rect(oo2:rect.x,
-                                                                     oo2:rect.y,
-                                                                     0,0);
-                                                this.id   = _OBJ_BONUS_HITS;
-                                                this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_HITS);
-                                                this.dir  = -dir;
-                                            end;
-                                        else/if pct < 70 then
-                                            spawn Bonus in all with
-                                                this.rect = SDL_Rect(oo2:rect.x,
-                                                                     oo2:rect.y,
-                                                                     0,0);
-                                                this.id     = _OBJ_BONUS_SHIELD;
-                                                this.tex    = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_SHIELD);
-                                                this.dir    = -dir;
-                                            end;
-                                        else/if pct < 85 then
-                                            spawn Bonus in all with
-                                                this.rect = SDL_Rect(oo2:rect.x,
-                                                                     oo2:rect.y,
-                                                                     0,0);
-                                                this.id   = _OBJ_BONUS_FIRE;
-                                                this.tex  = &_UNSAFE_POINTER_TO_REFERENCE(_TEX_BONUS_FIRE);
-                                                this.dir  = -dir;
-                                            end;
-                                        else
-                                            /*
-                                             * Spawn a bomb.
-                                             * It goes in the opposite direction of the 
-                                             * ship that hit the rock.
-                                             * (All instances are also scoped to the 
-                                             * "battle block".)
-                                             */
-                                            spawn Bomb in all with
-                                                this.rect = SDL_Rect(oo2:rect.x,
-                                                                     oo2:rect.y,
-                                                                     0,0);
-                                                this.dir  = dir;
-                                            end;
-                                        end
-                                    end
-                                end
-
-                                /*
-                                 * SHIP vs BONUS_LIFE (+1):
-                                 * Increment the player's total points.
-                                 */
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_BONUS_LIFE, &&oo1, &&oo2) then
-                                        if oo2:id == _OBJ_SHIP1 then
-                                            emit points-1.go_inc;
-                                        else/if oo2:id == _OBJ_SHIP2 then
-                                            emit points-2.go_inc;
-                                        end
-                                    end
-                                end
-
-                                /*
-                                 * SHIP vs BONUS_LIFE (+1):
-                                 * Increment the player's total points.
-                                 */
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_BONUS_HITS, &&oo1, &&oo2) then
-                                        if (oo2:id == _OBJ_SHIP1) or
-                                           (oo2:id == _OBJ_SHIP2) then
-                                            var Ship&& ship = (Ship&&) oo2;
-                                            emit ship:go_H;
-                                        end
-                                    end
-                                end
-
-                                // BonusShield vs Ship: go_S
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_BONUS_SHIELD, &&oo1, &&oo2) then
-                                        if oo2:id == _OBJ_SHIP1 or
-                                           oo2:id == _OBJ_SHIP2 then
-                                            var Ship&& ship = (Ship&&) oo2;
-                                            emit ship:go_S;
-                                        end
-                                    end
-                                end
-
-                                // BonusFire vs Ship: fire.rect.w++
-                                do
-                                    var Object&& oo1 = o1!;
-                                    var Object&& oo2 = o2!;
-                                    if getVS(_OBJ_BONUS_FIRE, &&oo1, &&oo2) then
-                                        if oo2:id == _OBJ_SHIP1 or
-                                           oo2:id == _OBJ_SHIP2 then
-                                            var Ship&& ship = (Ship&&) oo2;
-                                            emit ship:go_F;
-                                        end
-                                    end
-                                end
-
-                                /*
-                                 * Signal the two items that they were hit.
-                                 * For ROCKS, BONUSES, FIRE, and BOMB, this will 
-                                 * make them terminate their execution. Given that 
-                                 * they were instantiated with "spawn", this will 
-                                 * also make them be freed by the system.
-                                 * For SHIP, this will make them loose a hit point.
-                                 * (More details in "objs.ceu".)
-                                 */
-                                var int id1 = o1!:id;
-                                var int id2 = o2!:id;
-                                if _idVSid[id2][id1] then
-                                    hit1 = true; /* delay emit */
-                                    emit o1!:go_hit;     // only emit if _idVSid()
-                                end
-                                if _idVSid[id1][id2] then
-                                    emit o2!:go_hit;     // only emit if _idVSid()
-                                end
-                                if not o1? then
-                                    break;
-                                end
-                                /*
-                                 * Note that the "emit go_hit" must happen after 
-                                 * the previous effects, because it may release the 
-                                 * object from the memory.
-                                 */
-                            end // o2 iteration
-                        end // o1 iteration
-                        /*
-                         * Finished comparing all objects alive.
-                         * Wait for the next frame.
-                         */
-                    end // coolision detection loop
-                end // game innermost "par/or"
-                /*
-                 * One of the ships was destroyed (ship.ok_killed).
-                 * The innermost "par/or" terminated.
-                 */
-            end // the "battle block"
             /*
-             * The "battle block" terminated, the ships, controllers, and all 
-             * dynamic items are destroyed.
-             * Restart the "main loop" and show the "= TAP TO START =" message 
-             * again.
-             * The points are kept (they are declated in the outer scope).
+             * One of the ships was destroyed (ship.ok_killed).
+             * The innermost "par/or" terminated.
              */
-        end // the "main loop"
         /*
-         * The "main loop" never terminates.
-         * This "end" is never surpassed.
+         * The "battle block" terminated, the ships, controllers, and all 
+         * dynamic items are destroyed.
+         * Restart the "main loop" and show the "= TAP TO START =" message 
+         * again.
+         * The points are kept (they are declated in the outer scope).
          */
-    #ifdef DEBUG_FPS
-    with
-        /*
-         * If we are in DEBUG mode (defined in "Makefile"), we display a text with 
-         * the current frame rate of the game.
-         * We count the number of times we react to the "SDL_REDRAW" event in one 
-         * second.
-         */
-        var int fps = 0;                // previous FPS
-        loop do
-            var int c = 0;              // reset the current counter
-
-            // create a texture with the previous FPS
-            var char[5] str;
-            _sprintf(str, "%d", fps);
-            var _SDL_Texture&? tex;
-            var SDL_Color white = SDL_COLOR_WHITE;
-            finalize
-                tex = &_SDL_text2texture(_REN, _FONT_SMALL, str,
-                                         (_SDL_Color&&)&&white, null);
-            with
-                _SDL_DestroyTexture(&&tex!);
-            end
-            var SDL_Rect r = (200,200, 30,30);
-
-            /*
-             * During 1 second, show the previous FPS and increment the current 
-             * counter "c" on every frame.
-             * After 1 second, set "fps" to the current "c" and restart the 
-             * process.
-             */
-            watching 1s do
-                every SDL_REDRAW do
-                    c = c + 1;
-                    _SDL_RenderCopy(_REN, &&tex, null, (_SDL_Rect&&)&&r);
-                end
-            end
-            fps = c;
-            //_printf("[FPS=%d]\n", fps);
-        end
-    #endif
-    with
-        /*
-         * Complete the drawing process for every frame.
-         * Given that this trail is the last to appear in the source code (among 
-         * those that react to "SDL_REDRAW"), it will only take effect after all 
-         * objects are redrawn.
-         */
-        every SDL_REDRAW do
-            _SDL_RenderPresent(_REN);
-        end
-    #ifndef CEU_TIMEMACHINE
-    #if defined(SIMULATION) || defined(SIMULATION_TEST)
-    with
-        #include "input.ceu"
-        do Input with
-            this.visible = false;
-        end;
-    #endif
-    #endif
-
-    /* TODO:
-     * - PAUSE/IF salva img emostra pause em cima
-     * - BONUS_ACCEL
-     * - MENU: control-sides, reset-points
-     * - start at 1/2 speed of previous match
+    /*
+     * The "main loop" never terminates.
+     * This "end" is never surpassed.
      */
-    }
-}
+/* TODO:
+ * - PAUSE/IF salva img emostra pause em cima
+ * - BONUS_ACCEL
+ * - MENU: control-sides, reset-points
+ * - start at 1/2 speed of previous match
+ */
 ;;;;
