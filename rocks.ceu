@@ -22,6 +22,7 @@ task Rock-Big () :T {
 
     par-or {
         await :collided
+        pico-output-sound("snds/rock.wav")
     } with {
         await (random-next() % 1000) :ms
         await spawn Move-T(task.pub.rect, [vx,vy])

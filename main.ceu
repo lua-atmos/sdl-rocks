@@ -90,7 +90,7 @@ spawn {         ;; MAIN-LOOP
             }
         }
 
-        ;; TODO: sound
+        pico-output-sound("snds/start.wav")
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; - The "battle block" with the gameplay holds the spaceships,

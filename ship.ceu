@@ -13,6 +13,7 @@ func between (MIN, MAX, v) {
 }
 
 task Fire (dir, pos:XY, vy) :T {
+    pico-output-sound("snds/fire.wav")
     set task.pub = tags([[pos, FIRE-DIM]], tag, true) where {
         val tag = ((dir == :R) and :T.Fire.R) or :T.Fire.L
     }
@@ -90,7 +91,7 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
     }
 
     ;; explode 40w/s
-    ;;_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+    pico-output-sound("snds/explosion.wav")
     awaiting 150:ms {
         var d = dy / 2;
         par {
