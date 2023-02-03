@@ -205,7 +205,7 @@ spawn {         ;; MAIN-LOOP
             every :Pico.Frame {
                 val trks = to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
                 val cols = pico-collisions(f-cmp, trks)
-                val bcsts = @[]
+                val cols' = @[]
                 while in :vector cols, (_,col) {
                     val col? = do {
                         val t0 = detrack(col.0).pub
@@ -215,16 +215,16 @@ spawn {         ;; MAIN-LOOP
                             (t0 is :T.Fire.R) and (t1 is :T.Ship.R) -> false
                             (t0 is :T.Ship.L) and (t1 is :T.Fire.L) -> false
                             (t0 is :T.Fire.L) and (t1 is :T.Ship.L) -> false
-                            (t0 is :T.Rock)   and (t1 is :T.Rock) -> false
+                            (t0 is :T.Rock)   and (t1 is :T.Rock)   -> false
                             else -> true
                         }
                     }
                     if col? {
-                        set bcsts[col.0] = true
-                        set bcsts[col.1] = true
+                        set cols'[col.0] = true
+                        set cols'[col.1] = true
                     }
                 }
-                while in :dict bcsts, (k,_1) {
+                while in :dict cols', (k,_1) {
                     broadcast in detrack(k), :collided
                 }
             }

@@ -88,4 +88,20 @@ task Ship (id, path, dir, pos:XY, ctl:Control, fires) :T {
             set pos.y = between((-WIN.h/2)+dy, (WIN.h/2)-dy, pos.y+vel.y)
         }
     }
+
+    ;; explode 40w/s
+    ;;_Mix_PlayChannel(-1, _SND_EXPLOSION, 0);
+    awaiting 150:ms {
+        var d = dy / 2;
+        par {
+            every :Pico.Frame {
+                set d = d + (((40*d)*evt.ms)/1000)
+            }
+        } with {
+            every :Pico.Draw {
+                pico-state-set-color-draw([0xFF,0x00,0x00,0xFF])
+                pico-output-draw-oval([pos,[d,d]])
+            }
+        }
+    }
 }
