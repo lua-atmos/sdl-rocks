@@ -22,12 +22,11 @@ task Rock-Big () :T {
     }
 
     par-or {
-        await :collided
-        pico-output-sound("snds/rock.wav")
-    } with {
         await (random-next() % ROCKS-AWAIT) :ms
-        await spawn Move-T(task.pub.rect, [vx,vy])
-        ;; can-hit = true
+        awaiting :collided {
+            await spawn Move-T(task.pub.rect, [vx,vy])
+        }
+        pico-output-sound("snds/rock.wav")
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[dx,0],[w,dim.h]])

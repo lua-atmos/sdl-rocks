@@ -15,12 +15,12 @@ random-seed()
 
 spawn {         ;; BACKGROUND
     ;;;
-    ;; Spawn a task to draw the background image on every frame.
-        ;; We draw at position (0,0), which is the center of the screen.
-        ;; By default, the center of the image is anchored at the given
-        ;; position.
-        ;; This task is the first to spawn, what makes the background image
-        ;; to always be rendered first.
+    ;; Spawns a task to draw the background image on every frame.
+    ;; We draw at position (0,0), which is the center of the screen.
+    ;; By default, the center of the image is anchored at the given
+    ;; position.
+    ;; This task is the first to spawn, what makes the background image
+    ;; to always be rendered first.
     ;;;
     every :Pico.Draw {
         pico-state-set-image-crop()
@@ -30,17 +30,13 @@ spawn {         ;; BACKGROUND
 
 do :unnest {    ;; POINTS
     ;;;
-    ;; Spawn the players' points and place them at the bottom of the screen,
-    ;; in opposite sides:
-        ;;      +------------------------+
-        ;;      |                        |
-        ;;      | points-1      points-2 |
-        ;;      +------------------------+
-        ;; Points are incremented when the ship of the opponent is destroyed.
-        ;; Since points must outlive each individual battle, we spawn them
-        ;; here, outside the nested gameplay.
-        ;; The `:unnest` annotation makes all nested variables visible to the
-        ;; outer scope, which is useful to group declarations.
+    ;; Spawns the players points and place them at the bottom of the screen, in
+    ;; opposite sides.
+    ;; Points are incremented when the ship of the opponent is destroyed.
+    ;; Since points must outlive each individual battle, we spawn them here,
+    ;; outside the nested gameplay.
+    ;; The `:unnest` annotation makes all nested variables visible to the outer
+    ;; scope, which is useful to group declarations.
     ;;;
 
     var points-1 = "0"
@@ -61,14 +57,14 @@ do :unnest {    ;; POINTS
 
 spawn {         ;; MAIN-LOOP
     ;;;
-    ;; The main loop restarts whenever one of the ships is destroyed.
+    ;; Starts the main loop, which restarts whenever a ship is destroyed.
     ;;;
 
     while true {
         awaiting :Pico.Key.Dn {     ;; TAP-TO-START
             ;;;
-            ;; Spawn the blinking "= TAP TO START =" message, and awaits the
-            ;; user interaction.
+            ;; Spawns the blinking "= TAP TO START =" message, and awaits any
+            ;; key press.
             ;;;
             while true {
                 awaiting 500:ms {
@@ -91,38 +87,6 @@ spawn {         ;; MAIN-LOOP
         ;; each individual battle.
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        data :T = [rect:Rect] {
-            :Ship = [] {
-                :L = []
-                :R = []
-            }
-            :Fire = [] {
-                :L = []
-                :R = []
-            }
-            :Rock = []
-        }
-
-        task Move-T (rect:Rect, vel:XY) {
-            awaiting out-of-screen() {
-                every :Pico.Frame {
-                    val dt = evt.ms / 1000
-                    set rect.pos.x = rect.pos.x + (vel.x * dt)
-                    set rect.pos.y = rect.pos.y + (vel.y * dt)
-                }
-            } where {
-                func out-of-screen () {
-                    ifs {
-                        rect.pos.x < -(WIN.w/2) -> true
-                        rect.pos.x >  (WIN.w/2) -> true
-                        rect.pos.y < -(WIN.h/2) -> true
-                        rect.pos.y >  (WIN.h/2) -> true
-                        else -> false
-                    }
-                }
-            }
-        }
-
         spawn {
             while true {
                 await :Pico.Key.Dn, evt.key==:Key-P
@@ -138,109 +102,9 @@ spawn {         ;; MAIN-LOOP
         }
 
         toggle :Hide -> :Show {
-            do :unnest {                ;; SHIPS
-                ;;;
-                ;; - Creates the two ships.
-                ;; They differ in ids (:ship-1 vs :ship-2), initial positions,
-                ;; screen limits, key controllers, and image orientations
-                ;; (i.e., pointing :R or :L).
-                ;;;
-                ^["ship.ceu"]
-
-                val fires-1 = tasks(SHIP-FIRES)
-                val ship-1 = spawn Ship(:L, pos-1, ctl-1, fires-1, "imgs/ship-1.gif")
-                    where {
-                        val pos-1 = [(-WIN.w/2)+(WIN.w/10), 0]
-                        val ctl-1 = [[:Key-A,:Key-D,:Key-W,:Key-S], :Key-Shift-Left]
-                    }
-
-                val fires-2 = tasks(SHIP-FIRES)
-                val ship-2 = spawn Ship(:R, pos-2, ctl-2, fires-2, "imgs/ship-2.gif")
-                    where {
-                        val pos-2 = [( WIN.w/2)-(WIN.w/10), 0]
-                        val ctl-2 = [[:Key-Left,:Key-Right,:Key-Up,:Key-Down], :Key-Shift-Right]
-                    }
-            }
-
-            ;;;
-            ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
-            ;;   this pool.
-            ;;;
-            val rocks = tasks()
-            ^["rocks.ceu"]
-
-            ;;;
-            ;; - The game innermost "awaiting" terminates when either of the two
-            ;;   ships is destroyed.
-            ;; - We then proceed to increment the points before restarting the
-            ;;   outer loop for the next battle.
-            ;;;
-
-            awaiting (evt==ship-1) or (evt==ship-2) {
-                ;;;
-                ;; - Spawns new meteros in the game.
-                ;; It starts with 2s but goes down continuously.
-                ;; The "spawn" creates a dynamic instance of "Rock-Big".
-                ;; All instances are limited to the closest outer "do-end" 
-                ;; block (in this case, the "battle block").
-                ;; When the block terminates, all instances are automatically 
-                ;; destroyed, i.e., when one of the ships is destroyed, the 
-                ;; "battle block" will restart and all meteors will be 
-                ;; automatically destroyed.
-                ;;;
-                spawn {
-                    var period = ROCK-MS;
-                    every (random-next() % period) :ms {
-                        set period = max(50, period - 10)
-                        spawn in rocks, Rock-Big()
-                    }
-                }
-
-                func f-cmp (p1:T, p2:T) {
-                    pico-rect-vs-rect?(p1.rect, p2.rect)
-                }
-
-                ;;;
-                ;; - Collision detection loop:
-                ;;  - "$objs" is the number of alive objects.
-                ;;  - "objs"  contains references to them.
-                ;; We iterate over "objs" to check for collisions between "o1" 
-                ;; vs "o2" for every possible pairs of objects.
-                ;; Then, we check each "id" in the collisions to take the 
-                ;; proper action.
-                ;;;
-                every :Pico.Frame {
-                    val trks = to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
-                    val cols = pico-collisions(f-cmp, trks)
-                    val cols' = @[]
-                    while in :vector cols, (_,col) {
-                        val col? = do {
-                            val t0 = detrack(col.0).pub
-                            val t1 = detrack(col.1).pub
-                            ifs {
-                                (t0 is :T.Ship.R) and (t1 is :T.Fire.R) -> false
-                                (t0 is :T.Fire.R) and (t1 is :T.Ship.R) -> false
-                                (t0 is :T.Ship.L) and (t1 is :T.Fire.L) -> false
-                                (t0 is :T.Fire.L) and (t1 is :T.Ship.L) -> false
-                                (t0 is :T.Rock)   and (t1 is :T.Rock)   -> false
-                                else -> true
-                            }
-                        }
-                        if col? {
-                            set cols'[col.0] = true
-                            set cols'[col.1] = true
-                        }
-                    }
-                    while in :dict cols', (k,_1) {
-                        broadcast in detrack(k), :collided
-                    }
-                }
-            }
-            ifs {
-                (ship-1.status == :terminated) -> set points-2 = to-string(to-number(points-2)+1)
-                (ship-2.status == :terminated) -> set points-1 = to-string(to-number(points-1)+1)
-            }
+            ^["battle.ceu"]
         }
+
         await 1:s
     }
 }

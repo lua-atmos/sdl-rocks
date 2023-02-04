@@ -1,15 +1,15 @@
-val ACC-DIV     = 3000
+val ACC-DIV     = 10
 val SHIP-FRAMES = 4
 val SHIP-FIRES  = 3
 val FIRE-DIM    = [WIN.w/50, WIN.h/100]
 val FIRE-COLOR  = [0xFF,0xFF,0x88,0xFF]
-val MAX :XY     = [WIN.w/200, WIN.h/200]
+val VEL-MAX :XY = [WIN.w/2.5, WIN.h/2.5]
 
 data :LRUD = [left,right,up,down]
 data :Control = [mov:LRUD, fire]
 
-func between (MIN, MAX, v) {
-    max(MIN, min(MAX, v))
+func between (min_max, v) {
+    max(min_max.0, min(min_max.1, v))
 }
 
 task Fire (side, pos:XY, vy) :T {
@@ -49,7 +49,7 @@ task Ship (side, pos:XY, ctl:Control, fires, path) :T {
                     == ctl.mov.right -> set acc.x =  WIN.w/ACC-DIV
                     == ctl.mov.up    -> set acc.y =  WIN.h/ACC-DIV
                     == ctl.mov.down  -> set acc.y = -WIN.h/ACC-DIV
-                    == ctl.fire      -> spawn in fires, Fire(side, copy(pos), 10*vel.y)
+                    == ctl.fire      -> spawn in fires, Fire(side, copy(pos), vel.y)
                 }
                 set key = evt.key
             }
@@ -79,14 +79,15 @@ task Ship (side, pos:XY, ctl:Control, fires, path) :T {
         }
     } with {
         every :Pico.Frame {
-            set vel.x = between(-MAX.x, MAX.x, vel.x+acc.x)
-            set vel.y = between(-MAX.y, MAX.y, vel.y+acc.y)
+            val dt = evt.ms / 1000
+            set vel.x = between([-VEL-MAX.x,VEL-MAX.x], vel.x+(acc.x*dt))
+            set vel.y = between([-VEL-MAX.y,VEL-MAX.y], vel.y+(acc.y*dt))
             set pos.x = if side==:L {
-                            between((-WIN.w/2)+dim.w, 0-dim.w, pos.x+vel.x)
+                            between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
                         } else {
-                            between(0+dim.w,  (WIN.w/2)-dim.w, pos.x+vel.x)
+                            between([0+dim.w,  (WIN.w/2)-dim.w], pos.x+(vel.x*dt))
                         }
-            set pos.y = between((-WIN.h/2)+dy, (WIN.h/2)-dy, pos.y+vel.y)
+            set pos.y = between([(-WIN.h/2)+dy, (WIN.h/2)-dy], pos.y+(vel.y*dt))
         }
     }
 
