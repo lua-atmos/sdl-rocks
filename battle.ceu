@@ -1,10 +1,14 @@
 do :unnest {                ;; CONSTANTS
-    val METEOR-MS  = 5000   ;; period to spawn a new meteor
+    val METEOR-MS  = 5000   ;; average period to spawn a new meteor
     val SHIP-SHOTS = 3      ;; maximum number of simultaneous shots
 }
 
 do :unnest {                ;; DATA :T
     data :T = [rect:Rect] {
+        ;;; Describes the data hierarchy :T for the game objects public fields:
+        ;;  - They all expose a :Rect object for collision detection.
+        ;;  - We distinguish between objects on the left and right (:L and :R).
+        ;;;
         :Ship = [] {
             :L = []
             :R = []
@@ -17,6 +21,10 @@ do :unnest {                ;; DATA :T
     }
 
     task Move-T (rect:Rect, vel:XY) {
+        ;;; Updates the given `rect` position according to its `vel` speed.
+        ;;  - Updates on every :Frame.
+        ;;  - Terminates when going out of screen.
+        ;;;
         awaiting out-of-screen() {
             every :Pico.Frame {
                 val dt = evt.ms / 1000
@@ -40,6 +48,10 @@ do :unnest {                ;; DATA :T
 do :unnest {                ;; METEORS, SHIPS, SHOTS
     ^["ts.ceu"]
 
+    ;;; Declares and spawns all visual objects:
+    ;;  - Meteors
+    ;;;
+
     ;;;
     ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
     ;;   this pool.
@@ -56,8 +68,8 @@ do :unnest {                ;; METEORS, SHIPS, SHOTS
     val shots = [tasks(SHIP-SHOTS), tasks(SHIP-SHOTS)]
 
     val ships = [
-        spawn Ship(:L, pos.0, ctl.0, shots.0, "imgs/ship-L.gif"),
-        spawn Ship(:R, pos.1, ctl.1, shots.1, "imgs/ship-R.gif"),
+        spawn Ship(:T.Ship.L, pos.0, ctl.0, shots.0, "imgs/ship-L.gif"),
+        spawn Ship(:T.Ship.R, pos.1, ctl.1, shots.1, "imgs/ship-R.gif"),
     ] where {
         val pos = [
             [(-WIN.w/2)+(WIN.w/10), 0],

@@ -1,0 +1,148 @@
+val ACC-DIV     = 10
+val SHIP-FRAMES   = 4
+val SHOT-DIM      = [WIN.w/50, WIN.h/100]
+val SHOT-COLOR    = [0xFF,0xFF,0x88,0xFF]
+val VEL-MAX :XY   = [WIN.w/2.5, WIN.h/2.5]
+val METEOR-FRAMES = 6
+val METEOR-AWAIT  = 5000
+
+data :LRUD    = [left,right,up,down]
+data :Control = [mov:LRUD, shot]
+
+func random-signal () {
+    (((random-next()%2) == 0) and 1) or -1
+}
+
+task Meteor () :T {
+    val path = "imgs/meteor.gif"
+    val y-sig = random-signal()
+
+    val vx = (1 + (random-next() % (WIN.w/5))) * random-signal()
+    val vy = (1 + (random-next() % (WIN.h/5))) * y-sig
+
+    val dim :WH = pico-state-get-size-image(path)
+    val w = dim.w / METEOR-FRAMES
+    var dx = 0
+
+    set task.pub = :T.Meteor [[[x,y], [w,dim.h]]] where {
+        val x = ((random-next() % WIN.w) / 3) * random-signal()
+        val y = (WIN.h/2) * -y-sig
+    }
+
+    par-or {
+        await (random-next() % METEOR-AWAIT) :ms
+        par-or {
+            await spawn Move-T(task.pub.rect, [vx,vy])
+        } with {
+            await :collided
+            pico-output-sound("snds/meteor.wav")
+        }
+    } with {
+        every :Pico.Draw {
+            pico-state-set-image-crop([[dx,0],[w,dim.h]])
+            pico-output-draw-image(task.pub.rect.pos, path)
+        }
+    } with {
+        val v = ((vx**2) + (vy**2)) ** (1/2)
+        var x = 0
+        every :Pico.Frame {
+            set x = x + ((v * evt.ms) / 1000)
+            set dx = (x % dim.w) - (x % task.pub.rect.dim.w)
+        }
+    }
+}
+
+task Shot (tag, pos:XY, vy) :T {
+    pico-output-sound("snds/shot.wav")
+    set task.pub = tags([[pos, SHOT-DIM]], tag, true)
+    par-or {
+        await :collided
+    } with {
+        val sig = ((tag==:T.Shot.L) and 1) or -1
+        await spawn Move-T(task.pub.rect, [(WIN.w/3)*sig, vy])
+    } with {
+        every :Pico.Draw {
+            pico-state-set-color-draw(SHOT-COLOR)
+            pico-output-draw-rect(task.pub.rect)
+        }
+    }
+}
+
+task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
+    val dim:WH = pico-state-get-size-image(path)
+    val vel:XY = [0,0]
+    val dy = dim.h / SHIP-FRAMES
+    set task.pub = tags([[pos, [dim.w,dy]]], tag, true)
+
+    ;; Control
+    var acc:XY = [0,0]
+    var key
+    spawn {
+        par {
+            every :Pico.Key.Dn {
+                ifs evt.key {
+                    == ctl.mov.left  -> set acc.x = -WIN.w/ACC-DIV
+                    == ctl.mov.right -> set acc.x =  WIN.w/ACC-DIV
+                    == ctl.mov.up    -> set acc.y =  WIN.h/ACC-DIV
+                    == ctl.mov.down  -> set acc.y = -WIN.h/ACC-DIV
+                    == ctl.shot      ->
+                        spawn in shots, Shot(tag', copy(pos), vel.y) where {
+                            val tag' = ((tag == :T.Ship.L) and :T.Shot.L) or :T.Shot.R
+                        }
+                }
+                set key = evt.key
+            }
+        } with {
+            every :Pico.Key.Up {
+                set key = nil
+                set acc = [0,0]
+            }
+        }
+    }
+
+    par-or {
+        await :collided
+    } with {
+        every :Pico.Draw {
+            pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
+                where {
+                    val frame = ifs key {
+                        == ctl.mov.left  -> ((tag==:T.Ship.L) and 0) or 1
+                        == ctl.mov.right -> ((tag==:T.Ship.R) and 0) or 1
+                        == ctl.mov.up    -> 2
+                        == ctl.mov.down  -> 3
+                        else -> 0
+                    }
+                }
+            pico-output-draw-image(pos, path)
+        }
+    } with {
+        every :Pico.Frame {
+            val dt = evt.ms / 1000
+            set vel.x = between([-VEL-MAX.x,VEL-MAX.x], vel.x+(acc.x*dt))
+            set vel.y = between([-VEL-MAX.y,VEL-MAX.y], vel.y+(acc.y*dt))
+            set pos.x = if tag==:T.Ship.L {
+                            between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
+                        } else {
+                            between([0+dim.w,  (WIN.w/2)-dim.w], pos.x+(vel.x*dt))
+                        }
+            set pos.y = between([(-WIN.h/2)+dy, (WIN.h/2)-dy], pos.y+(vel.y*dt))
+        }
+    }
+
+    ;; explode 40w/s
+    pico-output-sound("snds/explosion.wav")
+    awaiting 150:ms {
+        var d = dy / 2;
+        par {
+            every :Pico.Frame {
+                set d = d + (((40*d)*evt.ms)/1000)
+            }
+        } with {
+            every :Pico.Draw {
+                pico-state-set-color-draw([0xFF,0x00,0x00,0xFF])
+                pico-output-draw-oval([pos,[d,d]])
+            }
+        }
+    }
+}
