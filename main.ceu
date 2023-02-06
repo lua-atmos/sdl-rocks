@@ -1,17 +1,20 @@
-^["pico.ceu"]   ;; includes the pico-sdl graphics library
+^["pico.ceu"]   ;; PICO-SDL library
 
-do {            ;; SCREEN CONFIGURATION
-    pico-state-set-title("The Rocks! Game")
+do :unnest {    ;; INITIALIZATION
+    pico-state-set-title("The Battle of Ships")
     pico-state-set-size-pixel([1,1])
     pico-state-set-size([641,481])
     pico-state-set-grid(false)
     pico-state-set-auto(false)
-}
 
-val WIN :WH = pico-state-get-size()
-val ROCK-MS = 5000
-pico-state-set-font("tiny.ttf", WIN.h/15)
-random-seed()
+    ;; The `:unnest` annotation makes all nested variables visible to the
+    ;; outer scope, which is useful to group declarations.
+
+    val WIN :WH = pico-state-get-size()
+    pico-state-set-font("tiny.ttf", WIN.h/15)
+
+    random-seed()
+}
 
 spawn {         ;; BACKGROUND
     ;;;
@@ -27,17 +30,16 @@ spawn {         ;; BACKGROUND
     }
 }
 
-;;;
-;; Spawns the players points and place them at the bottom of the screen, in
-;; opposite sides.
-;; Points are incremented when the ship of the opponent is destroyed.
-;; Since points must outlive each individual battle, we spawn them here,
-;; outside the main game loop.
-;;;
-
 val points = ["0", "0"]
 
 spawn {         ;; POINTS
+    ;;;
+    ;; Spawns the players points and place them at the bottom of the screen, in
+    ;; opposite sides.
+    ;; Points are incremented when the ship of the opponent is destroyed.
+    ;; Since points must outlive each individual battle, we spawn them here,
+    ;; outside the main game loop.
+    ;;;
     val dx = WIN.w / 15
     val y  = (-WIN.h /2 ) + (WIN.h / 15)
     every :Pico.Draw {

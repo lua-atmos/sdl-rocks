@@ -1,49 +1,63 @@
-data :T = [rect:Rect] {
-    :Ship = [] {
-        :L = []
-        :R = []
-    }
-    :Fire = [] {
-        :L = []
-        :R = []
-    }
-    :Rock = []
+do :unnest {                ;; CONSTANTS
+    val METEOR-MS  = 5000   ;; period to spawn a new meteor
+    val SHIP-SHOTS = 3      ;; maximum number of simultaneous shots
 }
 
-task Move-T (rect:Rect, vel:XY) {
-    awaiting out-of-screen() {
-        every :Pico.Frame {
-            val dt = evt.ms / 1000
-            set rect.pos.x = rect.pos.x + (vel.x * dt)
-            set rect.pos.y = rect.pos.y + (vel.y * dt)
+do :unnest {                ;; DATA :T
+    data :T = [rect:Rect] {
+        :Ship = [] {
+            :L = []
+            :R = []
         }
-    } where {
-        func out-of-screen () {
-            ifs {
-                rect.pos.x < -(WIN.w/2) -> true
-                rect.pos.x >  (WIN.w/2) -> true
-                rect.pos.y < -(WIN.h/2) -> true
-                rect.pos.y >  (WIN.h/2) -> true
-                else -> false
+        :Shot = [] {
+            :L = []
+            :R = []
+        }
+        :Meteor = []
+    }
+
+    task Move-T (rect:Rect, vel:XY) {
+        awaiting out-of-screen() {
+            every :Pico.Frame {
+                val dt = evt.ms / 1000
+                set rect.pos.x = rect.pos.x + (vel.x * dt)
+                set rect.pos.y = rect.pos.y + (vel.y * dt)
+            }
+        } where {
+            func out-of-screen () {
+                ifs {
+                    rect.pos.x < -(WIN.w/2) -> true
+                    rect.pos.x >  (WIN.w/2) -> true
+                    rect.pos.y < -(WIN.h/2) -> true
+                    rect.pos.y >  (WIN.h/2) -> true
+                    else -> false
+                }
             }
         }
     }
 }
 
-do :unnest {                ;; SHIPS
+do :unnest {                ;; METEORS, SHIPS, SHOTS
+    ^["ts.ceu"]
+
+    ;;;
+    ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
+    ;;   this pool.
+    ;;;
+    val meteors = tasks()
+
     ;;;
     ;; - Creates the two ships.
     ;; They differ in ids (:ship-1 vs :ship-2), initial positions,
     ;; screen limits, key controllers, and image orientations
     ;; (i.e., pointing :R or :L).
     ;;;
-    ^["ship.ceu"]
 
-    val fires = [tasks(SHIP-FIRES), tasks(SHIP-FIRES)]
+    val shots = [tasks(SHIP-SHOTS), tasks(SHIP-SHOTS)]
 
     val ships = [
-        spawn Ship(:L, pos.0, ctl.0, fires.0, "imgs/ship-L.gif"),
-        spawn Ship(:R, pos.1, ctl.1, fires.1, "imgs/ship-R.gif"),
+        spawn Ship(:L, pos.0, ctl.0, shots.0, "imgs/ship-L.gif"),
+        spawn Ship(:R, pos.1, ctl.1, shots.1, "imgs/ship-R.gif"),
     ] where {
         val pos = [
             [(-WIN.w/2)+(WIN.w/10), 0],
@@ -55,13 +69,6 @@ do :unnest {                ;; SHIPS
         ]
     }
 }
-
-;;;
-;; - All dynamically spawned meteors, bonuses, and bombs reside in 
-;;   this pool.
-;;;
-val rocks = tasks()
-^["rocks.ceu"]
 
 ;;;
 ;; - The game innermost "awaiting" terminates when either of the two
@@ -83,10 +90,10 @@ awaiting (evt==ships.0) or (evt==ships.1) {
     ;; automatically destroyed.
     ;;;
     spawn {
-        var period = ROCK-MS;
+        var period = METEOR-MS;
         every (random-next() % period) :ms {
             set period = max(50, period - 10)
-            spawn in rocks, Rock-Big()
+            spawn in meteors, Meteor()
         }
     }
 
@@ -104,7 +111,7 @@ awaiting (evt==ships.0) or (evt==ships.1) {
     ;; proper action.
     ;;;
     every :Pico.Frame {
-        val trks = to-tracks(fires.0, fires.1, ships.0, ships.1, rocks)
+        val trks = to-tracks(shots.0, shots.1, ships.0, ships.1, meteors)
         val cols = pico-collisions(f-cmp, trks)
         val cols' = @[]
         loop in iter(cols), i {
@@ -112,11 +119,11 @@ awaiting (evt==ships.0) or (evt==ships.1) {
                 val t0 = detrack(i.1.0).pub
                 val t1 = detrack(i.1.1).pub
                 ifs {
-                    (t0 is :T.Ship.R) and (t1 is :T.Fire.R) -> false
-                    (t0 is :T.Fire.R) and (t1 is :T.Ship.R) -> false
-                    (t0 is :T.Ship.L) and (t1 is :T.Fire.L) -> false
-                    (t0 is :T.Fire.L) and (t1 is :T.Ship.L) -> false
-                    (t0 is :T.Rock)   and (t1 is :T.Rock)   -> false
+                    (t0 is :T.Ship.R) and (t1 is :T.Shot.R) -> false
+                    (t0 is :T.Shot.R) and (t1 is :T.Ship.R) -> false
+                    (t0 is :T.Ship.L) and (t1 is :T.Shot.L) -> false
+                    (t0 is :T.Shot.L) and (t1 is :T.Ship.L) -> false
+                    (t0 is :T.Meteor)   and (t1 is :T.Meteor)   -> false
                     else -> true
                 }
             }
