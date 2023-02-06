@@ -5,7 +5,7 @@ do :unnest {                ;; CONSTANTS
 
 do :unnest {                ;; DATA :T
     data :T = [rect:Rect] {
-        ;;; Describes the data hierarchy :T for the game objects public fields:
+        ;;; Describes the data hierarchy :T for the public fields of objects:
         ;;  - They all expose a :Rect object for collision detection.
         ;;  - We distinguish between objects on the left and right (:L and :R).
         ;;;
@@ -23,7 +23,7 @@ do :unnest {                ;; DATA :T
     task Move-T (rect:Rect, vel:XY) {
         ;;; Updates the given `rect` position according to its `vel` speed.
         ;;  - Updates on every :Frame.
-        ;;  - Terminates when going out of screen.
+        ;;  - Terminates when leaving the screen.
         ;;;
         awaiting out-of-screen() {
             every :Pico.Frame {
@@ -46,110 +46,115 @@ do :unnest {                ;; DATA :T
 }
 
 do :unnest {                ;; METEORS, SHIPS, SHOTS
-    ^["ts.ceu"]
+    ^["ts.ceu"] ;; includes the object tasks
 
-    ;;; Declares and spawns all visual objects:
-    ;;  - Meteors
+    ;;; Declares and spawns the game objects:
+    ;;  - Meteors live in a dynamic pool of tasks and are spawned periodically.
+    ;;  - Ships are fixed and held in a tuple pair.
+    ;;  - Shots live in dynamic pools, one for each ship, which are held in a
+    ;;    tuple pair.
+    ;; Pools control the lifecycle of tasks by releasing them from memory
+    ;; automatically on termination. Tasks in pools are anonymous and can only
+    ;; be accessed through iterators or reference tracks.
     ;;;
 
-    ;;;
-    ;; - All dynamically spawned meteors, bonuses, and bombs reside in 
-    ;;   this pool.
-    ;;;
-    val meteors = tasks()
+    val meteors = tasks()   ;; holds all spawned meteors
 
-    ;;;
-    ;; - Creates the two ships.
-    ;; They differ in ids (:ship-1 vs :ship-2), initial positions,
-    ;; screen limits, key controllers, and image orientations
-    ;; (i.e., pointing :R or :L).
-    ;;;
+    val shots = [           ;; holds all spawned shots, limited to a maximum
+        tasks(SHIP-SHOTS),  ;;  - shots for ship in the left
+        tasks(SHIP-SHOTS),  ;;  - shots for ship in the right
+    ]
 
-    val shots = [tasks(SHIP-SHOTS), tasks(SHIP-SHOTS)]
-
-    val ships = [
+    val ships = [           ;; holds the two ships
         spawn Ship(:T.Ship.L, pos.0, ctl.0, shots.0, "imgs/ship-L.gif"),
         spawn Ship(:T.Ship.R, pos.1, ctl.1, shots.1, "imgs/ship-R.gif"),
     ] where {
-        val pos = [
-            [(-WIN.w/2)+(WIN.w/10), 0],
-            [( WIN.w/2)-(WIN.w/10), 0],
+        val pos = [         ;; positions for each ship
+            [(-WIN.w/2)+(WIN.w/10), 0], ;; left  of the screen
+            [( WIN.w/2)-(WIN.w/10), 0], ;; right of the screen
         ]
-        val ctl = [
+        val ctl = [         ;; key controls for each ship
             [[:Key-A,    :Key-D,     :Key-W,  :Key-S],    :Key-Shift-Left],
             [[:Key-Left, :Key-Right, :Key-Up, :Key-Down], :Key-Shift-Right],
         ]
     }
 }
 
-;;;
-;; - The game innermost "awaiting" terminates when either of the two
-;;   ships is destroyed.
-;; - We then proceed to increment the points before restarting the
-;;   outer loop for the next battle.
-;;;
-
-awaiting (evt==ships.0) or (evt==ships.1) {
+awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
     ;;;
-    ;; - Spawns new meteros in the game.
-    ;; It starts with 2s but goes down continuously.
-    ;; The "spawn" creates a dynamic instance of "Rock-Big".
-    ;; All instances are limited to the closest outer "do-end" 
-    ;; block (in this case, the "battle block").
-    ;; When the block terminates, all instances are automatically 
-    ;; destroyed, i.e., when one of the ships is destroyed, the 
-    ;; "battle block" will restart and all meteors will be 
-    ;; automatically destroyed.
+    ;; Runs the gameplay until one of the two ships is destroyed:
+    ;;  - Spawns new meteors periodically.
+    ;;  - Checks collisions between all objects.
     ;;;
-    spawn {
+    par {                   ;; METEORS
+        ;;;
+        ;; Spawns new meteros in the game every period:
+        ;;  - Hold them in the outer pool.
+        ;;  - Gradually decreases the spawning period.
+        ;;;
         var period = METEOR-MS;
         every (random-next() % period) :ms {
             set period = max(50, period - 10)
             spawn in meteors, Meteor()
         }
-    }
+    } with {
+        every :Pico.Frame { ;; COLLISIONS
+            ;;;
+            ;; Checks collisions between objects:
+            ;;  1. Uses `to-tracks` to collect the ships and all (safe)
+            ;;     references to dinamically allocated meteors and shots.
+            ;;  2. Uses `pico-collisions` to get all pairs of colliding
+            ;;     objects, using the `f-cmp` comparator which relies on `:T`
+            ;;     rect.
+            ;;  3. Iterates over the pairs, ignores innocuous collisions, and
+            ;;     collects final colliding objects.
+            ;;  4. Signals colliding objects.
+            ;; A ship collision will eventually terminate the enclosing
+            ;; `awaiting`, also terminating the current battle.
+            ;;;
+            val trks =      ;; (1)
+                to-tracks(ships.0, ships.1, shots.0, shots.1, meteors)
 
-    func f-cmp (p1:T, p2:T) {
-        pico-rect-vs-rect?(p1.rect, p2.rect)
-    }
+            val pairs =     ;; (2)
+                pico-collisions(trks,f-cmp) where {
+                    func f-cmp (p1:T, p2:T) {
+                        pico-rect-vs-rect?(p1.rect, p2.rect)
+                    }
+                }
 
-    ;;;
-    ;; - Collision detection loop:
-    ;;  - "$objs" is the number of alive objects.
-    ;;  - "objs"  contains references to them.
-    ;; We iterate over "objs" to check for collisions between "o1" 
-    ;; vs "o2" for every possible pairs of objects.
-    ;; Then, we check each "id" in the collisions to take the 
-    ;; proper action.
-    ;;;
-    every :Pico.Frame {
-        val trks = to-tracks(shots.0, shots.1, ships.0, ships.1, meteors)
-        val cols = pico-collisions(f-cmp, trks)
-        val cols' = @[]
-        loop in iter(cols), i {
-            val col? = do {
-                val t0 = detrack(i.1.0).pub
-                val t1 = detrack(i.1.1).pub
-                ifs {
-                    (t0 is :T.Ship.R) and (t1 is :T.Shot.R) -> false
-                    (t0 is :T.Shot.R) and (t1 is :T.Ship.R) -> false
-                    (t0 is :T.Ship.L) and (t1 is :T.Shot.L) -> false
-                    (t0 is :T.Shot.L) and (t1 is :T.Ship.L) -> false
-                    (t0 is :T.Meteor)   and (t1 is :T.Meteor)   -> false
-                    else -> true
+            val fins = #[] ;; (3)
+            loop in iter(pairs), i {
+                val ts = i.1
+                val col? = do {
+                    val t0 = detrack(ts.0).pub
+                    val t1 = detrack(ts.1).pub
+                    ifs {
+                        (t0 is :T.Ship.R) and (t1 is :T.Shot.R) -> false
+                        (t0 is :T.Shot.R) and (t1 is :T.Ship.R) -> false
+                        (t0 is :T.Ship.L) and (t1 is :T.Shot.L) -> false
+                        (t0 is :T.Shot.L) and (t1 is :T.Ship.L) -> false
+                        (t0 is :T.Meteor) and (t1 is :T.Meteor) -> false
+                        else -> true
+                    }
+                }
+                if col? {
+                    set fins[+] = ts.0
+                    set fins[+] = ts.1
                 }
             }
-            if col? {
-                set cols'[i.1.0] = true
-                set cols'[i.1.1] = true
+
+            loop in iter(fins), j { ;; (4)
+                broadcast in detrack(j.1), :collided
             }
-        }
-        loop in iter(cols'), j {
-            broadcast in detrack(j.0), :collided
         }
     }
 }
-ifs {
+
+ifs {                       ;; BATTLE RESULT
+    ;;; Returns the winner index to the main game loop:
+    ;;  - 1, if ship.0 is dead
+    ;;  - 0, if ship.1 is dead
+    ;;;
     (ships[0].status == :terminated) -> 1
     (ships[1].status == :terminated) -> 0
     else -> throw(:error)
