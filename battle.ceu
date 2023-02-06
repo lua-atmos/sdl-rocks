@@ -105,10 +105,10 @@ awaiting (evt==ship-1) or (evt==ship-2) {
         val trks = to-tracks(ship-1, fires-1, ship-2, fires-2, rocks)
         val cols = pico-collisions(f-cmp, trks)
         val cols' = @[]
-        while in :vector cols, (_,col) {
+        loop in iter(cols), i {
             val col? = do {
-                val t0 = detrack(col.0).pub
-                val t1 = detrack(col.1).pub
+                val t0 = detrack(i.1.0).pub
+                val t1 = detrack(i.1.1).pub
                 ifs {
                     (t0 is :T.Ship.R) and (t1 is :T.Fire.R) -> false
                     (t0 is :T.Fire.R) and (t1 is :T.Ship.R) -> false
@@ -119,12 +119,12 @@ awaiting (evt==ship-1) or (evt==ship-2) {
                 }
             }
             if col? {
-                set cols'[col.0] = true
-                set cols'[col.1] = true
+                set cols'[i.1.0] = true
+                set cols'[i.1.1] = true
             }
         }
-        while in :dict cols', (k,_1) {
-            broadcast in detrack(k), :collided
+        loop in iter(cols'), j {
+            broadcast in detrack(j.0), :collided
         }
     }
 }

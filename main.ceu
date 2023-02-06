@@ -57,16 +57,19 @@ do :unnest {    ;; POINTS
 
 spawn {         ;; MAIN-LOOP
     ;;;
-    ;; Starts the main loop, which restarts whenever a ship is destroyed.
+    ;; Starts the main game loop:
+    ;;  - Shows the "tap to start" message.
+    ;;  - Runs the next battle with the actual gameplay.
+    ;;  - Restarts whenever one of the ships is destroyed.
     ;;;
 
-    while true {
+    loop {
         awaiting :Pico.Key.Dn {     ;; TAP-TO-START
             ;;;
             ;; Spawns the blinking "= TAP TO START =" message, and awaits any
             ;; key press.
             ;;;
-            while true {
+            loop {
                 awaiting 500:ms {
                     every :Pico.Draw {
                         pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
@@ -79,16 +82,8 @@ spawn {         ;; MAIN-LOOP
 
         pico-output-sound("snds/start.wav")
 
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;; - The "battle block" with the gameplay holds the spaceships,
-        ;;   controllers, and all dynamic objects, such as meteors, bonuses,
-        ;;   and ship shots.
-        ;; This means that they are all properly released/reallocated after
-        ;; each individual battle.
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
         spawn {
-            while true {
+            loop {
                 await :Pico.Key.Dn, evt.key==:Key-P
                 broadcast in :global, :Hide
                 spawn {
@@ -102,6 +97,14 @@ spawn {         ;; MAIN-LOOP
         }
 
         toggle :Hide -> :Show {
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;; - The "battle block" with the gameplay holds the spaceships,
+        ;;   controllers, and all dynamic objects, such as meteors, bonuses,
+        ;;   and ship shots.
+        ;; This means that they are all properly released/reallocated after
+        ;; each individual battle.
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
             ^["battle.ceu"]
         }
 
