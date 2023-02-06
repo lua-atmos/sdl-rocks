@@ -5,7 +5,8 @@ do :unnest {                ;; CONSTANTS
 
 do :unnest {                ;; DATA :T
     data :T = [rect:Rect] {
-        ;;; Describes the data hierarchy :T for the public fields of objects:
+        ;;;
+        ;; Describes the data hierarchy :T for the public fields of objects:
         ;;  - They all expose a :Rect object for collision detection.
         ;;  - We distinguish between objects on the left and right (:L and :R).
         ;;;
@@ -21,7 +22,8 @@ do :unnest {                ;; DATA :T
     }
 
     task Move-T (rect:Rect, vel:XY) {
-        ;;; Updates the given `rect` position according to its `vel` speed.
+        ;;;
+        ;; Updates the given `rect` position according to its `vel` speed.
         ;;  - Updates on every :Frame.
         ;;  - Terminates when leaving the screen.
         ;;;
@@ -48,7 +50,8 @@ do :unnest {                ;; DATA :T
 do :unnest {                ;; METEORS, SHIPS, SHOTS
     ^["ts.ceu"] ;; includes the object tasks
 
-    ;;; Declares and spawns the game objects:
+    ;;;
+    ;; Declares and spawns the game objects:
     ;;  - Meteors live in a dynamic pool of tasks and are spawned periodically.
     ;;  - Ships are fixed and held in a tuple pair.
     ;;  - Shots live in dynamic pools, one for each ship, which are held in a
@@ -151,7 +154,8 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
 }
 
 ifs {                       ;; BATTLE RESULT
-    ;;; Returns the winner index to the main game loop:
+    ;;;
+    ;; Returns the winner index to the main game loop:
     ;;  - 1, if ship.0 is dead
     ;;  - 0, if ship.1 is dead
     ;;;

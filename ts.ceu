@@ -1,16 +1,18 @@
-val ACC-DIV     = 10
-val SHIP-FRAMES   = 4
-val SHOT-DIM      = [WIN.w/50, WIN.h/100]
-val SHOT-COLOR    = [0xFF,0xFF,0x88,0xFF]
-val VEL-MAX :XY   = [WIN.w/2.5, WIN.h/2.5]
-val METEOR-FRAMES = 6
-val METEOR-AWAIT  = 5000
+do :unnest {                ;; CONSTANTS / AUXILIARY
+    val SHIP-FRAMES      = 4
+    val SHIP-ACC-DIV     = 10
+    val SHIP-VEL-MAX :XY = [WIN.w/2.5, WIN.h/2.5]
+    val SHOT-DIM         = [WIN.w/50, WIN.h/100]
+    val SHOT-COLOR       = [0xFF,0xFF,0x88,0xFF]
+    val METEOR-FRAMES    = 6
+    val METEOR-AWAIT     = 5000
 
-data :LRUD    = [left,right,up,down]
-data :Control = [mov:LRUD, shot]
+    data :LRUD    = [left,right,up,down]
+    data :Control = [mov:LRUD, shot]
 
-func random-signal () {
-    (((random-next()%2) == 0) and 1) or -1
+    func random-signal () {
+        (((random-next()%2) == 0) and 1) or -1
+    }
 }
 
 task Meteor () :T {
@@ -74,17 +76,16 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
     val dy = dim.h / SHIP-FRAMES
     set task.pub = tags([[pos, [dim.w,dy]]], tag, true)
 
-    ;; Control
     var acc:XY = [0,0]
     var key
     spawn {
         par {
             every :Pico.Key.Dn {
                 ifs evt.key {
-                    == ctl.mov.left  -> set acc.x = -WIN.w/ACC-DIV
-                    == ctl.mov.right -> set acc.x =  WIN.w/ACC-DIV
-                    == ctl.mov.up    -> set acc.y =  WIN.h/ACC-DIV
-                    == ctl.mov.down  -> set acc.y = -WIN.h/ACC-DIV
+                    == ctl.mov.left  -> set acc.x = -WIN.w/SHIP-ACC-DIV
+                    == ctl.mov.right -> set acc.x =  WIN.w/SHIP-ACC-DIV
+                    == ctl.mov.up    -> set acc.y =  WIN.h/SHIP-ACC-DIV
+                    == ctl.mov.down  -> set acc.y = -WIN.h/SHIP-ACC-DIV
                     == ctl.shot      ->
                         spawn in shots, Shot(tag', copy(pos), vel.y) where {
                             val tag' = ((tag == :T.Ship.L) and :T.Shot.L) or :T.Shot.R
@@ -119,8 +120,8 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
     } with {
         every :Pico.Frame {
             val dt = evt.ms / 1000
-            set vel.x = between([-VEL-MAX.x,VEL-MAX.x], vel.x+(acc.x*dt))
-            set vel.y = between([-VEL-MAX.y,VEL-MAX.y], vel.y+(acc.y*dt))
+            set vel.x = between([-SHIP-VEL-MAX.x,SHIP-VEL-MAX.x], vel.x+(acc.x*dt))
+            set vel.y = between([-SHIP-VEL-MAX.y,SHIP-VEL-MAX.y], vel.y+(acc.y*dt))
             set pos.x = if tag==:T.Ship.L {
                             between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
                         } else {
@@ -130,7 +131,6 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
         }
     }
 
-    ;; explode 40w/s
     pico-output-sound("snds/explosion.wav")
     awaiting 150:ms {
         var d = dy / 2;
