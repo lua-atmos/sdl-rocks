@@ -129,7 +129,7 @@ awaiting (evt==ship-1) or (evt==ship-2) {
     }
 }
 ifs {
-    (ship-1.status == :terminated) -> set points-2 = to-string(to-number(points-2)+1)
-    (ship-2.status == :terminated) -> set points-1 = to-string(to-number(points-1)+1)
+    (ship-1.status == :terminated) -> 1
+    (ship-2.status == :terminated) -> 0
+    else -> throw(:error)
 }
-

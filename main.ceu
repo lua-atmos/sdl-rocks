@@ -1,4 +1,4 @@
-^["pico.ceu"]
+^["pico.ceu"]   ;; includes the pico-sdl graphics library
 
 do {            ;; SCREEN CONFIGURATION
     pico-state-set-title("The Rocks! Game")
@@ -17,10 +17,9 @@ spawn {         ;; BACKGROUND
     ;;;
     ;; Spawns a task to draw the background image on every frame.
     ;; We draw at position (0,0), which is the center of the screen.
-    ;; By default, the center of the image is anchored at the given
-    ;; position.
-    ;; This task is the first to spawn, what makes the background image
-    ;; to always be rendered first.
+    ;; By default, the center of the image is anchored at the given position.
+    ;; This task is the first to spawn, which makes the background image to
+    ;; always be rendered first.
     ;;;
     every :Pico.Draw {
         pico-state-set-image-crop()
@@ -28,30 +27,23 @@ spawn {         ;; BACKGROUND
     }
 }
 
-do :unnest {    ;; POINTS
-    ;;;
-    ;; Spawns the players points and place them at the bottom of the screen, in
-    ;; opposite sides.
-    ;; Points are incremented when the ship of the opponent is destroyed.
-    ;; Since points must outlive each individual battle, we spawn them here,
-    ;; outside the nested gameplay.
-    ;; The `:unnest` annotation makes all nested variables visible to the outer
-    ;; scope, which is useful to group declarations.
-    ;;;
+;;;
+;; Spawns the players points and place them at the bottom of the screen, in
+;; opposite sides.
+;; Points are incremented when the ship of the opponent is destroyed.
+;; Since points must outlive each individual battle, we spawn them here,
+;; outside the main game loop.
+;;;
 
-    var points-1 = "0"
-    var points-2 = "0"
+val points = ["0", "0"]
 
-    spawn {
-        val dx = WIN.w / 15
-        val y  = (-WIN.h /2 ) + (WIN.h / 15)
-        val p1 = [(-WIN.w / 2) + dx, y]
-        val p2 = [( WIN.w / 2) - dx, y]
-        every :Pico.Draw {
-            pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
-            pico-output-draw-text(p1, points-1)
-            pico-output-draw-text(p2, points-2)
-        }
+spawn {         ;; POINTS
+    val dx = WIN.w / 15
+    val y  = (-WIN.h /2 ) + (WIN.h / 15)
+    every :Pico.Draw {
+        pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
+        pico-output-draw-text([(-WIN.w / 2) + dx, y], points.0)
+        pico-output-draw-text([( WIN.w / 2) - dx, y], points.1)
     }
 }
 
@@ -62,12 +54,10 @@ spawn {         ;; MAIN-LOOP
     ;;  - Runs the next battle with the actual gameplay.
     ;;  - Restarts whenever one of the ships is destroyed.
     ;;;
-
     loop {
         awaiting :Pico.Key.Dn {     ;; TAP-TO-START
             ;;;
-            ;; Spawns the blinking "= TAP TO START =" message, and awaits any
-            ;; key press.
+            ;; Spawns the blinking message, and awaits any key press.
             ;;;
             loop {
                 awaiting 500:ms {
@@ -80,8 +70,15 @@ spawn {         ;; MAIN-LOOP
             }
         }
 
+        ;; Plays the restart sound.
         pico-output-sound("snds/start.wav")
 
+        ;;;
+        ;; Broadcasts pause and resume events to the game:
+        ;;  - Pauses on key "P" (event :Hide).
+        ;;  - Shows the pause image while paused.
+        ;;  - Resumes on key "P" (event :Show).
+        ;;;
         spawn {
             loop {
                 await :Pico.Key.Dn, evt.key==:Key-P
@@ -96,44 +93,45 @@ spawn {         ;; MAIN-LOOP
             }
         }
 
-        toggle :Hide -> :Show {
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;; - The "battle block" with the gameplay holds the spaceships,
-        ;;   controllers, and all dynamic objects, such as meteors, bonuses,
-        ;;   and ship shots.
-        ;; This means that they are all properly released/reallocated after
-        ;; each individual battle.
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            ^["battle.ceu"]
+        ;;;
+        ;; Pauses and resumes the game when receiving key "P".
+        ;; The toggle construct receives two events separated by `->`, and
+        ;; controls its nested block as follows:
+        ;;  - Initially, the block executes and receives broadcasts normally.
+        ;;  - When the first event is received, the block is paused by not
+        ;;    receiving any broadcasts.
+        ;;  - When the second event is received, the block is resumed and
+        ;;    receives broadcasts normally.
+        ;;  - When the nested block terminates, the outer toggle as a whole
+        ;;    also terminates.
+        ;;  - The toggle evaluates to the final value of the block.
+        ;;;
+        val winner = toggle :Hide -> :Show {
+            ;;;
+            ;; The "battle block" contains the actual gameplay and holds the
+            ;; spaceships and meteors.
+            ;; The block returns the winner index (0 or 1), whose points are
+            ;; incremented before the next battle.
+            ;; Since the block is nested, all dynamic objects are all properly
+            ;; released and reallocated after each individual battle.
+            ;;;
+            ^["battle.ceu"]     ;; includes the battle block
         }
 
+        ;; Increments the winner points.
+        set points[winner] = to-string(to-number(points[winner])+1)
+
         await 1:s
+
+        ;;;
+        ;; Restarts the main loop.
+        ;; Due to lexical memory management, only the points are preserved
+        ;; between loop iterations.
+        ;; All other data, including those dynamically allocated, are
+        ;; guaranteed to be reclaimed after this point, no matter how the
+        ;; nested code above is structured.
+        ;;;
     }
 }
 
 pico-loop ()
-
-;;;;
-            /*
-             * One of the ships was destroyed (ship.ok_killed).
-             * The innermost "par/or" terminated.
-             */
-        /*
-         * The "battle block" terminated, the ships, controllers, and all 
-         * dynamic items are destroyed.
-         * Restart the "main loop" and show the "= TAP TO START =" message 
-         * again.
-         * The points are kept (they are declated in the outer scope).
-         */
-    /*
-     * The "main loop" never terminates.
-     * This "end" is never surpassed.
-     */
-/* TODO:
- * - PAUSE/IF salva img emostra pause em cima
- * - BONUS_ACCEL
- * - MENU: control-sides, reset-points
- * - start at 1/2 speed of previous match
- */
-;;;;
