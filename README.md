@@ -1,3 +1,6 @@
+TODO
+
+<!--
 (THE CODE IS COMMENTED :: implementation in Céu :: start from "main.ceu" :: http://www.ceu-lang.org/)
 
 
@@ -60,3 +63,4 @@ Uses the SDL library:
 http://www.libsdl.org/
 
 keywords: 2-players, 2-person, shooter, shoot'em up, space, games
+-->
