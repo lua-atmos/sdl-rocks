@@ -1,4 +1,4 @@
-^["pico.ceu"]   ;; PICO-SDL library
+^["@/pico/pico.ceu"]   ;; PICO-SDL library
 
 do :unnest {    ;; INITIALIZATION
     pico-state-set-title("The Battle of Ships")
