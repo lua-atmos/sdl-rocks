@@ -1,14 +1,14 @@
 ^["@/pico/pico.ceu"]   ;; PICO-SDL library
 
-do :unnest {    ;; INITIALIZATION
+export [WIN] {  ;; INITIALIZATION
     pico-state-set-title("The Battle of Ships")
     pico-state-set-size-pixel([1,1])
     pico-state-set-size([641,481])
     pico-state-set-grid(false)
     pico-state-set-auto(false)
 
-    ;; The `:unnest` annotation makes all nested variables visible to the
-    ;; outer scope, which is useful to group declarations.
+    ;; An `export` groups and hides declarations and expressions, exposing only
+    ;; a short list of variables to the outer scope.
 
     val WIN :WH = pico-state-get-size()
     pico-state-set-font("tiny.ttf", WIN.h/15)

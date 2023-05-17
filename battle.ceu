@@ -1,9 +1,9 @@
-do :unnest {                ;; CONSTANTS
+export [METEOR-MS,SHIP-SHOTS] { ;; CONSTANTS
     val METEOR-MS  = 5000   ;; average period to spawn a new meteor
     val SHIP-SHOTS = 3      ;; maximum number of simultaneous shots
 }
 
-do :unnest {                ;; DATA :T
+export [Move-T] {           ;; DATA :T
     data :T = [rect:Rect] {
         ;;;
         ;; Describes the data hierarchy :T for the public fields of objects:
@@ -47,8 +47,13 @@ do :unnest {                ;; DATA :T
     }
 }
 
-do :unnest {                ;; METEORS, SHIPS, SHOTS
+export [meteors,shots,ships,Meteor] {
     ^["ts.ceu"] ;; includes the object tasks
+
+    val t = [           ;; holds all spawned shots, limited to a maximum
+        tasks(),  ;;  - shots for ship in the right
+        tasks(),  ;;  - shots for ship in the right
+    ]
 
     ;;;
     ;; Declares and spawns the game objects:
@@ -126,17 +131,16 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
                 }
 
             val fins = #[] ;; (3)
-            loop in iter(pairs), i {
-                val ts = i.1
+            loop in iter(pairs), ts {
                 val col? = do {
                     val t0 = detrack(ts.0).pub
                     val t1 = detrack(ts.1).pub
                     ifs {
-                        (t0 is :T.Ship.R) and (t1 is :T.Shot.R) -> false
-                        (t0 is :T.Shot.R) and (t1 is :T.Ship.R) -> false
-                        (t0 is :T.Ship.L) and (t1 is :T.Shot.L) -> false
-                        (t0 is :T.Shot.L) and (t1 is :T.Ship.L) -> false
-                        (t0 is :T.Meteor) and (t1 is :T.Meteor) -> false
+                        (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) -> false
+                        (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) -> false
+                        (t0 is? :T.Ship.L) and (t1 is? :T.Shot.L) -> false
+                        (t0 is? :T.Shot.L) and (t1 is? :T.Ship.L) -> false
+                        (t0 is? :T.Meteor) and (t1 is? :T.Meteor) -> false
                         else -> true
                     }
                 }
@@ -147,7 +151,7 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
             }
 
             loop in iter(fins), j { ;; (4)
-                broadcast in detrack(j.1), :collided
+                broadcast in detrack(j), :collided
             }
         }
     }
@@ -159,7 +163,7 @@ ifs {                       ;; BATTLE RESULT
     ;;  - 1, if ship.0 is dead
     ;;  - 0, if ship.1 is dead
     ;;;
-    (ships[0].status == :terminated) -> 1
-    (ships[1].status == :terminated) -> 0
+    (status(ships[0]) == :terminated) -> 1
+    (status(ships[1]) == :terminated) -> 0
     else -> throw(:error)
 }

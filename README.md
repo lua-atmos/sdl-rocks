@@ -1,4 +1,6 @@
-TODO
+```
+$ ceu --lib=pico main.ceu
+```
 
 <!--
 (THE CODE IS COMMENTED :: implementation in Céu :: start from "main.ceu" :: http://www.ceu-lang.org/)

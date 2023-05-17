@@ -1,4 +1,13 @@
-do :unnest {                ;; CONSTANTS / AUXILIARY
+export [                    ;; CONSTANTS / AUXILIARY
+    SHIP-FRAMES,
+    SHIP-ACC-DIV,
+    SHIP-VEL-MAX,
+    SHOT-DIM,
+    SHOT-COLOR,
+    METEOR-FRAMES,
+    METEOR-AWAIT,
+    random-signal,
+] {
     val SHIP-FRAMES      = 4
     val SHIP-ACC-DIV     = 10
     val SHIP-VEL-MAX :XY = [WIN.w/2.5, WIN.h/2.5]
@@ -87,7 +96,7 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
                     == ctl.mov.up    -> set acc.y =  WIN.h/SHIP-ACC-DIV
                     == ctl.mov.down  -> set acc.y = -WIN.h/SHIP-ACC-DIV
                     == ctl.shot      ->
-                        spawn in shots, Shot(tag', copy(pos), vel.y) where {
+                        (spawn in shots, Shot(tag', copy(pos), vel.y)) where {
                             val tag' = ((tag == :T.Ship.L) and :T.Shot.L) or :T.Shot.R
                         }
                 }
