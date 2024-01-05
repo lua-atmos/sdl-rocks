@@ -16,7 +16,7 @@ export [WIN] {  ;; INITIALIZATION
     random-seed()
 }
 
-spawn {         ;; BACKGROUND
+spawn task {    ;; BACKGROUND
     ;;;
     ;; Spawns a task to draw the background image on every frame.
     ;; We draw at position (0,0), which is the center of the screen.
@@ -32,7 +32,7 @@ spawn {         ;; BACKGROUND
 
 val points = ["0", "0"]
 
-spawn {         ;; POINTS
+spawn task {    ;; POINTS
     ;;;
     ;; Spawns the players points and place them at the bottom of the screen, in
     ;; opposite sides.
@@ -49,7 +49,7 @@ spawn {         ;; POINTS
     }
 }
 
-spawn {         ;; MAIN-LOOP
+spawn task {    ;; MAIN-LOOP
     ;;;
     ;; Starts the main game loop:
     ;;  - Shows the "tap to start" message.
@@ -57,18 +57,18 @@ spawn {         ;; MAIN-LOOP
     ;;  - Restarts whenever one of the ships is destroyed.
     ;;;
     loop {
-        awaiting :Pico.Key.Dn {     ;; TAP-TO-START
+        watching :Pico.Key.Dn {     ;; TAP-TO-START
             ;;;
             ;; Spawns the blinking message, and awaits any key press.
             ;;;
             loop {
-                awaiting 500:ms {
+                watching :500:ms {
                     every :Pico.Draw {
                         pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
                         pico-output-draw-text([0,0], "= TAP TO START =")
                     }
                 }
-                await 500:ms
+                await(:500:ms)
             }
         }
 
@@ -81,17 +81,17 @@ spawn {         ;; MAIN-LOOP
         ;;  - Shows the pause image while paused.
         ;;  - Resumes on key "P" (event :Show).
         ;;;
-        spawn {
+        spawn task {
             loop {
-                await :Pico.Key.Dn, evt.key==:Key-P
-                broadcast in :global, :Hide
-                spawn {
+                await(:Pico.Key.Dn => it.key==:Key-P)
+                broadcast(:Show [false]) in :global
+                spawn task {
                     every :Pico.Draw {
                         pico-output-draw-image([0,0], "imgs/pause.png")
                     }
                 }
-                await :Pico.Key.Dn, evt.key==:Key-P
-                broadcast in :global, :Show
+                await(:Pico.Key.Dn => it.key==:Key-P)
+                broadcast(:Show [true]) in :global
             }
         }
 
@@ -108,7 +108,7 @@ spawn {         ;; MAIN-LOOP
         ;;    also terminates.
         ;;  - The toggle evaluates to the final value of the block.
         ;;;
-        val winner = toggle :Hide -> :Show {
+        val winner = toggle :Show {
             ;;;
             ;; The "battle block" contains the actual gameplay and holds the
             ;; spaceships and meteors.
@@ -121,9 +121,9 @@ spawn {         ;; MAIN-LOOP
         }
 
         ;; Increments the winner points.
-        set points[winner] = to-string(to-number(points[winner])+1)
+        set points[winner] = points[winner]+1 --> to-number --> to-string
 
-        await 1:s
+        await(:1:s)
 
         ;;;
         ;; Restarts the main loop.

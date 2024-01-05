@@ -27,20 +27,20 @@ export [Move-T] {           ;; DATA :T
         ;;  - Updates on every :Frame.
         ;;  - Terminates when leaving the screen.
         ;;;
-        awaiting out-of-screen() {
+        watching out-of-screen() {
             every :Pico.Frame {
-                val dt = evt.ms / 1000
+                val dt = it.ms / 1000
                 set rect.pos.x = rect.pos.x + (vel.x * dt)
                 set rect.pos.y = rect.pos.y + (vel.y * dt)
             }
         } where {
             func out-of-screen () {
                 ifs {
-                    rect.pos.x < -(WIN.w/2) -> true
-                    rect.pos.x >  (WIN.w/2) -> true
-                    rect.pos.y < -(WIN.h/2) -> true
-                    rect.pos.y >  (WIN.h/2) -> true
-                    else -> false
+                    rect.pos.x < -(WIN.w/2) => true
+                    rect.pos.x >  (WIN.w/2) => true
+                    rect.pos.y < -(WIN.h/2) => true
+                    rect.pos.y >  (WIN.h/2) => true
+                    else => false
                 }
             }
         }
@@ -88,7 +88,7 @@ export [meteors,shots,ships,Meteor] {
     }
 }
 
-awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
+watching ((it==ships.0) or (it==ships.1)) {     ;; GAMEPLAY
     ;;;
     ;; Runs the gameplay until one of the two ships is destroyed:
     ;;  - Spawns new meteors periodically.
@@ -101,9 +101,10 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
         ;;  - Gradually decreases the spawning period.
         ;;;
         var period = METEOR-MS;
-        every (random-next() % period) :ms {
-            set period = max(50, period - 10)
-            spawn in meteors, Meteor()
+        loop {
+            val dt = random-next() % period
+            await(:dt:ms)
+            spawn Meteor() in meteors
         }
     } with {
         every :Pico.Frame { ;; COLLISIONS
@@ -118,7 +119,7 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
             ;;     collects final colliding objects.
             ;;  4. Signals colliding objects.
             ;; A ship collision will eventually terminate the enclosing
-            ;; `awaiting`, also terminating the current battle.
+            ;; `watching`, also terminating the current battle.
             ;;;
             val trks =      ;; (1)
                 to-tracks(ships.0, ships.1, shots.0, shots.1, meteors)
@@ -131,39 +132,42 @@ awaiting (evt==ships.0) or (evt==ships.1) {     ;; GAMEPLAY
                 }
 
             val fins = #[] ;; (3)
-            loop in iter(pairs), ts {
-                val col? = do {
-                    val t0 = detrack(ts.0).pub
-                    val t1 = detrack(ts.1).pub
-                    ifs {
-                        (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) -> false
-                        (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) -> false
-                        (t0 is? :T.Ship.L) and (t1 is? :T.Shot.L) -> false
-                        (t0 is? :T.Shot.L) and (t1 is? :T.Ship.L) -> false
-                        (t0 is? :T.Meteor) and (t1 is? :T.Meteor) -> false
-                        else -> true
+            loop ts in iter(pairs) {
+                val col? =
+                    detrack(ts.0) { t0' =>
+                        detrack(ts.1) { t1' =>
+                            val t0 = pub(t0')
+                            val t1 = pub(t1')
+                            ifs {
+                                (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) => false
+                                (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) => false
+                                (t0 is? :T.Ship.L) and (t1 is? :T.Shot.L) => false
+                                (t0 is? :T.Shot.L) and (t1 is? :T.Ship.L) => false
+                                (t0 is? :T.Meteor) and (t1 is? :T.Meteor) => false
+                                else => true
+                            }
+                        }
                     }
-                }
                 if col? {
                     set fins[+] = ts.0
                     set fins[+] = ts.1
                 }
             }
 
-            loop in iter(fins), j { ;; (4)
-                broadcast in detrack(j), :collided
+            loop j in iter(fins) { ;; (4)
+                detrack(j) { broadcast(:collided) in it }
             }
         }
     }
 }
 
-ifs {                       ;; BATTLE RESULT
+ifs :terminated {       ;; BATTLE RESULT
     ;;;
     ;; Returns the winner index to the main game loop:
     ;;  - 1, if ship.0 is dead
     ;;  - 0, if ship.1 is dead
     ;;;
-    (status(ships[0]) == :terminated) -> 1
-    (status(ships[1]) == :terminated) -> 0
-    else -> throw(:error)
+    == status(ships[0]) => 1
+    == status(ships[1]) => 0
+    else => throw(:error)
 }

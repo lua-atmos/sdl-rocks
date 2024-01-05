@@ -35,46 +35,47 @@ task Meteor () :T {
     val w = dim.w / METEOR-FRAMES
     var dx = 0
 
-    set task.pub = :T.Meteor [[[x,y], [w,dim.h]]] where {
+    set pub() = :T.Meteor [[[x,y], [w,dim.h]]] where {
         val x = ((random-next() % WIN.w) / 3) * random-signal()
         val y = (WIN.h/2) * -y-sig
     }
 
     par-or {
-        await (random-next() % METEOR-AWAIT) :ms
+        val dt = random-next() % METEOR-AWAIT
+        await(:dt:ms)
         par-or {
-            await spawn Move-T(task.pub.rect, [vx,vy])
+            await spawn Move-T(pub().rect, [vx,vy])
         } with {
-            await :collided
+            await(:collided)
             pico-output-sound("snds/meteor.wav")
         }
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[dx,0],[w,dim.h]])
-            pico-output-draw-image(task.pub.rect.pos, path)
+            pico-output-draw-image(pub().rect.pos, path)
         }
     } with {
         val v = ((vx**2) + (vy**2)) ** (1/2)
         var x = 0
         every :Pico.Frame {
-            set x = x + ((v * evt.ms) / 1000)
-            set dx = (x % dim.w) - (x % task.pub.rect.dim.w)
+            set x = x + ((v * it.ms) / 1000)
+            set dx = (x % dim.w) - (x % pub().rect.dim.w)
         }
     }
 }
 
 task Shot (tag, pos:XY, vy) :T {
     pico-output-sound("snds/shot.wav")
-    set task.pub = tags([[pos, SHOT-DIM]], tag, true)
+    set pub() = tags([[pos, SHOT-DIM]], tag, true)
     par-or {
-        await :collided
+        await(:collided)
     } with {
         val sig = ((tag==:T.Shot.L) and 1) or -1
-        await spawn Move-T(task.pub.rect, [(WIN.w/3)*sig, vy])
+        await spawn Move-T(pub().rect, [(WIN.w/3)*sig, vy])
     } with {
         every :Pico.Draw {
             pico-state-set-color-draw(SHOT-COLOR)
-            pico-output-draw-rect(task.pub.rect)
+            pico-output-draw-rect(pub().rect)
         }
     }
 }
@@ -83,24 +84,24 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
     val dim:WH = pico-state-get-size-image(path)
     val vel:XY = [0,0]
     val dy = dim.h / SHIP-FRAMES
-    set task.pub = tags([[pos, [dim.w,dy]]], tag, true)
+    set pub() = tags([[pos, [dim.w,dy]]], tag, true)
 
     var acc:XY = [0,0]
     var key
-    spawn {
+    spawn task {
         par {
             every :Pico.Key.Dn {
-                ifs evt.key {
-                    == ctl.mov.left  -> set acc.x = -WIN.w/SHIP-ACC-DIV
-                    == ctl.mov.right -> set acc.x =  WIN.w/SHIP-ACC-DIV
-                    == ctl.mov.up    -> set acc.y =  WIN.h/SHIP-ACC-DIV
-                    == ctl.mov.down  -> set acc.y = -WIN.h/SHIP-ACC-DIV
-                    == ctl.shot      ->
-                        (spawn in shots, Shot(tag', copy(pos), vel.y)) where {
+                ifs it.key {
+                    == ctl.mov.left  => set acc.x = -WIN.w/SHIP-ACC-DIV
+                    == ctl.mov.right => set acc.x =  WIN.w/SHIP-ACC-DIV
+                    == ctl.mov.up    => set acc.y =  WIN.h/SHIP-ACC-DIV
+                    == ctl.mov.down  => set acc.y = -WIN.h/SHIP-ACC-DIV
+                    == ctl.shot      =>
+                        (spawn Shot(tag', copy(pos), vel.y) in shots) where {
                             val tag' = ((tag == :T.Ship.L) and :T.Shot.L) or :T.Shot.R
                         }
                 }
-                set key = evt.key
+                set key = it.key
             }
         } with {
             every :Pico.Key.Up {
@@ -111,41 +112,39 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
     }
 
     par-or {
-        await :collided
+        await(:collided)
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
                     val frame = ifs key {
-                        == ctl.mov.left  -> ((tag==:T.Ship.L) and 0) or 1
-                        == ctl.mov.right -> ((tag==:T.Ship.R) and 0) or 1
-                        == ctl.mov.up    -> 2
-                        == ctl.mov.down  -> 3
-                        else -> 0
+                        == ctl.mov.left  => ((tag==:T.Ship.L) and 0) or 1
+                        == ctl.mov.right => ((tag==:T.Ship.R) and 0) or 1
+                        == ctl.mov.up    => 2
+                        == ctl.mov.down  => 3
+                        else => 0
                     }
                 }
             pico-output-draw-image(pos, path)
         }
     } with {
         every :Pico.Frame {
-            val dt = evt.ms / 1000
+            val dt = it.ms / 1000
             set vel.x = between([-SHIP-VEL-MAX.x,SHIP-VEL-MAX.x], vel.x+(acc.x*dt))
             set vel.y = between([-SHIP-VEL-MAX.y,SHIP-VEL-MAX.y], vel.y+(acc.y*dt))
-            set pos.x = if tag==:T.Ship.L {
-                            between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
-                        } else {
-                            between([0+dim.w,  (WIN.w/2)-dim.w], pos.x+(vel.x*dt))
-                        }
+            set pos.x = if tag == :T.Ship.L
+                => between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
+                => between([0+dim.w,  (WIN.w/2)-dim.w], pos.x+(vel.x*dt))
             set pos.y = between([(-WIN.h/2)+dy, (WIN.h/2)-dy], pos.y+(vel.y*dt))
         }
     }
 
     pico-output-sound("snds/explosion.wav")
-    awaiting 150:ms {
+    watching :150:ms {
         var d = dy / 2;
         par {
             every :Pico.Frame {
-                set d = d + (((40*d)*evt.ms)/1000)
+                set d = d + (((40*d)*it.ms)/1000)
             }
         } with {
             every :Pico.Draw {
