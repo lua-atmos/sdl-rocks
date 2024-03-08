@@ -1,20 +1,15 @@
 ^["@/pico/pico.ceu"]   ;; PICO-SDL library
 
-export [WIN] {  ;; INITIALIZATION
-    pico-state-set-title("The Battle of Ships")
-    pico-state-set-size-pixel([1,1])
-    pico-state-set-size([641,481])
-    pico-state-set-grid(false)
-    pico-state-set-auto(false)
+pico-state-set-title("The Battle of Ships")
+pico-state-set-size-pixel([1,1])
+pico-state-set-size([641,481])
+pico-state-set-grid(false)
+pico-state-set-auto(false)
 
-    ;; An `export` groups and hides declarations and expressions, exposing only
-    ;; a short list of variables to the outer scope.
+val WIN :WH = pico-state-get-size()
+pico-state-set-font("tiny.ttf", WIN.h/15)
 
-    val WIN :WH = pico-state-get-size()
-    pico-state-set-font("tiny.ttf", WIN.h/15)
-
-    random-seed()
-}
+random-seed()
 
 spawn task {    ;; BACKGROUND
     ;;;
@@ -121,7 +116,7 @@ spawn task {    ;; MAIN-LOOP
         }
 
         ;; Increments the winner points.
-        set points[winner] = points[winner]+1 --> to-number --> to-string
+        set points[winner] = to-number(points[winner]) + 1 --> to-string
 
         await(:1:s)
 

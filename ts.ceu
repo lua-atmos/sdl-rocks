@@ -1,27 +1,16 @@
-export [                    ;; CONSTANTS / AUXILIARY
-    SHIP-FRAMES,
-    SHIP-ACC-DIV,
-    SHIP-VEL-MAX,
-    SHOT-DIM,
-    SHOT-COLOR,
-    METEOR-FRAMES,
-    METEOR-AWAIT,
-    random-signal,
-] {
-    val SHIP-FRAMES      = 4
-    val SHIP-ACC-DIV     = 10
-    val SHIP-VEL-MAX :XY = [WIN.w/2.5, WIN.h/2.5]
-    val SHOT-DIM         = [WIN.w/50, WIN.h/100]
-    val SHOT-COLOR       = [0xFF,0xFF,0x88,0xFF]
-    val METEOR-FRAMES    = 6
-    val METEOR-AWAIT     = 5000
+val SHIP-FRAMES      = 4
+val SHIP-ACC-DIV     = 10
+val SHIP-VEL-MAX :XY = [WIN.w/2.5, WIN.h/2.5]
+val SHOT-DIM         = [WIN.w/50, WIN.h/100]
+val SHOT-COLOR       = [0xFF,0xFF,0x88,0xFF]
+val METEOR-FRAMES    = 6
+val METEOR-AWAIT     = 5000
 
-    data :LRUD    = [left,right,up,down]
-    data :Control = [mov:LRUD, shot]
+data :LRUD    = [left,right,up,down]
+data :Control = [mov:LRUD, shot]
 
-    func random-signal () {
-        (((random-next()%2) == 0) and 1) or -1
-    }
+func random-signal () {
+    (((random-next()%2) == 0) and 1) or -1
 }
 
 task Meteor () :T {
