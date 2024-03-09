@@ -24,7 +24,7 @@ task Meteor () :T {
     val w = dim.w / METEOR-FRAMES
     var dx = 0
 
-    set pub() = :T.Meteor [[[x,y], [w,dim.h]]] where {
+    set pub = :T.Meteor [[[x,y], [w,dim.h]]] where {
         val x = ((random-next() % WIN.w) / 3) * random-signal()
         val y = (WIN.h/2) * -y-sig
     }
@@ -33,7 +33,7 @@ task Meteor () :T {
         val dt = random-next() % METEOR-AWAIT
         await(:dt:ms)
         par-or {
-            await spawn Move-T(pub().rect, [vx,vy])
+            await spawn Move-T(pub.rect, [vx,vy])
         } with {
             await(:collided)
             pico-output-sound("snds/meteor.wav")
@@ -41,30 +41,30 @@ task Meteor () :T {
     } with {
         every :Pico.Draw {
             pico-state-set-image-crop([[dx,0],[w,dim.h]])
-            pico-output-draw-image(pub().rect.pos, path)
+            pico-output-draw-image(pub.rect.pos, path)
         }
     } with {
         val v = ((vx**2) + (vy**2)) ** (1/2)
         var x = 0
         every :Pico.Frame {
             set x = x + ((v * it.ms) / 1000)
-            set dx = (x % dim.w) - (x % pub().rect.dim.w)
+            set dx = (x % dim.w) - (x % pub.rect.dim.w)
         }
     }
 }
 
 task Shot (tag, pos:XY, vy) :T {
     pico-output-sound("snds/shot.wav")
-    set pub() = tags([[pos, SHOT-DIM]], tag, true)
+    set pub = tags([[pos, SHOT-DIM]], tag, true)
     par-or {
         await(:collided)
     } with {
         val sig = ((tag==:T.Shot.L) and 1) or -1
-        await spawn Move-T(pub().rect, [(WIN.w/3)*sig, vy])
+        await spawn Move-T(pub.rect, [(WIN.w/3)*sig, vy])
     } with {
         every :Pico.Draw {
             pico-state-set-color-draw(SHOT-COLOR)
-            pico-output-draw-rect(pub().rect)
+            pico-output-draw-rect(pub.rect)
         }
     }
 }
@@ -73,7 +73,7 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
     val dim:WH = pico-state-get-size-image(path)
     val vel:XY = [0,0]
     val dy = dim.h / SHIP-FRAMES
-    set pub() = tags([[pos, [dim.w,dy]]], tag, true)
+    set pub = tags([[pos, [dim.w,dy]]], tag, true)
 
     var acc:XY = [0,0]
     var key

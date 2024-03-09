@@ -132,8 +132,8 @@ watching ((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
             val fins = #[] ;; (3)
             loop ts in iter(pairs) {
                 val col? = do {
-                    val t0 = pub(ts[0])
-                    val t1 = pub(ts[1])
+                    val t0 = ts[0].pub
+                    val t1 = ts[1].pub
                     ifs {
                         (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) => false
                         (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) => false
