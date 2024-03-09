@@ -39,8 +39,8 @@ spawn task {    ;; POINTS
     val y  = (-WIN.h /2 ) + (WIN.h / 15)
     every :Pico.Draw {
         pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
-        pico-output-draw-text([(-WIN.w / 2) + dx, y], points.0)
-        pico-output-draw-text([( WIN.w / 2) - dx, y], points.1)
+        pico-output-draw-text([(-WIN.w / 2) + dx, y], points[0])
+        pico-output-draw-text([( WIN.w / 2) - dx, y], points[1])
     }
 }
 

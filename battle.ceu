@@ -78,12 +78,11 @@ val shots = [           ;; holds all spawned shots, limited to a maximum
     ]
 
 val ships = [           ;; holds the two ships
-    spawn Ship(:T.Ship.L, pos.0, ctl.0, shots.0, "imgs/ship-L.gif"),
-    spawn Ship(:T.Ship.R, pos.1, ctl.1, shots.1, "imgs/ship-R.gif"),
-] ;;where {
-;;}
+    spawn Ship(:T.Ship.L, pos[0], ctl[0], shots[0], "imgs/ship-L.gif"),
+    spawn Ship(:T.Ship.R, pos[1], ctl[1], shots[1], "imgs/ship-R.gif"),
+] ;;where { }
 
-watching ((it==ships.0) or (it==ships.1)) {     ;; GAMEPLAY
+watching ((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
     ;;;
     ;; Runs the gameplay until one of the two ships is destroyed:
     ;;  - Spawns new meteors periodically.
@@ -118,10 +117,10 @@ watching ((it==ships.0) or (it==ships.1)) {     ;; GAMEPLAY
             ;;;
 
             val tsks =      ;; (1)
-                to-vector(ships)   <++
-                to-vector(shots.0) <++
-                to-vector(shots.1) <++
-                to-vector(meteors) <-- debug
+                to-vector(ships)    <++
+                to-vector(shots[0]) <++
+                to-vector(shots[1]) <++
+                to-vector(meteors)  <-- debug
 
             val pairs =     ;; (2)
                 pico-collisions(tsks,f-cmp) where {
@@ -133,8 +132,8 @@ watching ((it==ships.0) or (it==ships.1)) {     ;; GAMEPLAY
             val fins = #[] ;; (3)
             loop ts in iter(pairs) {
                 val col? = do {
-                    val t0 = pub(ts.0)
-                    val t1 = pub(ts.1)
+                    val t0 = pub(ts[0])
+                    val t1 = pub(ts[1])
                     ifs {
                         (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) => false
                         (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) => false
@@ -145,8 +144,8 @@ watching ((it==ships.0) or (it==ships.1)) {     ;; GAMEPLAY
                     }
                 }
                 if col? {
-                    set fins[+] = ts.0
-                    set fins[+] = ts.1
+                    set fins[+] = ts[0]
+                    set fins[+] = ts[1]
                 }
                 break if col?
             }
