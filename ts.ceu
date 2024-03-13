@@ -77,7 +77,7 @@ task Ship (tag, pos:XY, ctl:Control, shots, path) :T {
 
     var acc:XY = [0,0]
     var key
-    spawn task {
+    spawn {
         par {
             every :Pico.Key.Dn {
                 ifs it.key {

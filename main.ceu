@@ -11,7 +11,7 @@ pico-state-set-font("tiny.ttf", WIN.h/15)
 
 random-seed()
 
-spawn task {    ;; BACKGROUND
+spawn {    ;; BACKGROUND
     ;;;
     ;; Spawns a task to draw the background image on every frame.
     ;; We draw at position (0,0), which is the center of the screen.
@@ -27,7 +27,7 @@ spawn task {    ;; BACKGROUND
 
 val points = ["0", "0"]
 
-spawn task {    ;; POINTS
+spawn {    ;; POINTS
     ;;;
     ;; Spawns the players points and place them at the bottom of the screen, in
     ;; opposite sides.
@@ -44,7 +44,7 @@ spawn task {    ;; POINTS
     }
 }
 
-spawn task {    ;; MAIN-LOOP
+spawn {    ;; MAIN-LOOP
     ;;;
     ;; Starts the main game loop:
     ;;  - Shows the "tap to start" message.
@@ -76,16 +76,16 @@ spawn task {    ;; MAIN-LOOP
         ;;  - Shows the pause image while paused.
         ;;  - Resumes on key "P" (event :Show).
         ;;;
-        spawn task {
+        spawn {
             loop {
-                await(:Pico.Key.Dn => it.key==:Key-P)
+                await(:Pico.Key.Dn, it.key==:Key-P)
                 broadcast(:Show [false]) in :global
-                spawn task {
+                spawn {
                     every :Pico.Draw {
                         pico-output-draw-image([0,0], "imgs/pause.png")
                     }
                 }
-                await(:Pico.Key.Dn => it.key==:Key-P)
+                await(:Pico.Key.Dn, it.key==:Key-P)
                 broadcast(:Show [true]) in :global
             }
         }
