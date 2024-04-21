@@ -51,6 +51,7 @@ task Meteor () :T {
             set dx = (x % dim.w) - (x % pub.rect.dim.w)
         }
     }
+    ;;pub
 }
 
 task Shot (tp, pos:XY, vy) :T {
@@ -67,6 +68,7 @@ task Shot (tp, pos:XY, vy) :T {
             pico-output-draw-rect(pub.rect)
         }
     }
+    ;;pub
 }
 
 task Ship (tp, pos:XY, ctl:Control, shots, path) :T {

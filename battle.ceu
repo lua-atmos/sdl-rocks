@@ -120,12 +120,12 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
                 to-vector(ships)    <++
                 to-vector(shots[0]) <++
                 to-vector(shots[1]) <++
-                to-vector(meteors)  <-- debug
+                to-vector(meteors)
 
             val pairs =     ;; (2)
                 pico-collisions(tsks,f-cmp) where {
                     func f-cmp (p1:T, p2:T) {
-                        pico-rect-vs-rect?(p1.rect, p2.rect) <-- debug
+                        pico-rect-vs-rect?(p1.rect, p2.rect)
                     }
                 }
 
@@ -160,8 +160,8 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
 ifs :terminated {       ;; BATTLE RESULT
     ;;;
     ;; Returns the winner index to the main game loop:
-    ;;  - 1, if ship.0 is dead
-    ;;  - 0, if ship.1 is dead
+    ;;  - 1, if ship[0] is dead
+    ;;  - 0, if ship[1] is dead
     ;;;
     == status(ships[0]) => 1
     == status(ships[1]) => 0
