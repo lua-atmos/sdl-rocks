@@ -157,7 +157,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
     }
 }
 
-ifs :terminated {       ;; BATTLE RESULT
+match :terminated {       ;; BATTLE RESULT
     ;;;
     ;; Returns the winner index to the main game loop:
     ;;  - 1, if ship[0] is dead

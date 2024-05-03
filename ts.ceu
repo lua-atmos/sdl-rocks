@@ -82,7 +82,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
     spawn {
         par {
             every :Pico.Key.Dn {
-                ifs it.key {
+                match it.key {
                     == ctl.mov.left  => set acc.x = -WIN.w/SHIP-ACC-DIV
                     == ctl.mov.right => set acc.x =  WIN.w/SHIP-ACC-DIV
                     == ctl.mov.up    => set acc.y =  WIN.h/SHIP-ACC-DIV
@@ -108,7 +108,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
         every :Pico.Draw {
             pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
-                    val frame = ifs key {
+                    val frame = match key {
                         == ctl.mov.left  => ((tp==:T.Ship.L) and 0) or 1
                         == ctl.mov.right => ((tp==:T.Ship.R) and 0) or 1
                         == ctl.mov.up    => 2
