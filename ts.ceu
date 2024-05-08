@@ -10,27 +10,27 @@ data :LRUD    = [left,right,up,down]
 data :Control = [mov:LRUD, shot]
 
 func random-signal () {
-    (((random-next()%2) == 0) and 1) or -1
+    (((random.next()%2) == 0) and 1) or -1
 }
 
 task Meteor () :T {
     val path = "imgs/meteor.gif"
     val y-sig = random-signal()
 
-    val vx = (1 + (random-next() % (WIN.w/5))) * random-signal()
-    val vy = (1 + (random-next() % (WIN.h/5))) * y-sig
+    val vx = (1 + (random.next() % (WIN.w/5))) * random-signal()
+    val vy = (1 + (random.next() % (WIN.h/5))) * y-sig
 
     val dim :WH = pico-state-get-size-image(path)
     val w = dim.w / METEOR-FRAMES
     var dx = 0
 
     set pub = :T.Meteor [[[x,y], [w,dim.h]]] where {
-        val x = ((random-next() % WIN.w) / 3) * random-signal()
+        val x = ((random.next() % WIN.w) / 3) * random-signal()
         val y = (WIN.h/2) * -y-sig
     }
 
     par-or {
-        val dt = random-next() % METEOR-AWAIT
+        val dt = random.next() % METEOR-AWAIT
         await(:dt:ms)
         par-or {
             await spawn Move-T(pub.rect, [vx,vy])
@@ -121,12 +121,12 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
     } with {
         every :Pico.Frame {
             val dt = it.ms / 1000
-            set vel.x = between([-SHIP-VEL-MAX.x,SHIP-VEL-MAX.x], vel.x+(acc.x*dt))
-            set vel.y = between([-SHIP-VEL-MAX.y,SHIP-VEL-MAX.y], vel.y+(acc.y*dt))
+            set vel.x = math.between(vel.x+(acc.x*dt), [-SHIP-VEL-MAX.x,SHIP-VEL-MAX.x])
+            set vel.y = math.between(vel.y+(acc.y*dt), [-SHIP-VEL-MAX.y,SHIP-VEL-MAX.y])
             set pos.x = if tp == :T.Ship.L
-                => between([(-WIN.w/2)+dim.w, 0-dim.w], pos.x+(vel.x*dt))
-                => between([0+dim.w,  (WIN.w/2)-dim.w], pos.x+(vel.x*dt))
-            set pos.y = between([(-WIN.h/2)+dy, (WIN.h/2)-dy], pos.y+(vel.y*dt))
+                => math.between(pos.x+(vel.x*dt), [(-WIN.w/2)+dim.w, 0-dim.w])
+                => math.between(pos.x+(vel.x*dt), [0+dim.w,  (WIN.w/2)-dim.w])
+            set pos.y = math.between(pos.y+(vel.y*dt), [(-WIN.h/2)+dy, (WIN.h/2)-dy])
         }
     }
 

@@ -96,7 +96,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
         ;;;
         var period = METEOR-MS;
         loop {
-            val dt = random-next() % period
+            val dt = random.next() % period
             await(:dt:ms)
             spawn Meteor() in meteors
         }
@@ -104,7 +104,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
         every :Pico.Frame { ;; COLLISIONS
             ;;;
             ;; Checks collisions between objects:
-            ;;  1. Uses `to-vector` to collect all references to dinamically
+            ;;  1. Uses `to.vector` to collect all references to dinamically
             ;;     allocated ships, shots, and meteors.
             ;;  2. Uses `pico-collisions` to get all pairs of colliding
             ;;     objects, using the `f-cmp` comparator which relies on `:T`
@@ -117,10 +117,10 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
             ;;;
 
             val tsks =      ;; (1)
-                to-vector(ships)    <++
-                to-vector(shots[0]) <++
-                to-vector(shots[1]) <++
-                to-vector(meteors)
+                to.vector(ships)    <++
+                to.vector(shots[0]) <++
+                to.vector(shots[1]) <++
+                to.vector(meteors)
 
             val pairs =     ;; (2)
                 pico-collisions(tsks,f-cmp) where {
@@ -130,7 +130,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
                 }
 
             val fins = #[] ;; (3)
-            loop ts in to-iter(pairs) {
+            loop ts in pairs {
                 val col? = do {
                     val t0 = ts[0].pub
                     val t1 = ts[1].pub
@@ -150,7 +150,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
                 break if col?
             }
 
-            loop j in to-iter(fins) { ;; (4)
+            loop j in fins { ;; (4)
                 broadcast(:collided) in j
             }
         }

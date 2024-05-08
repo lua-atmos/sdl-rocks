@@ -9,7 +9,7 @@ pico-state-set-auto(false)
 val WIN :WH = pico-state-get-size()
 pico-state-set-font("tiny.ttf", WIN.h/15)
 
-random-seed()
+random.seed()
 
 spawn {    ;; BACKGROUND
     ;;;
@@ -116,7 +116,7 @@ spawn {    ;; MAIN-LOOP
         }
 
         ;; Increments the winner points.
-        set points[winner] = to-number(points[winner]) + 1 --> to-string
+        set points[winner] = to.number(points[winner]) + 1 --> to.string
 
         await(:1:s)
 
