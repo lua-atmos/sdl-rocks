@@ -123,9 +123,9 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
                 to.vector(meteors)
 
             val pairs =     ;; (2)
-                pico-collisions(tsks,f-cmp) where {
+                pico.collisions(tsks,f-cmp) where {
                     func f-cmp (p1:T, p2:T) {
-                        pico-rect-vs-rect?(p1.rect, p2.rect)
+                        pico.rect-vs-rect?(p1.rect, p2.rect)
                     }
                 }
 

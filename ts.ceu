@@ -20,7 +20,7 @@ task Meteor () :T {
     val vx = (1 + (random.next() % (WIN.w/5))) * random-signal()
     val vy = (1 + (random.next() % (WIN.h/5))) * y-sig
 
-    val dim :WH = pico-state-get-size-image(path)
+    val dim :WH = pico.state.get.size.image(path)
     val w = dim.w / METEOR-FRAMES
     var dx = 0
 
@@ -36,12 +36,12 @@ task Meteor () :T {
             await spawn Move-T(pub.rect, [vx,vy])
         } with {
             await(:collided)
-            pico-output-sound("snds/meteor.wav")
+            pico.output.sound("snds/meteor.wav")
         }
     } with {
         every :Pico.Draw {
-            pico-state-set-image-crop([[dx,0],[w,dim.h]])
-            pico-output-draw-image(pub.rect.pos, path)
+            pico.state.set.image-crop([[dx,0],[w,dim.h]])
+            pico.output.draw.image(pub.rect.pos, path)
         }
     } with {
         val v = ((vx**2) + (vy**2)) ** (1/2)
@@ -55,7 +55,7 @@ task Meteor () :T {
 }
 
 task Shot (tp, pos:XY, vy) :T {
-    pico-output-sound("snds/shot.wav")
+    pico.output.sound("snds/shot.wav")
     set pub = tag(tp, [[pos, SHOT-DIM]])
     par-or {
         await(:collided)
@@ -64,15 +64,15 @@ task Shot (tp, pos:XY, vy) :T {
         await spawn Move-T(pub.rect, [(WIN.w/3)*sig, vy])
     } with {
         every :Pico.Draw {
-            pico-state-set-color-draw(SHOT-COLOR)
-            pico-output-draw-rect(pub.rect)
+            pico.state.set.color.draw(SHOT-COLOR)
+            pico.output.draw.rect(pub.rect)
         }
     }
     ;;pub
 }
 
 task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
-    val dim:WH = pico-state-get-size-image(path)
+    val dim:WH = pico.state.get.size.image(path)
     val vel:XY = [0,0]
     val dy = dim.h / SHIP-FRAMES
     set pub = tag(tp, [[pos, [dim.w,dy]]])
@@ -106,7 +106,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
         await(:collided)
     } with {
         every :Pico.Draw {
-            pico-state-set-image-crop([[0,frame*dy],[dim.w,dy]])
+            pico.state.set.image-crop([[0,frame*dy],[dim.w,dy]])
                 where {
                     val frame = match key {
                         == ctl.mov.left  => ((tp==:T.Ship.L) and 0) or 1
@@ -116,7 +116,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
                         else => 0
                     }
                 }
-            pico-output-draw-image(pos, path)
+            pico.output.draw.image(pos, path)
         }
     } with {
         every :Pico.Frame {
@@ -130,7 +130,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
         }
     }
 
-    pico-output-sound("snds/explosion.wav")
+    pico.output.sound("snds/explosion.wav")
     watching :150:ms {
         var d = dy / 2;
         par {
@@ -139,8 +139,8 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
             }
         } with {
             every :Pico.Draw {
-                pico-state-set-color-draw([0xFF,0x00,0x00,0xFF])
-                pico-output-draw-oval([pos,[d,d]])
+                pico.state.set.color.draw([0xFF,0x00,0x00,0xFF])
+                pico.output.draw.oval([pos,[d,d]])
             }
         }
     }

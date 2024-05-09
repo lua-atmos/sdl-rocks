@@ -1,13 +1,13 @@
 ^["@/pico/pico.ceu"]   ;; PICO-SDL library
 
-pico-state-set-title("The Battle of Ships")
-pico-state-set-size-pixel([1,1])
-pico-state-set-size([641,481])
-pico-state-set-grid(false)
-pico-state-set-auto(false)
+pico.state.set.title        <- "The Battle of Ships"
+pico.state.set.size.pixel   <- [1,1]
+pico.state.set.size.window  <- [641,481]
+pico.state.set.grid         <- false
+pico.state.set.auto         <- false
 
-val WIN :WH = pico-state-get-size()
-pico-state-set-font("tiny.ttf", WIN.h/15)
+val WIN :WH = pico.state.get.size.window()
+pico.state.set.font("tiny.ttf", WIN.h/15)
 
 random.seed()
 
@@ -20,8 +20,8 @@ spawn {    ;; BACKGROUND
     ;; always be rendered first.
     ;;;
     every :Pico.Draw {
-        pico-state-set-image-crop()
-        pico-output-draw-image([0,0], "imgs/bg.png")
+        pico.state.set.image-crop()
+        pico.output.draw.image([0,0], "imgs/bg.png")
     }
 }
 
@@ -38,9 +38,9 @@ spawn {    ;; POINTS
     val dx = WIN.w / 15
     val y  = (-WIN.h /2 ) + (WIN.h / 15)
     every :Pico.Draw {
-        pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
-        pico-output-draw-text([(-WIN.w / 2) + dx, y], points[0])
-        pico-output-draw-text([( WIN.w / 2) - dx, y], points[1])
+        pico.state.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
+        pico.output.draw.text([(-WIN.w / 2) + dx, y], points[0])
+        pico.output.draw.text([( WIN.w / 2) - dx, y], points[1])
     }
 }
 
@@ -59,8 +59,8 @@ spawn {    ;; MAIN-LOOP
             loop {
                 watching :500:ms {
                     every :Pico.Draw {
-                        pico-state-set-color-draw([0xFF,0xFF,0xFF,0xFF]);
-                        pico-output-draw-text([0,0], "= TAP TO START =")
+                        pico.state.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
+                        pico.output.draw.text([0,0], "= TAP TO START =")
                     }
                 }
                 await(:500:ms)
@@ -68,7 +68,7 @@ spawn {    ;; MAIN-LOOP
         }
 
         ;; Plays the restart sound.
-        pico-output-sound("snds/start.wav")
+        pico.output.sound("snds/start.wav")
 
         ;;;
         ;; Broadcasts pause and resume events to the game:
@@ -82,7 +82,7 @@ spawn {    ;; MAIN-LOOP
                 broadcast(:Show [false]) in :global
                 spawn {
                     every :Pico.Draw {
-                        pico-output-draw-image([0,0], "imgs/pause.png")
+                        pico.output.draw.image([0,0], "imgs/pause.png")
                     }
                 }
                 await(:Pico.Key.Dn, it.key==:Key-P)
@@ -131,4 +131,4 @@ spawn {    ;; MAIN-LOOP
     }
 }
 
-pico-loop ()
+pico.loop ()
