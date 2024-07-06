@@ -31,7 +31,7 @@ task Meteor () :T {
 
     par-or {
         val dt = random.next() % METEOR-AWAIT
-        await(:dt:ms)
+        await <dt:ms>
         par-or {
             await spawn Move-T(pub.rect, [vx,vy])
         } with {
@@ -131,7 +131,7 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
     }
 
     pico.output.sound("snds/explosion.wav")
-    watching :150:ms {
+    watching <150:ms> {
         var d = dy / 2;
         par {
             every :Pico.Frame {

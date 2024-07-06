@@ -57,13 +57,13 @@ spawn {    ;; MAIN-LOOP
             ;; Spawns the blinking message, and awaits any key press.
             ;;;
             loop {
-                watching :500:ms {
+                watching <500:ms> {
                     every :Pico.Draw {
                         pico.state.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
                         pico.output.draw.text([0,0], "= TAP TO START =")
                     }
                 }
-                await(:500:ms)
+                await <500:ms>
             }
         }
 
@@ -78,14 +78,14 @@ spawn {    ;; MAIN-LOOP
         ;;;
         spawn {
             loop {
-                await(:Pico.Key.Dn, it.key==:Key-P)
+                await(:Pico.Key.Dn | it.key==:Key-P)
                 broadcast(:Show [false]) in :global
                 spawn {
                     every :Pico.Draw {
                         pico.output.draw.image([0,0], "imgs/pause.png")
                     }
                 }
-                await(:Pico.Key.Dn, it.key==:Key-P)
+                await(:Pico.Key.Dn | it.key==:Key-P)
                 broadcast(:Show [true]) in :global
             }
         }
@@ -118,7 +118,7 @@ spawn {    ;; MAIN-LOOP
         ;; Increments the winner points.
         set points[winner] = to.number(points[winner]) + 1 --> to.string
 
-        await(:1:s)
+        await <1:s>
 
         ;;;
         ;; Restarts the main loop.

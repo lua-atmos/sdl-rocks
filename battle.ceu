@@ -24,7 +24,7 @@ task Move-T (rect:Rect, vel:XY) {
     ;;  - Updates on every :Frame.
     ;;  - Terminates when leaving the screen.
     ;;;
-    watching ,out-of-screen() {
+    watching |out-of-screen() {
         every :Pico.Frame {
             val dt = it.ms / 1000
             set rect.pos.x = rect.pos.x + (vel.x * dt)
@@ -82,7 +82,7 @@ val ships = [           ;; holds the two ships
     spawn Ship(:T.Ship.R, pos[1], ctl[1], shots[1], "imgs/ship-R.gif"),
 ] ;;where { }
 
-watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
+watching |((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
     ;;;
     ;; Runs the gameplay until one of the two ships is destroyed:
     ;;  - Spawns new meteors periodically.
@@ -97,7 +97,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
         var period = METEOR-MS;
         loop {
             val dt = random.next() % period
-            await(:dt:ms)
+            await <dt:ms>
             spawn Meteor() in meteors
         }
     } with {
@@ -147,7 +147,7 @@ watching ,((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
                     set fins[+] = ts[0]
                     set fins[+] = ts[1]
                 }
-                break if col?
+                until col?
             }
 
             loop j in fins { ;; (4)
