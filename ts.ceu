@@ -121,12 +121,12 @@ task Ship (tp, pos:XY, ctl:Control, shots, path) :T {
     } with {
         every :Pico.Frame {
             val dt = it.ms / 1000
-            set vel.x = math.between(vel.x+(acc.x*dt), [-SHIP-VEL-MAX.x,SHIP-VEL-MAX.x])
-            set vel.y = math.between(vel.y+(acc.y*dt), [-SHIP-VEL-MAX.y,SHIP-VEL-MAX.y])
+            set vel.x = math.between(-SHIP-VEL-MAX.x, vel.x+(acc.x*dt), SHIP-VEL-MAX.x)
+            set vel.y = math.between(-SHIP-VEL-MAX.y, vel.y+(acc.y*dt), SHIP-VEL-MAX.y)
             set pos.x = if tp == :T.Ship.L
-                => math.between(pos.x+(vel.x*dt), [(-WIN.w/2)+dim.w, 0-dim.w])
-                => math.between(pos.x+(vel.x*dt), [0+dim.w,  (WIN.w/2)-dim.w])
-            set pos.y = math.between(pos.y+(vel.y*dt), [(-WIN.h/2)+dy, (WIN.h/2)-dy])
+                => math.between((-WIN.w/2)+dim.w, pos.x+(vel.x*dt), 0-dim.w)
+                => math.between(0+dim.w, pos.x+(vel.x*dt), (WIN.w/2)-dim.w)
+            set pos.y = math.between((-WIN.h/2)+dy, pos.y+(vel.y*dt), (WIN.h/2)-dy)
         }
     }
 
