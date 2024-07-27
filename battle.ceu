@@ -33,11 +33,11 @@ task Move-T (rect:Rect, vel:XY) {
     } where {
         func out-of-screen () {
             ifs {
-                rect.pos.x < -(WIN.w/2) => true
-                rect.pos.x >  (WIN.w/2) => true
-                rect.pos.y < -(WIN.h/2) => true
-                rect.pos.y >  (WIN.h/2) => true
-                else => false
+                rect.pos.x < 0     => true
+                rect.pos.x > WIN.w => true
+                rect.pos.y < 0     => true
+                rect.pos.y > WIN.h => true
+                else               => false
             }
         }
     }
@@ -69,8 +69,8 @@ val shots = [           ;; holds all spawned shots, limited to a maximum
 ]
 
     val pos = [         ;; positions for each ship
-        [(-WIN.w/2)+(WIN.w/10), 0], ;; left  of the screen
-        [( WIN.w/2)-(WIN.w/10), 0], ;; right of the screen
+        0.1 || 0.5,     ;; left  of the screen
+        0.9 || 0.5,     ;; right of the screen
     ]
     val ctl = [         ;; key controls for each ship
         [[:Key-A,    :Key-D,     :Key-W,  :Key-S],    :Key-Shift-Left],
@@ -96,7 +96,7 @@ watching |((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
         ;;;
         var period = METEOR-MS;
         loop {
-            val dt = random.next() % period
+            val dt = random.int(1, period)
             await <dt:ms>
             spawn Meteor() in meteors
         }

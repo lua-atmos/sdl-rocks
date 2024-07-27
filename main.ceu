@@ -1,13 +1,12 @@
 ^["@/pico/pico.ceu"]   ;; PICO-SDL library
 
-pico.state.set.title        <- "The Battle of Ships"
-pico.state.set.size.pixel   <- [1,1]
-pico.state.set.size.window  <- [641,481]
-pico.state.set.grid         <- false
-pico.state.set.auto         <- false
+pico.set.title <- "The Battle of Ships"
+pico.set.size  <- [640,480]
 
-val WIN :WH = pico.state.get.size.window()
-pico.state.set.font("tiny.ttf", WIN.h/15)
+val [WIN :WH, _] = pico.get.size()
+pico.set.font("tiny.ttf", WIN.h/15)
+
+val {{||}} = pico.pct-to-pos
 
 random.seed()
 
@@ -20,8 +19,8 @@ spawn {    ;; BACKGROUND
     ;; always be rendered first.
     ;;;
     every :Pico.Draw {
-        pico.state.set.image-crop()
-        pico.output.draw.image([0,0], "imgs/bg.png")
+        pico.set.image.crop()
+        pico.output.draw.image(0.5||0.5, "imgs/bg.png")
     }
 }
 
@@ -38,9 +37,9 @@ spawn {    ;; POINTS
     val dx = WIN.w / 15
     val y  = (-WIN.h /2 ) + (WIN.h / 15)
     every :Pico.Draw {
-        pico.state.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
-        pico.output.draw.text([(-WIN.w / 2) + dx, y], points[0])
-        pico.output.draw.text([( WIN.w / 2) - dx, y], points[1])
+        pico.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
+        pico.output.draw.text(0.1||0.9, points[0])
+        pico.output.draw.text(0.9||0.9, points[1])
     }
 }
 
@@ -59,8 +58,8 @@ spawn {    ;; MAIN-LOOP
             loop {
                 watching <500:ms> {
                     every :Pico.Draw {
-                        pico.state.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
-                        pico.output.draw.text([0,0], "= TAP TO START =")
+                        pico.set.color.draw([0xFF,0xFF,0xFF,0xFF]);
+                        pico.output.draw.text(0.5||0.5, "= TAP TO START =")
                     }
                 }
                 await <500:ms>
@@ -82,7 +81,7 @@ spawn {    ;; MAIN-LOOP
                 broadcast(:Show [false]) in :global
                 spawn {
                     every :Pico.Draw {
-                        pico.output.draw.image([0,0], "imgs/pause.png")
+                        pico.output.draw.image(0.5||0.5, "imgs/pause.png")
                     }
                 }
                 await(:Pico.Key.Dn | it.key==:Key-P)
