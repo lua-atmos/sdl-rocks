@@ -3,7 +3,7 @@
 pico.set.title <- "The Battle of Ships"
 pico.set.size  <- [640,480]
 
-val [WIN :WH, _] = pico.get.size()
+val WIN :WH = pico.get.size(:internal)
 pico.set.font("tiny.ttf", WIN.h/15)
 
 val {{||}} = pico.pct-to-pos
