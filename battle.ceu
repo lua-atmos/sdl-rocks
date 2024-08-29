@@ -31,7 +31,7 @@ task Move-T (rect:Rect, vel:XY) {
             set rect.pos.y = rect.pos.y + (vel.y * dt)
         }
     } where {
-        func out-of-screen () {
+        val out-of-screen = func () {
             ifs {
                 rect.pos.x < 0     => true
                 rect.pos.x > WIN.w => true
