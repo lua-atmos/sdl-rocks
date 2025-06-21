@@ -1,56 +1,37 @@
-val METEOR-MS  = 5000   ;; average period to spawn a new meteor
-val SHIP-SHOTS = 3      ;; maximum number of simultaneous shots
+local METEOR_MS  = 5000   -- average period to spawn a new meteor
+local SHIP_SHOTS = 3      -- maximum number of simultaneous shots
 
-data :T = [rect:Rect] {
-    ;;;
-    ;; Describes the data hierarchy :T for the public fields of objects:
-    ;;  - They all expose a :Rect object for collision detection.
-    ;;  - We distinguish between objects on the left and right (:L and :R).
-    ;;;
-    :Ship = [] {
-        :L = []
-        :R = []
-    }
-    :Shot = [] {
-        :L = []
-        :R = []
-    }
-    :Meteor = []
-}
-
-task Move-T (rect:Rect, vel:XY) {
-    ;;;
+function Move_T (rect, vel)
+    --[[
     ;; Updates the given `rect` position according to its `vel` speed.
     ;;  - Updates on every :Frame.
     ;;  - Terminates when leaving the screen.
-    ;;;
-    watching |out-of-screen() {
-        every :Pico.Frame {
-            val dt = it.ms / 1000
-            set rect.pos.x = rect.pos.x + (vel.x * dt)
-            set rect.pos.y = rect.pos.y + (vel.y * dt)
-        }
-    } where {
-        val out-of-screen = func () {
-            ifs {
-                rect.pos.x < 0     => true
-                rect.pos.x > WIN.w => true
-                rect.pos.y < 0     => true
-                rect.pos.y > WIN.h => true
-                else               => false
-            }
-        }
-    }
+    ]]
+    local function out_of_screen ()
+        return (
+            rect.pos.x < 0  or
+            rect.pos.x > W  or
+            rect.pos.y < 0  or
+            rect.pos.y > H
+        )
+    end
+    watching(out_of_screen, function ()
+        every('step', function (ms)
+            local dt = ms / 1000
+            rect.pos.x = rect.pos.x + (vel.x * dt)
+            rect.pos.y = rect.pos.y + (vel.y * dt)
+        end)
+    end)
+end
+
+require "ts" -- includes the object tasks
+
+local t = {   -- holds all spawned shots, limited to a maximum
+    tasks(),  --  - shots for ship in the right
+    tasks(),  --  - shots for ship in the right
 }
 
-^["ts.ceu"] ;; includes the object tasks
-
-val t = [           ;; holds all spawned shots, limited to a maximum
-    tasks(),  ;;  - shots for ship in the right
-    tasks(),  ;;  - shots for ship in the right
-]
-
-;;;
+--[[
 ;; Declares and spawns the game objects:
 ;;  - Meteors live in a dynamic pool of tasks and are spawned periodically.
 ;;  - Ships are fixed and held in a tuple pair.
@@ -59,50 +40,51 @@ val t = [           ;; holds all spawned shots, limited to a maximum
 ;; Pools control the lifecycle of tasks by releasing them from memory
 ;; automatically on termination. Tasks in pools are anonymous and can only
 ;; be accessed through iterators or reference tracks.
-;;;
+]]
 
-val meteors = tasks()   ;; holds all spawned meteors
+local meteors = tasks()   -- holds all spawned meteors
 
-val shots = [           ;; holds all spawned shots, limited to a maximum
-    tasks(SHIP-SHOTS),  ;;  - shots for ship in the left
-    tasks(SHIP-SHOTS),  ;;  - shots for ship in the right
-]
+local shots = {           -- holds all spawned shots, limited to a maximum
+    tasks(SHIP_SHOTS),  --  - shots for ship in the left
+    tasks(SHIP_SHOTS),  --  - shots for ship in the right
+}
 
-    val pos = [         ;; positions for each ship
-        0.1 || 0.5,     ;; left  of the screen
-        0.9 || 0.5,     ;; right of the screen
-    ]
-    val ctl = [         ;; key controls for each ship
-        [[:Key-A,    :Key-D,     :Key-W,  :Key-S],    :Key-Shift-Left],
-        [[:Key-Left, :Key-Right, :Key-Up, :Key-Down], :Key-Shift-Right],
-    ]
+    local pos = {         -- positions for each ship
+        l = PP(10, 50),     -- left  of the screen
+        r = PP(90, 50),     -- right of the screen
+    }
+    local ctl = {         -- key controls for each ship
+        l = {{'A',    'D',     'W',  'S'},    'Shift-Left'},
+        r = {{'Left', 'Right', 'Up', 'Down'}, 'Shift-Right'},
+    }
 
-val ships = [           ;; holds the two ships
-    spawn Ship(:T.Ship.L, pos[0], ctl[0], shots[0], "imgs/ship-L.gif"),
-    spawn Ship(:T.Ship.R, pos[1], ctl[1], shots[1], "imgs/ship-R.gif"),
-] ;;where { }
+local ships = {           -- holds the two ships
+    l = spawn(Ship, 'Ship.L', pos.l, ctl.l, shots.l, "imgs/ship-L.gif"),
+    r = spawn(Ship, 'Ship.R', pos.r, ctl.r, shots.r, "imgs/ship-R.gif"),
+} --where { }
 
-watching |((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
-    ;;;
+watching(ships.l,ships.r, function ()
+    -- GAMEPLAY
+    --[[
     ;; Runs the gameplay until one of the two ships is destroyed:
     ;;  - Spawns new meteors periodically.
     ;;  - Checks collisions between all objects.
-    ;;;
-    par {                   ;; METEORS
-        ;;;
+    ]]
+    par(function ()                   -- METEORS
+        --[[
         ;; Spawns new meteros in the game every period:
         ;;  - Hold them in the outer pool.
         ;;  - Gradually decreases the spawning period.
-        ;;;
-        var period = METEOR-MS;
-        loop {
-            val dt = random.int(1, period)
-            await <dt:ms>
-            spawn Meteor() in meteors
-        }
-    } with {
-        every :Pico.Frame { ;; COLLISIONS
-            ;;;
+        ]]
+        local period = METEOR_MS
+        while true do
+            local dt = random.int(1, period)
+            await(clock{ms=dt})
+            spawn_in(meteors, Meteor)
+        end
+    end, function ()
+        every('step', function () -- COLLISIONS
+            --[[
             ;; Checks collisions between objects:
             ;;  1. Uses `to.vector` to collect all references to dinamically
             ;;     allocated ships, shots, and meteors.
@@ -114,56 +96,55 @@ watching |((it==ships[0]) or (it==ships[1])) {     ;; GAMEPLAY
             ;;  4. Signals colliding objects.
             ;; A ship collision will eventually terminate the enclosing
             ;; `watching`, also terminating the current battle.
-            ;;;
+            ]]
 
-            val tsks =      ;; (1)
-                to.vector(ships)    <++
-                to.vector(shots[0]) <++
-                to.vector(shots[1]) <++
-                to.vector(meteors)
-
-            val pairs =     ;; (2)
-                pico.collisions(tsks,f-cmp) where {
-                    func f-cmp (p1:T, p2:T) {
-                        pico.rect-vs-rect?(p1.rect, p2.rect)
-                    }
-                }
-
-            val fins = #[] ;; (3)
-            loop ts in pairs {
-                val col? = do {
-                    val t0 = ts[0].pub
-                    val t1 = ts[1].pub
-                    ifs {
-                        (t0 is? :T.Ship.R) and (t1 is? :T.Shot.R) => false
-                        (t0 is? :T.Shot.R) and (t1 is? :T.Ship.R) => false
-                        (t0 is? :T.Ship.L) and (t1 is? :T.Shot.L) => false
-                        (t0 is? :T.Shot.L) and (t1 is? :T.Ship.L) => false
-                        (t0 is? :T.Meteor) and (t1 is? :T.Meteor) => false
-                        else => true
-                    }
-                }
-                if col? {
-                    set fins[+] = ts[0]
-                    set fins[+] = ts[1]
-                }
-                until col?
+            local tsks = {    -- (1)
+                ships.l, ships.r,
             }
+            for _, t in pairs(shots.l) do
+                tsks[#tsks+1] = t
+            end
+            for _, t in pairs(shots.r) do
+                tsks[#tsks+1] = t
+            end
+            for _, t in pairs(meteors) do
+                tsks[#tsks+1] = t
+            end
 
-            loop j in fins { ;; (4)
-                broadcast(:collided) in j
-            }
-        }
-    }
-}
+            local cols = {}     -- (2)
+            for i=1, #tsks do
+                for j=i+1, #tsks do
+                    local t1 = tsks[i]
+                    local t2 = tsks[j]
+                    local no = (
+                        (t1.tag=='Ship.R' and t2.tag=='Shot.R') or
+                        (t1.tag=='Shot.R' and t2.tag=='Ship.R') or
+                        (t1.tag=='Ship.L' and t2.tag=='Shot.L') or
+                        (t1.tag=='Shot.L' and t2.tag=='Ship.L') or
+                        (t1.tag=='Meteor' and t2.tag=='Meteor')
+                    )
+                    if rect_vs_rect(t1.rect, t2.rect) then
+                        emit_in(t1, 'collided')
+                        emit_in(t2, 'collided')
+                    end
+                end
+            end
+        end)
+    end)
+end)
 
-match :terminated {       ;; BATTLE RESULT
-    ;;;
-    ;; Returns the winner index to the main game loop:
-    ;;  - 1, if ship[0] is dead
-    ;;  - 0, if ship[1] is dead
-    ;;;
-    == status(ships[0]) => 1
-    == status(ships[1]) => 0
-    else => error(:error)
-}
+-- BATTLE RESULT
+do
+    local l = coroutine.status(ships.l._.co)
+    local r = coroutine.status(ships.r._.co)
+
+    if l=='dead' and r=='dead' then
+        return 0
+    elseif l == 'dead' then
+        return 'l'
+    elseif r == 'dead' then
+        return 'r'
+    else
+        error "bug found"
+    end
+end
