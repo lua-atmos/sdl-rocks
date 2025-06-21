@@ -23,32 +23,32 @@ function Meteor ()
 
     local x = random.int(WIN.w)
     local y = (y_sig == 1) and 0 or WIN.h
-    set pub = {{{x,y}, {w,dim.h}}}
+    me().rect = {{x,y}, {w,dim.h}}
 
-    par_or {
+    par_or(function ()
         local dt = random.int(1, METEOR_AWAIT)
-        await <dt:ms>
-        par_or {
-            await spawn Move_T(pub.rect, [vx,vy])
-        } with {
-            await(:collided)
+        await(clock{ms=dt})
+        par_or(function ()
+            await(spawn (Move_T, pub.rect, {vx,vy}))
+        end, function ()
+            await('collided')
             pico.output.sound("snds/meteor.wav")
-        }
-    } with {
-        every :Pico.Draw {
+        end)
+    end, function ()
+        every('SDL.Draw', function ()
             pico.set.image.crop([[dx,0],[w,dim.h]])
             pico.output.draw.image(pub.rect.pos, path)
-        }
-    } with {
-        local v = ((vx**2) + (vy**2)) ** (1/2)
+        end)
+    end, function ()
+        local v = ((vx^2) + (vy^2)) ^ (1/2)
         local x = 0
-        every :Pico.Frame {
+        every('step', function ()
             x = x + ((v * it.ms) / 1000)
             dx = (x % dim.w) - (x % pub.rect.dim.w)
-        }
-    }
-    ;;pub
-end)
+        end)
+    end)
+    --pub
+end
 
 function Shot (tp, pos, vy)
     pico.output.sound("snds/shot.wav")
