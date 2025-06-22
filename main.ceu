@@ -151,21 +151,20 @@ spawn(function ()   -- MAIN-LOOP
             dofile "battle.ceu"     -- includes the battle block
         end)
 
---[===[
-        ;; Increments the winner points.
-        set points[winner] = to.number(points[winner]) + 1 --> to.string
+        -- Increments the winner points.
+        if winner then
+            points[winner] = points[winner] + 1
+            await(clock{s=1})
+        end
 
-        await <1:s>
-
-        ;;;
+        --[[
         ;; Restarts the main loop.
         ;; Due to lexical memory management, only the points are preserved
         ;; between loop iterations.
         ;; All other data, including those dynamically allocated, are
         ;; guaranteed to be reclaimed after this point, no matter how the
         ;; nested code above is structured.
-        ;;;
---]===]
+        ]]
     end
 end)
 
