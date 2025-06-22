@@ -42,28 +42,26 @@ local t = {   -- holds all spawned shots, limited to a maximum
 ;; be accessed through iterators or reference tracks.
 ]]
 
-local meteors = tasks()   -- holds all spawned meteors
+local meteors <close> = tasks()   -- holds all spawned meteors
 
-local shots = {           -- holds all spawned shots, limited to a maximum
-    l = tasks(SHIP_SHOTS),  --  - shots for ship in the left
-    r = tasks(SHIP_SHOTS),  --  - shots for ship in the right
+-- holds all spawned shots, limited to a maximum
+local shots_l <close> = tasks(SHIP_SHOTS)   --  - shots for ship in the left
+local shots_r <close> = tasks(SHIP_SHOTS)   --  - shots for ship in the right
+
+local pos = {         -- positions for each ship
+    l = PP(10, 50),     -- left  of the screen
+    r = PP(90, 50),     -- right of the screen
+}
+local ctl = {         -- key controls for each ship
+    l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Left Shift'},
+    r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
 }
 
-    local pos = {         -- positions for each ship
-        l = PP(10, 50),     -- left  of the screen
-        r = PP(90, 50),     -- right of the screen
-    }
-    local ctl = {         -- key controls for each ship
-        l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Left Shift'},
-        r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
-    }
+local ships = tasks(2)  -- holds the two ships
+spawn_in(ships, Ship, 'Ship.L', pos.l, ctl.l, shots_l, "imgs/ship-L.gif")
+spawn_in(ships, Ship, 'Ship.R', pos.r, ctl.r, shots_r, "imgs/ship-R.gif")
 
-local ships = {           -- holds the two ships
-    l = spawn(Ship, 'Ship.L', pos.l, ctl.l, shots.l, "imgs/ship-L.gif"),
-    r = spawn(Ship, 'Ship.R', pos.r, ctl.r, shots.r, "imgs/ship-R.gif"),
-} --where { }
-
-watching(ships.l,ships.r, function ()
+local _, ship = watching(ships, function ()
     -- GAMEPLAY
     --[[
     ;; Runs the gameplay until one of the two ships is destroyed:
@@ -98,13 +96,14 @@ watching(ships.l,ships.r, function ()
             ;; `watching`, also terminating the current battle.
             ]]
 
-            local tsks = {    -- (1)
-                ships.l, ships.r,
-            }
-            for _, t in pairs(shots.l) do
+            local tsks = {}    -- (1)
+            for _, t in pairs(ships) do
                 tsks[#tsks+1] = t
             end
-            for _, t in pairs(shots.r) do
+            for _, t in pairs(shots_l) do
+                tsks[#tsks+1] = t
+            end
+            for _, t in pairs(shots_r) do
                 tsks[#tsks+1] = t
             end
             for _, t in pairs(meteors) do
@@ -134,17 +133,4 @@ watching(ships.l,ships.r, function ()
 end)
 
 -- BATTLE RESULT
-do
-    local l = coroutine.status(ships.l._.co)
-    local r = coroutine.status(ships.r._.co)
-
-    if l=='dead' and r=='dead' then
-        return 0
-    elseif l == 'dead' then
-        return 'l'
-    elseif r == 'dead' then
-        return 'r'
-    else
-        error "bug found"
-    end
-end
+return ship.tag
