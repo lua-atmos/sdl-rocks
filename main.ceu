@@ -1,11 +1,22 @@
-local SDL = require "SDL"
-local IMG = require "SDL.image"
-local TTF = require "SDL.ttf"
+SDL = require "SDL"
+IMG = require "SDL.image"
+TTF = require "SDL.ttf"
 
 require "atmos"
 local sdl = require "atmos.env.sdl"
 
 PP = sdl.pct_to_pos
+rect_vs_rect = sdl.rect_vs_rect
+
+function between (min, v, max)
+    if v < min then
+        return min
+    elseif v > max then
+        return max
+    else
+        return v
+    end
+end
 
 assert(TTF.init())
 local _ <close> = defer(function ()

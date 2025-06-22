@@ -9,17 +9,17 @@ function Move_T (rect, vel)
     ]]
     local function out_of_screen ()
         return (
-            rect.pos.x < 0  or
-            rect.pos.x > W  or
-            rect.pos.y < 0  or
-            rect.pos.y > H
+            rect.x < 0  or
+            rect.x > W  or
+            rect.y < 0  or
+            rect.y > H
         )
     end
     watching(out_of_screen, function ()
-        every('step', function (ms)
+        every('step', function (_,ms)
             local dt = ms / 1000
-            rect.pos.x = rect.pos.x + (vel.x * dt)
-            rect.pos.y = rect.pos.y + (vel.y * dt)
+            rect.x = rect.x + (vel.x * dt)
+            rect.y = rect.y + (vel.y * dt)
         end)
     end)
 end
@@ -45,8 +45,8 @@ local t = {   -- holds all spawned shots, limited to a maximum
 local meteors = tasks()   -- holds all spawned meteors
 
 local shots = {           -- holds all spawned shots, limited to a maximum
-    tasks(SHIP_SHOTS),  --  - shots for ship in the left
-    tasks(SHIP_SHOTS),  --  - shots for ship in the right
+    l = tasks(SHIP_SHOTS),  --  - shots for ship in the left
+    r = tasks(SHIP_SHOTS),  --  - shots for ship in the right
 }
 
     local pos = {         -- positions for each ship
@@ -54,8 +54,8 @@ local shots = {           -- holds all spawned shots, limited to a maximum
         r = PP(90, 50),     -- right of the screen
     }
     local ctl = {         -- key controls for each ship
-        l = {{'A',    'D',     'W',  'S'},    'Shift-Left'},
-        r = {{'Left', 'Right', 'Up', 'Down'}, 'Shift-Right'},
+        l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Shift-Left'},
+        r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Shift-Right'},
     }
 
 local ships = {           -- holds the two ships
@@ -78,7 +78,7 @@ watching(ships.l,ships.r, function ()
         ]]
         local period = METEOR_MS
         while true do
-            local dt = random.int(1, period)
+            local dt = math.random(1, period)
             await(clock{ms=dt})
             spawn_in(meteors, Meteor)
         end

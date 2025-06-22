@@ -1,50 +1,53 @@
-local SHIP_FRAMES      = 4
-local SHIP_ACC_DIV     = 10
-local SHIP_VEL_MAX  = {W/2.5, H/2.5}
-local SHOT_DIM      = {W/50, H/100}
+local SHIP_FRAMES   = 4
+local SHIP_ACC_DIV  = 10
+local SHIP_VEL_MAX  = { x=W/2.5, y=H/2.5 }
+local SHOT_DIM      = { w=W/50, h=H/100 }
 local SHOT_COLOR    = {0xFF,0xFF,0x88,0xFF}
 local METEOR_FRAMES = 6
 local METEOR_AWAIT  = 5000
 
 function random_signal ()
-    return (random.bool() and 1) or -1
+    return ((math.random(0,1)==1) and 1) or -1
 end
 
 function Meteor ()
-    local path = "imgs/meteor.gif"
+    local sfc = assert(IMG.load("imgs/meteor.gif"))
+    local tex = assert(REN:createTextureFromSurface(sfc))
+    local ww,h = sfc:getSize()
+
     local y_sig = random_signal()
 
-    local vx = (1 + (random.int(WIN.w/5))) * random_signal()
-    local vy = (1 + (random.int(WIN.h/5))) * y_sig
+    local vx = (1 + (math.random(0,W/5))) * random_signal()
+    local vy = (1 + (math.random(0,H/5))) * y_sig
 
-    local dim = pico.get.image.size(path)
-    local w = dim.w / METEOR_FRAMES
+    local w = ww / METEOR_FRAMES
     local dx = 0
 
-    local x = random.int(WIN.w)
-    local y = (y_sig == 1) and 0 or WIN.h
-    me().rect = {{x,y}, {w,dim.h}}
+    local x = math.random(0,W)
+    local y = (y_sig == 1) and 0 or H
+    local rect = { x=x, y=y, w=w, h=h }
+    me().rect = rect
 
     par_or(function ()
-        local dt = random.int(1, METEOR_AWAIT)
+        local dt = math.random(1, METEOR_AWAIT)
         await(clock{ms=dt})
         par_or(function ()
-            await(spawn (Move_T, pub.rect, {vx,vy}))
+            await(spawn (Move_T, rect, {x=vx,y=vy}))
         end, function ()
             await('collided')
-            pico.output.sound("snds/meteor.wav")
+            --pico.output.sound("snds/meteor.wav")
         end)
     end, function ()
         every('sdl.draw', function ()
-            pico.set.image.crop([[dx,0],[w,dim.h]])
-            pico.output.draw.image(pub.rect.pos, path)
+            local crop = { x=dx, y=0, w=w, h=h }
+            REN:copy(tex, crop, rect)
         end)
     end, function ()
         local v = ((vx^2) + (vy^2)) ^ (1/2)
         local x = 0
-        every('step', function ()
-            x = x + ((v * it.ms) / 1000)
-            dx = (x % dim.w) - (x % pub.rect.dim.w)
+        every('step', function (_,ms)
+            x = x + ((v * ms) / 1000)
+            dx = (x % ww) - (x % w)
         end)
     end)
     --pub
@@ -52,13 +55,14 @@ end
 
 function Shot (tp, pos, vy)
     pico.output.sound("snds/shot.wav")
+    local rect = { x=pos, y=pos.y, w=SHOT_DIM.w, h=SHOT_DIM.h }
     me().tag = tp
-    me().rect = { pos, SHOT_DIM }
+    me().rect = rect
     par_or(function ()
         await('collided')
     end, function ()
         local sig = (tp=='Shot.L' and 1) or -1
-        await(spawn (Move_T, pub.rect, {(WIN.w/3)*sig, vy}))
+        await(spawn (Move_T, rect, {x=(W/3)*sig, y=vy}))
     end, function ()
         every('sdl.draw', function ()
             pico.set.color.draw(SHOT_COLOR)
@@ -69,36 +73,39 @@ function Shot (tp, pos, vy)
 end
 
 function Ship (tp, pos, ctl, shots, path)
-    local dim = pico.get.image.size(path)
-    local vel = {0,0}
-    local dy = dim.h / SHIP_FRAMES
+    local sfc = assert(IMG.load(path))
+    local tex = assert(REN:createTextureFromSurface(sfc))
+    local w,h = sfc:getSize()
+    local vel = {x=0,y=0}
+    local dy = h / SHIP_FRAMES
+    local rect = { x=pos.x, y=pos.y, w=w, h=dy }
     me().tag = tp
-    me().rect = {pos, {dim.w,dy}}
+    me().rect = rect
 
-    local acc = {0,0}
+    local acc = {x=0,y=0}
     local key
     spawn(function ()
         par(function ()
-            every(SDL.event.KeyDown, function ()
+            every(SDL.event.KeyDown, function (evt)
                 if false then
-                elseif it.key == ctl.mov.left then
-                    acc.x = -WIN.w/SHIP_ACC_DIV
-                elseif it.key == ctl.mov.right then
-                    acc.x =  WIN.w/SHIP_ACC_DIV
-                elseif it.key == ctl.mov.up then
-                    acc.y = -WIN.h/SHIP_ACC_DIV
-                elseif it.key == ctl.mov.down then
-                    acc.y =  WIN.h/SHIP_ACC_DIV
-                elseif it.key == ctl.shot then
+                elseif evt.name == ctl.mov.l then
+                    acc.x = -W/SHIP_ACC_DIV
+                elseif evt.name == ctl.mov.r then
+                    acc.x =  W/SHIP_ACC_DIV
+                elseif evt.name == ctl.mov.u then
+                    acc.y = -H/SHIP_ACC_DIV
+                elseif evt.name == ctl.mov.d then
+                    acc.y =  H/SHIP_ACC_DIV
+                elseif evt.name == ctl.shot then
                     local tpx = ((tp == 'Ship.L') and 'Shot.L') or 'Shot.R'
                     spawn_in(shots, Shot, tpx, copy(pos), vel.y)
                 end
-                key = it.key
+                key = evt
             end)
         end, function ()
             every(SDL.event.KeyUp, function ()
                 key = nil
-                acc = {0,0}
+                acc = {x=0,y=0}
             end)
         end)
     end)
@@ -119,20 +126,20 @@ function Ship (tp, pos, ctl, shots, path)
                     frame = 3
                 end
             end
-            pico.set.image.crop([[0,frame*dy],[dim.w,dy]])
-            pico.output.draw.image(pos, path)
+            local crop = { x=0, y=frame*dy, w=rect.w, h=dy }
+            REN:copy(tex, crop, rect)
         end)
     end, function ()
-        every('step', function ()
-            local dt = it.ms / 1000
-            vel.x = math.between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
-            vel.y = math.between(-SHIP_VEL_MAX.y, vel.y+(acc.y*dt), SHIP_VEL_MAX.y)
+        every('step', function (_,ms)
+            local dt = ms / 1000
+            vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
+            vel.y = between(-SHIP_VEL_MAX.y, vel.y+(acc.y*dt), SHIP_VEL_MAX.y)
             if tp == 'Ship.L' then
-                pos.x = math.between(0, pos.x+(vel.x*dt), WIN.w/2)
+                pos.x = between(0, pos.x+(vel.x*dt), W/2)
             else
-                pos.x = math.between(WIN.w/2, pos.x+(vel.x*dt), WIN.w)
+                pos.x = between(W/2, pos.x+(vel.x*dt), W)
             end
-            pos.y = math.between(0, pos.y+(vel.y*dt), WIN.h)
+            pos.y = between(0, pos.y+(vel.y*dt), H)
         end)
     end)
 
@@ -140,8 +147,8 @@ function Ship (tp, pos, ctl, shots, path)
     watching(clock{ms=150}, function ()
         local d = dy / 2;
         par(function ()
-            every('step', function ()
-                d = d + (((40*d)*it.ms)/1000)
+            every('step', function (_,ms)
+                d = d + (((40*d)*ms)/1000)
             end)
         end, function ()
             every('sdl.draw', function ()
