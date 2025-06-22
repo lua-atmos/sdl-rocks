@@ -36,7 +36,7 @@ spawn(function ()   -- BACKGROUND
     ]]
     local sfc = assert(IMG.load("imgs/bg.png"))
     local tex = assert(REN:createTextureFromSurface(sfc))
-    every('SDL.Draw', function ()
+    every('sdl.draw', function ()
         REN:copy(tex)
     end)
 end)
@@ -53,7 +53,7 @@ spawn(function ()   -- POINTS
     ]]
     local l = PP(10, 90)
     local r = PP(90, 90)
-    every('SDL.Draw', function ()
+    every('sdl.draw', function ()
         REN:setDrawColor(0xFFFFFF)
         sdl.write(FNT, tostring(points.l), l)
         sdl.write(FNT, tostring(points.r), r)
@@ -76,7 +76,7 @@ spawn(function ()   -- MAIN-LOOP
             while true do
                 watching(clock{ms=500}, function ()
                     local pt = PP(50, 50)
-                    every('SDL.Draw', function ()
+                    every('sdl.draw', function ()
                         REN:setDrawColor(0xFFFFFF)
                         sdl.write(FNT, "= TAP TO START =", pt)
                     end)
@@ -106,7 +106,7 @@ spawn(function ()   -- MAIN-LOOP
                     local pt = PP(50, 50)
                     r.x = math.floor(pt.x - r.w/2)
                     r.y = math.floor(pt.y - r.h/2)
-                    every('SDL.Draw', function ()
+                    every('sdl.draw', function ()
                         REN:copy(tex, nil, r)
                     end)
                 end)
