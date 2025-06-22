@@ -18,8 +18,8 @@ function Move_T (rect, vel)
     watching(out_of_screen, function ()
         every('step', function (_,ms)
             local dt = ms / 1000
-            rect.x = rect.x + (vel.x * dt)
-            rect.y = rect.y + (vel.y * dt)
+            rect.x = math.floor(rect.x + (vel.x * dt))
+            rect.y = math.floor(rect.y + (vel.y * dt))
         end)
     end)
 end
@@ -54,8 +54,8 @@ local shots = {           -- holds all spawned shots, limited to a maximum
         r = PP(90, 50),     -- right of the screen
     }
     local ctl = {         -- key controls for each ship
-        l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Shift-Left'},
-        r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Shift-Right'},
+        l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Left Shift'},
+        r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
     }
 
 local ships = {           -- holds the two ships
@@ -123,7 +123,7 @@ watching(ships.l,ships.r, function ()
                         (t1.tag=='Shot.L' and t2.tag=='Ship.L') or
                         (t1.tag=='Meteor' and t2.tag=='Meteor')
                     )
-                    if rect_vs_rect(t1.rect, t2.rect) then
+                    if (not no) and rect_vs_rect(t1.rect, t2.rect) then
                         emit_in(t1, 'collided')
                         emit_in(t2, 'collided')
                     end
