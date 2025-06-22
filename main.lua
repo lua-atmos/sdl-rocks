@@ -52,7 +52,7 @@ spawn(function ()   -- BACKGROUND
     end)
 end)
 
-local points = { l=0, r=0 }
+local points = { L=0, R=0 }
 
 spawn(function ()   -- POINTS
     --[[
@@ -66,8 +66,8 @@ spawn(function ()   -- POINTS
     local r = PP(90, 90)
     every('sdl.draw', function ()
         REN:setDrawColor(0xFFFFFF)
-        sdl.write(FNT, tostring(points.l), l)
-        sdl.write(FNT, tostring(points.r), r)
+        sdl.write(FNT, tostring(points.L), l)
+        sdl.write(FNT, tostring(points.R), r)
     end)
 end)
 
@@ -139,16 +139,18 @@ spawn(function ()   -- MAIN-LOOP
         ;;    also terminates.
         ;;  - The toggle evaluates to the final value of the block.
         ]]
-        local winner = toggle('Show', function ()
-            --[[
-            ;; The "battle block" contains the actual gameplay and holds the
-            ;; spaceships and meteors.
-            ;; The block returns the winner index (0 or 1), whose points are
-            ;; incremented before the next battle.
-            ;; Since the block is nested, all dynamic objects are all properly
-            ;; released and reallocated after each individual battle.
-            ]]
-            dofile "battle.ceu"     -- includes the battle block
+        local _,_,winner = catch('winner', function ()
+            toggle('Show', function ()
+                --[[
+                ;; The "battle block" contains the actual gameplay and holds the
+                ;; spaceships and meteors.
+                ;; The block returns the winner index (0 or 1), whose points are
+                ;; incremented before the next battle.
+                ;; Since the block is nested, all dynamic objects are all properly
+                ;; released and reallocated after each individual battle.
+                ]]
+                dofile "battle.lua"     -- includes the battle block
+            end)
         end)
 
         -- Increments the winner points.

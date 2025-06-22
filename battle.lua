@@ -26,11 +26,6 @@ end
 
 require "ts" -- includes the object tasks
 
-local t = {   -- holds all spawned shots, limited to a maximum
-    tasks(),  --  - shots for ship in the right
-    tasks(),  --  - shots for ship in the right
-}
-
 --[[
 ;; Declares and spawns the game objects:
 ;;  - Meteors live in a dynamic pool of tasks and are spawned periodically.
@@ -57,11 +52,11 @@ local ctl = {         -- key controls for each ship
     r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
 }
 
-local ships = tasks(2)  -- holds the two ships
-spawn_in(ships, Ship, 'Ship.L', pos.l, ctl.l, shots_l, "imgs/ship-L.gif")
-spawn_in(ships, Ship, 'Ship.R', pos.r, ctl.r, shots_r, "imgs/ship-R.gif")
+local ships <close> = tasks(2)  -- holds the two ships
+spawn_in(ships, Ship, 'L', pos.l, ctl.l, shots_l, "imgs/ship-L.gif")
+spawn_in(ships, Ship, 'R', pos.r, ctl.r, shots_r, "imgs/ship-R.gif")
 
-local _, ship = watching(ships, function ()
+watching(ships, function ()
     -- GAMEPLAY
     --[[
     ;; Runs the gameplay until one of the two ships is destroyed:
@@ -116,11 +111,11 @@ local _, ship = watching(ships, function ()
                     local t1 = tsks[i]
                     local t2 = tsks[j]
                     local no = (
-                        (t1.tag=='Ship.R' and t2.tag=='Shot.R') or
-                        (t1.tag=='Shot.R' and t2.tag=='Ship.R') or
-                        (t1.tag=='Ship.L' and t2.tag=='Shot.L') or
-                        (t1.tag=='Shot.L' and t2.tag=='Ship.L') or
-                        (t1.tag=='Meteor' and t2.tag=='Meteor')
+                        (t1.tag=='R' and t2.tag=='r') or
+                        (t1.tag=='r' and t2.tag=='R') or
+                        (t1.tag=='L' and t2.tag=='l') or
+                        (t1.tag=='l' and t2.tag=='L') or
+                        (t1.tag=='M' and t2.tag=='M')
                     )
                     if (not no) and rect_vs_rect(t1.rect, t2.rect) then
                         emit_in(t1, 'collided')
@@ -133,4 +128,7 @@ local _, ship = watching(ships, function ()
 end)
 
 -- BATTLE RESULT
-return ship.tag
+for _, t in pairs(ships) do
+    throw('winner', t.tag)
+end
+throw('winner', nil)

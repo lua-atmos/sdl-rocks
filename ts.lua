@@ -26,6 +26,7 @@ function Meteor ()
     local x = math.random(0,W)
     local y = (y_sig == 1) and 0 or H
     local rect = { x=x, y=y, w=w, h=h }
+    me().tag  = 'M'
     me().rect = rect
 
     par_or(function ()
@@ -62,7 +63,7 @@ function Shot (tag, pos, vy)
         await('collided')
     end, function ()
         -- TODO: move out
-        local sig = (tag=='Shot.L' and 1) or -1
+        local sig = (tag=='l' and 1) or -1
         await(spawn (Move_T, rect, {x=(W/3)*sig, y=vy}))
     end, function ()
         every('sdl.draw', function ()
@@ -99,7 +100,7 @@ function Ship (tag, pos, ctl, shots, path)
                     acc.y =  H/SHIP_ACC_DIV
                 elseif evt.name == ctl.shot then
                     -- TODO: move out
-                    local tpx = ((tag == 'Ship.L') and 'Shot.L') or 'Shot.R'
+                    local tpx = ((tag == 'L') and 'l') or 'r'
                     spawn_in(shots, Shot, tpx, {x=rect.x,y=rect.y}, vel.y)
                 end
                 key = evt
@@ -118,9 +119,9 @@ function Ship (tag, pos, ctl, shots, path)
                 local frame = 0; do
                     if false then
                     elseif key == ctl.mov.left then
-                        frame = ((tag=='Ship.L') and 0) or 1
+                        frame = ((tag=='L') and 0) or 1
                     elseif key == ctl.mov.right then
-                        frame = ((tag=='Ship.R') and 0) or 1
+                        frame = ((tag=='R') and 0) or 1
                     elseif key == ctl.mov.up then
                         frame = 2
                     elseif key == ctl.mov.down then
@@ -139,7 +140,7 @@ function Ship (tag, pos, ctl, shots, path)
                 -- TODO: lims out
                 local x = rect.x + (vel.x*dt)
                 local y = rect.y + (vel.y*dt)
-                if tag == 'Ship.L' then
+                if tag == 'L' then
                     rect.x = math.floor(between(0, x, W/2))
                 else
                     rect.x = math.floor(between(W/2, x, W))
