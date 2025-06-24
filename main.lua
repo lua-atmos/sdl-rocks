@@ -79,7 +79,6 @@ spawn(function ()   -- MAIN-LOOP
     ;;  - Restarts whenever one of the ships is destroyed.
     ]]
     while true do
---[=[
         watching(SDL.event.KeyDown, function ()     -- TAP-TO-START
             --[[
             ;; Spawns the blinking message, and awaits any key press.
@@ -95,7 +94,6 @@ spawn(function ()   -- MAIN-LOOP
                 await(clock{ms=500})
             end
         end)
-]=]
 
         -- Plays the restart sound.
         --pico.output.sound("snds/start.wav")

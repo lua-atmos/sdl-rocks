@@ -92,16 +92,16 @@ watching(ships, function ()
             ]]
 
             local tsks = {}    -- (1)
-            for _, t in pairs(ships) do
+            for _, t in getmetatable(ships).__pairs(ships) do
                 tsks[#tsks+1] = t
             end
-            for _, t in pairs(shots_l) do
+            for _, t in getmetatable(shots_l).__pairs(shots_l) do
                 tsks[#tsks+1] = t
             end
-            for _, t in pairs(shots_r) do
+            for _, t in getmetatable(shots_r).__pairs(shots_r) do
                 tsks[#tsks+1] = t
             end
-            for _, t in pairs(meteors) do
+            for _, t in getmetatable(meteors).__pairs(meteors) do
                 tsks[#tsks+1] = t
             end
 
@@ -126,6 +126,8 @@ watching(ships, function ()
         end)
     end)
 end)
+
+await(true)     -- allow both to die
 
 -- BATTLE RESULT
 for _, t in pairs(ships) do
