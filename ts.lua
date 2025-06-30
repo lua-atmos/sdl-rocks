@@ -84,13 +84,13 @@ function Shot (tag, pos, vy)
     --pub
 end
 
-function Ship (tag, pos, ctl, shots, path)
+function Ship (tag, pos, ctl, lim, shots, path)
     local sfc = assert(IMG.load(path))
     local tex = assert(REN:createTextureFromSurface(sfc))
     local w,h = sfc:getSize()
     local vel = {x=0,y=0}
     local dy = h / SHIP_FRAMES
-    local rect = { x=pos.x, y=pos.y, w=w, h=dy }
+    local rect = { x=pos.x-w/2, y=pos.y-dy/2, w=w, h=dy }
     me().tag = tag
     me().rect = rect
 
@@ -142,20 +142,16 @@ function Ship (tag, pos, ctl, shots, path)
                 REN:copy(tex, crop, rect)
             end)
         end, function ()
+            lim.x2 = lim.x2 - w
             every('step', function (_,ms)
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
                 vel.y = between(-SHIP_VEL_MAX.y, vel.y+(acc.y*dt), SHIP_VEL_MAX.y)
 
-                -- TODO: lims out
-                local x = rect.x + (vel.x*dt)
-                local y = rect.y + (vel.y*dt)
-                if tag == 'L' then
-                    rect.x = math.floor(between(0, x, W/2))
-                else
-                    rect.x = math.floor(between(W/2, x, W))
-                end
-                rect.y = math.floor(between(0, y, H))
+                local x = math.floor(rect.x + (vel.x*dt))
+                local y = math.floor(rect.y + (vel.y*dt))
+                rect.x = math.floor(between(lim.x1, x, lim.x2))
+                rect.y = math.floor(between(0, y, H-dy))
             end)
         end)
     end)

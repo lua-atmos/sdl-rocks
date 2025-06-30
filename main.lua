@@ -64,14 +64,14 @@ call(REN, function ()
     while true do
 
          -- TAP-TO-START
-        watching(SDL.event.KeyDown, function ()
+        local e = watching(SDL.event.KeyDown, 'Return', function ()
             -- Spawns the blinking message, and awaits any key press.
             while true do
                 watching(clock{ms=500}, function ()
                     local pt = PP(50, 50)
                     every('sdl.draw', function ()
                         REN:setDrawColor(0xFFFFFF)
-                        sdl.write(FNT, "= TAP TO START =", pt)
+                        sdl.write(FNT, "= ENTER TO START =", pt)
                     end)
                 end)
                 await(clock{ms=500})
@@ -134,12 +134,8 @@ call(REN, function ()
             end)
         end)
 
-        sdl.play "snds/explosion.wav"
-
         -- Increments the winner points.
-        if winner then
-            points[winner] = points[winner] + 1
-            await(clock{s=1})
-        end
+        points[winner] = points[winner] + 1
+        await(clock{s=1})
     end
 end)

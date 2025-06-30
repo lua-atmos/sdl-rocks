@@ -1,12 +1,10 @@
-local METEOR_MS  = 5000   -- average period to spawn a new meteor
-local SHIP_SHOTS = 3      -- maximum number of simultaneous shots
+require "ts" -- task prototypes for Ship, Shot, Meteor
 
+-- Task prototype to update the given `rect` position
+-- according to its `vel` speed:
+--  * Updates rect on every 'step' frame.
+--  * Terminates when rect leaves the screen.
 function Move_T (rect, vel)
-    --[[
-    ;; Updates the given `rect` position according to its `vel` speed.
-    ;;  - Updates on every :Frame.
-    ;;  - Terminates when leaving the screen.
-    ]]
     local function out_of_screen ()
         return (
             rect.x < 0  or
@@ -24,92 +22,75 @@ function Move_T (rect, vel)
     end)
 end
 
-require "ts" -- includes the object tasks
+-- Declares and spawns the game objects: ships, shots, meteors
 
---[[
-;; Declares and spawns the game objects:
-;;  - Meteors live in a dynamic pool of tasks and are spawned periodically.
-;;  - Ships are fixed and held in a tuple pair.
-;;  - Shots live in dynamic pools, one for each ship, which are held in a
-;;    tuple pair.
-;; Pools control the lifecycle of tasks by releasing them from memory
-;; automatically on termination. Tasks in pools are anonymous and can only
-;; be accessed through iterators or reference tracks.
-]]
+-- holds all meteors
+local meteors <close> = tasks()
 
-local meteors <close> = tasks()   -- holds all spawned meteors
+-- holds all l/r shots (max of 3 simultaneous)
+local shots_l <close> = tasks(3)
+local shots_r <close> = tasks(3)
 
--- holds all spawned shots, limited to a maximum
-local shots_l <close> = tasks(SHIP_SHOTS)   --  - shots for ship in the left
-local shots_r <close> = tasks(SHIP_SHOTS)   --  - shots for ship in the right
-
-local pos = {         -- positions for each ship
-    l = PP(10, 50),     -- left  of the screen
-    r = PP(90, 50),     -- right of the screen
+-- l/r ship positions
+local pos = {
+    l = PP(10, 50),
+    r = PP(90, 50),
 }
-local ctl = {         -- key controls for each ship
+
+-- l/r ship key controls
+local ctl = {
     l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Left Shift'},
     r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
 }
 
-local ships <close> = tasks(2)  -- holds the two ships
-spawn_in(ships, Ship, 'L', pos.l, ctl.l, shots_l, "imgs/ship-L.gif")
-spawn_in(ships, Ship, 'R', pos.r, ctl.r, shots_r, "imgs/ship-R.gif")
+-- l/r ship X limit (half of the screen)
+local lim = {
+    l = {x1=0,   x2=W/2},
+    r = {x1=W/2, x2=W  },
+}
 
-watching(ships, function ()
-    -- GAMEPLAY
-    --[[
-    ;; Runs the gameplay until one of the two ships is destroyed:
-    ;;  - Spawns new meteors periodically.
-    ;;  - Checks collisions between all objects.
-    ]]
-    par(function ()                   -- METEORS
-        --[[
-        ;; Spawns new meteros in the game every period:
-        ;;  - Hold them in the outer pool.
-        ;;  - Gradually decreases the spawning period.
-        ]]
-        local period = METEOR_MS
+-- holds l/r ships
+local ships <close> = tasks(2)
+spawn_in(ships, Ship, 'L', pos.l, ctl.l, lim.l, shots_l, "imgs/ship-L.gif")
+spawn_in(ships, Ship, 'R', pos.r, ctl.r, lim.r, shots_r, "imgs/ship-R.gif")
+
+-- GAMEPLAY:
+--  * runs until one of the two ships `s` is destroyed
+--  * spawns new meteors periodically
+--  * checks collisions between all objects
+
+local s = watching(ships, function ()
+    par(function ()
+        -- spawns new meteros periodically
         while true do
-            local dt = math.random(1, period)
+            local dt = math.random(1000, 5000)
             await(clock{ms=dt})
             spawn_in(meteors, Meteor)
         end
     end, function ()
-        every('step', function () -- COLLISIONS
-            --[[
-            ;; Checks collisions between objects:
-            ;;  1. Uses `to.vector` to collect all references to dinamically
-            ;;     allocated ships, shots, and meteors.
-            ;;  2. Uses `pico-collisions` to get all pairs of colliding
-            ;;     objects, using the `f-cmp` comparator which relies on `:T`
-            ;;     rect.
-            ;;  3. Iterates over the pairs, ignores innocuous collisions, and
-            ;;     collects final colliding objects.
-            ;;  4. Signals colliding objects.
-            ;; A ship collision will eventually terminate the enclosing
-            ;; `watching`, also terminating the current battle.
-            ]]
-
-            local tsks = {}    -- (1)
+        -- check collisions
+        every('step', function ()
+            -- collect references to all ships, shots, meteors
+            local ts = {}
             for _, t in getmetatable(ships).__pairs(ships) do
-                tsks[#tsks+1] = t
+                ts[#ts+1] = t
             end
             for _, t in getmetatable(shots_l).__pairs(shots_l) do
-                tsks[#tsks+1] = t
+                ts[#ts+1] = t
             end
             for _, t in getmetatable(shots_r).__pairs(shots_r) do
-                tsks[#tsks+1] = t
+                ts[#ts+1] = t
             end
             for _, t in getmetatable(meteors).__pairs(meteors) do
-                tsks[#tsks+1] = t
+                ts[#ts+1] = t
             end
 
-            local cols = {}     -- (2)
-            for i=1, #tsks do
-                for j=i+1, #tsks do
-                    local t1 = tsks[i]
-                    local t2 = tsks[j]
+            -- check valid collisions within `ts` and emit 'collided'
+            -- (ignore ship 'R'/'r' shot, ship 'L'/'l' shot, 'M'/'M' meteors)
+            for i=1, #ts do
+                for j=i+1, #ts do
+                    local t1 = ts[i]
+                    local t2 = ts[j]
                     local no = (
                         (t1.tag=='R' and t2.tag=='r') or
                         (t1.tag=='r' and t2.tag=='R') or
@@ -118,8 +99,8 @@ watching(ships, function ()
                         (t1.tag=='M' and t2.tag=='M')
                     )
                     if (not no) and rect_vs_rect(t1.rect, t2.rect) then
-                        emit_in(t1, 'collided')
-                        emit_in(t2, 'collided')
+                        emit_in(t1, 'collided') -- will terminate t1
+                        emit_in(t2, 'collided') -- will terminate t2
                     end
                 end
             end
@@ -127,10 +108,5 @@ watching(ships, function ()
     end)
 end)
 
-await(true)     -- allow both to die
-
--- BATTLE RESULT
-for _, t in pairs(ships) do
-    throw('winner', t.tag)
-end
-throw('winner', nil)
+sdl.play "snds/explosion.wav" -- overrides any active sound
+throw('winner', (s.tag=='L' and 'R') or 'L')
