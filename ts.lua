@@ -6,6 +6,16 @@ local SHOT_COLOR    = 0xFFFF88
 local METEOR_FRAMES = 6
 local METEOR_AWAIT  = 5000
 
+function between (min, v, max)
+    if v < min then
+        return min
+    elseif v > max then
+        return max
+    else
+        return v
+    end
+end
+
 function random_signal ()
     return ((math.random(0,1)==1) and 1) or -1
 end
@@ -36,7 +46,7 @@ function Meteor ()
             await(spawn (Move_T, rect, {x=vx,y=vy}))
         end, function ()
             await('collided')
-            --pico.output.sound("snds/meteor.wav")
+            sdl.play "snds/meteor.wav"
         end)
     end, function ()
         every('sdl.draw', function ()
@@ -55,8 +65,8 @@ function Meteor ()
 end
 
 function Shot (tag, pos, vy)
-    --pico.output.sound("snds/shot.wav")
-    local rect = { x=pos.x, y=pos.y, w=SHOT_DIM.w, h=SHOT_DIM.h }
+    sdl.play "snds/shot.wav"
+    local rect = { x=pos.x, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
     me().tag = tag
     me().rect = rect
     par_or(function ()
@@ -101,7 +111,7 @@ function Ship (tag, pos, ctl, shots, path)
                 elseif evt.name == ctl.shot then
                     -- TODO: move out
                     local tpx = ((tag == 'L') and 'l') or 'r'
-                    spawn_in(shots, Shot, tpx, {x=rect.x,y=rect.y}, vel.y)
+                    spawn_in(shots, Shot, tpx, {x=rect.x,y=rect.y+rect.h/2}, vel.y)
                 end
                 key = evt
             end)
@@ -150,7 +160,6 @@ function Ship (tag, pos, ctl, shots, path)
         end)
     end)
 
-    --pico.output.sound("snds/explosion.wav")
     watching(clock{ms=150}, function ()
         local d = dy / 2;
         par(function ()

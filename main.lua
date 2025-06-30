@@ -1,25 +1,20 @@
 SDL = require "SDL"
 IMG = require "SDL.image"
 TTF = require "SDL.ttf"
+MIX = require "SDL.mixer"
 
 require "atmos"
-local sdl = require "atmos.env.sdl"
+sdl = require "atmos.env.sdl"
 
 PP = sdl.pct_to_pos
 rect_vs_rect = sdl.rect_vs_rect
 
-function between (min, v, max)
-    if v < min then
-        return min
-    elseif v > max then
-        return max
-    else
-        return v
-    end
-end
-
+assert(SDL.init())
 assert(TTF.init())
+MIX.openAudio(44100, SDL.audioFormat.S16, 2, 1024);
+
 local _ <close> = defer(function ()
+    MIX.quit()
     TTF.quit()
     SDL.quit()
 end)
@@ -37,52 +32,40 @@ FNT = assert(TTF.open("tiny.ttf", H/15))
 
 math.randomseed()
 
-spawn(function ()   -- BACKGROUND
-    --[[
-    ;; Spawns a task to draw the background image on every frame.
-    ;; We draw at position (0,0), which is the center of the screen.
-    ;; By default, the center of the image is anchored at the given position.
-    ;; This task is the first to spawn, which makes the background image to
-    ;; always be rendered first.
-    ]]
-    local sfc = assert(IMG.load("imgs/bg.png"))
-    local tex = assert(REN:createTextureFromSurface(sfc))
-    every('sdl.draw', function ()
-        REN:copy(tex)
+call(REN, function ()
+
+    -- BACKGROUND
+    spawn(function ()
+        local sfc = assert(IMG.load("imgs/bg.png"))
+        local tex = assert(REN:createTextureFromSurface(sfc))
+        every('sdl.draw', function ()
+            REN:copy(tex)
+        end)
     end)
-end)
 
-local points = { L=0, R=0 }
+    local points = { L=0, R=0 }
 
-spawn(function ()   -- POINTS
-    --[[
-    ;; Spawns the players points and place them at the bottom of the screen, in
-    ;; opposite sides.
-    ;; Points are incremented when the ship of the opponent is destroyed.
-    ;; Since points must outlive each individual battle, we spawn them here,
-    ;; outside the main game loop.
-    ]]
-    local l = PP(10, 90)
-    local r = PP(90, 90)
-    every('sdl.draw', function ()
-        REN:setDrawColor(0xFFFFFF)
-        sdl.write(FNT, tostring(points.L), l)
-        sdl.write(FNT, tostring(points.R), r)
+    -- POINTS
+    spawn(function ()
+        local l = PP(10, 90)
+        local r = PP(90, 90)
+        every('sdl.draw', function ()
+            REN:setDrawColor(0xFFFFFF)
+            sdl.write(FNT, tostring(points.L), l)
+            sdl.write(FNT, tostring(points.R), r)
+        end)
     end)
-end)
 
-spawn(function ()   -- MAIN-LOOP
-    --[[
-    ;; Starts the main game loop:
-    ;;  - Shows the "tap to start" message.
-    ;;  - Runs the next battle with the actual gameplay.
-    ;;  - Restarts whenever one of the ships is destroyed.
-    ]]
+    -- MAIN LOOP:
+    -- Shows the "tap to start" message.
+    -- Runs the next battle with the actual gameplay.
+    -- Restarts whenever one of the ships is destroyed.
+
     while true do
-        watching(SDL.event.KeyDown, function ()     -- TAP-TO-START
-            --[[
-            ;; Spawns the blinking message, and awaits any key press.
-            ]]
+
+         -- TAP-TO-START
+        watching(SDL.event.KeyDown, function ()
+            -- Spawns the blinking message, and awaits any key press.
             while true do
                 watching(clock{ms=500}, function ()
                     local pt = PP(50, 50)
@@ -96,7 +79,7 @@ spawn(function ()   -- MAIN-LOOP
         end)
 
         -- Plays the restart sound.
-        --pico.output.sound("snds/start.wav")
+        sdl.play "snds/start.wav"
 
         --[[
         ;; Broadcasts pause and resume events to the game:
@@ -151,21 +134,12 @@ spawn(function ()   -- MAIN-LOOP
             end)
         end)
 
+        sdl.play "snds/explosion.wav"
+
         -- Increments the winner points.
         if winner then
             points[winner] = points[winner] + 1
             await(clock{s=1})
         end
-
-        --[[
-        ;; Restarts the main loop.
-        ;; Due to lexical memory management, only the points are preserved
-        ;; between loop iterations.
-        ;; All other data, including those dynamically allocated, are
-        ;; guaranteed to be reclaimed after this point, no matter how the
-        ;; nested code above is structured.
-        ]]
     end
 end)
-
-sdl.loop(REN)

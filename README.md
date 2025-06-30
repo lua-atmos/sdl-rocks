@@ -1,5 +1,7 @@
+Requires [lua-atmos](https://github.com/lua-atmos/atmos):
+
 ```
-$ ceu --lib=pico main.ceu
+lua5.4 main.lua
 ```
 
 <!--
