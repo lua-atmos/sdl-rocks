@@ -6,6 +6,8 @@ MIX = require "SDL.mixer"
 require "atmos"
 sdl = require "atmos.env.sdl"
 
+-- SKIP TO "START HERE"
+
 PP = sdl.pct_to_pos
 rect_vs_rect = sdl.rect_vs_rect
 
@@ -32,6 +34,10 @@ FNT = assert(TTF.open("tiny.ttf", H/15))
 
 math.randomseed()
 
+-- START HERE
+
+local Battle = require "battle" -- actual battle gameplay
+
 call(REN, function ()
 
     -- BACKGROUND
@@ -43,9 +49,8 @@ call(REN, function ()
         end)
     end)
 
-    local points = { L=0, R=0 }
-
     -- POINTS
+    local points = { L=0, R=0 }
     spawn(function ()
         local l = PP(10, 90)
         local r = PP(90, 90)
@@ -57,40 +62,43 @@ call(REN, function ()
     end)
 
     -- MAIN LOOP:
-    -- Shows the "tap to start" message.
-    -- Runs the next battle with the actual gameplay.
-    -- Restarts whenever one of the ships is destroyed.
+    --  * shows the "press enter to start" message
+    --  * runs the next battle
+    --  * restarts whenever one of the ships is destroyed
 
     while true do
 
-         -- TAP-TO-START
-        local e = watching(SDL.event.KeyDown, 'Return', function ()
-            -- Spawns the blinking message, and awaits any key press.
+        -- Start with 'ENTER':
+        --  * spawns a blinking message, and awaits "enter" key
+        watching(SDL.event.KeyDown, 'Return', function ()
             while true do
+                -- 500ms on
                 watching(clock{ms=500}, function ()
                     local pt = PP(50, 50)
                     every('sdl.draw', function ()
                         REN:setDrawColor(0xFFFFFF)
-                        sdl.write(FNT, "= ENTER TO START =", pt)
+                        sdl.write(FNT, "= PRESS ENTER TO START =", pt)
                     end)
                 end)
+                -- 500ms off
                 await(clock{ms=500})
             end
         end)
 
-        -- Plays the restart sound.
+        -- plays the restart sound
         sdl.play "snds/start.wav"
 
-        --[[
-        ;; Broadcasts pause and resume events to the game:
-        ;;  - Pauses on key "P" (event :Hide).
-        ;;  - Shows the pause image while paused.
-        ;;  - Resumes on key "P" (event :Show).
-        ]]
+        -- spawns the actual battle
+        local battle = spawn(Battle)
+
+        -- Pause with 'P':
+        --  * awaits 'P' to toggle battle off
+        --  * shows a "paused" image
+        --  * awaits 'P' to toggle battle on
         local _ <close> = spawn(function ()
             while true do
                 await(SDL.event.KeyDown, 'P')
-                emit('Show', false)
+                toggle(battle, false)
                 local _ <close> = spawn(function ()
                     local sfc = assert(IMG.load("imgs/pause.png"))
                     local r = totable('w', 'h', sfc:getSize())
@@ -103,38 +111,15 @@ call(REN, function ()
                     end)
                 end)
                 await(SDL.event.KeyDown, 'P')
-                emit('Show', true)
+                toggle(battle, true)
             end
         end)
 
-        --[[
-        ;; Pauses and resumes the game when receiving key "P".
-        ;; The toggle construct receives two events separated by `->`, and
-        ;; controls its nested block as follows:
-        ;;  - Initially, the block executes and receives broadcasts normally.
-        ;;  - When the first event is received, the block is paused by not
-        ;;    receiving any broadcasts.
-        ;;  - When the second event is received, the block is resumed and
-        ;;    receives broadcasts normally.
-        ;;  - When the nested block terminates, the outer toggle as a whole
-        ;;    also terminates.
-        ;;  - The toggle evaluates to the final value of the block.
-        ]]
-        local _,_,winner = catch('winner', function ()
-            toggle('Show', function ()
-                --[[
-                ;; The "battle block" contains the actual gameplay and holds the
-                ;; spaceships and meteors.
-                ;; The block returns the winner index (0 or 1), whose points are
-                ;; incremented before the next battle.
-                ;; Since the block is nested, all dynamic objects are all properly
-                ;; released and reallocated after each individual battle.
-                ]]
-                dofile "battle.lua"     -- includes the battle block
-            end)
-        end)
-
-        -- Increments the winner points.
+        -- Battle terminates:
+        --  * awaits battle to return winner
+        --  * increments winner points
+        --  * awaits 1s before next battle
+        local winner = await(battle)
         points[winner] = points[winner] + 1
         await(clock{s=1})
     end
