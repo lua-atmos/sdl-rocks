@@ -66,7 +66,7 @@ end
 
 function Shot (V, pos, vy)
     sdl.play "snds/shot.wav"
-    local rect = { x=pos.x, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
+    local rect = { x=pos.x+V.x*SHOT_DIM.w/2, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
     me().tag = V.tag
     me().rect = rect
     par_or(function ()
@@ -138,7 +138,6 @@ function Ship (V, shots, path)
                 REN:copy(tex, crop, rect)
             end)
         end, function ()
-            V.lim.x2 = V.lim.x2 - w
             every('step', function (_,ms)
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
@@ -146,7 +145,7 @@ function Ship (V, shots, path)
 
                 local x = math.floor(rect.x + (vel.x*dt))
                 local y = math.floor(rect.y + (vel.y*dt))
-                rect.x = math.floor(between(V.lim.x1, x, V.lim.x2))
+                rect.x = math.floor(between(V.lim.x1, x, V.lim.x2-w))
                 rect.y = math.floor(between(0, y, H-dy))
             end)
         end)

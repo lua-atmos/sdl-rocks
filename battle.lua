@@ -25,7 +25,7 @@ end
 -- Left/Right ship constant parameters
 
 local V = {
-    l = {
+    l = {                           -- left ship
         tag = 'L',
         pos = PP(10, 50),           -- x,y initial position
         ctl = {                     -- key controls
