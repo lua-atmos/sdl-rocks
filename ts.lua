@@ -64,17 +64,15 @@ function Meteor ()
     --pub
 end
 
-function Shot (tag, pos, vy)
+function Shot (V, pos, vy)
     sdl.play "snds/shot.wav"
     local rect = { x=pos.x, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
-    me().tag = tag
+    me().tag = V.tag
     me().rect = rect
     par_or(function ()
         await('collided')
     end, function ()
-        -- TODO: move out
-        local sig = (tag=='l' and 1) or -1
-        await(spawn (Move_T, rect, {x=(W/3)*sig, y=vy}))
+        await(spawn (Move_T, rect, {x=(W/3)*V.x, y=vy}))
     end, function ()
         every('sdl.draw', function ()
             REN:setDrawColor(SHOT_COLOR)
@@ -84,14 +82,14 @@ function Shot (tag, pos, vy)
     --pub
 end
 
-function Ship (tag, pos, ctl, lim, shots, path)
+function Ship (V, shots, path)
     local sfc = assert(IMG.load(path))
     local tex = assert(REN:createTextureFromSurface(sfc))
     local w,h = sfc:getSize()
     local vel = {x=0,y=0}
     local dy = h / SHIP_FRAMES
-    local rect = { x=pos.x-w/2, y=pos.y-dy/2, w=w, h=dy }
-    me().tag = tag
+    local rect = { x=V.pos.x-w/2, y=V.pos.y-dy/2, w=w, h=dy }
+    me().tag = V.tag
     me().rect = rect
 
     local acc = {x=0,y=0}
@@ -100,20 +98,18 @@ function Ship (tag, pos, ctl, lim, shots, path)
         par(function ()
             every(SDL.event.KeyDown, function (evt)
                 if false then
-                elseif evt.name == ctl.mov.l then
+                elseif evt.name == V.ctl.move.l then
                     acc.x = -W/SHIP_ACC_DIV
-                elseif evt.name == ctl.mov.r then
+                elseif evt.name == V.ctl.move.r then
                     acc.x =  W/SHIP_ACC_DIV
-                elseif evt.name == ctl.mov.u then
+                elseif evt.name == V.ctl.move.u then
                     acc.y = -H/SHIP_ACC_DIV
-                elseif evt.name == ctl.mov.d then
+                elseif evt.name == V.ctl.move.d then
                     acc.y =  H/SHIP_ACC_DIV
-                elseif evt.name == ctl.shot then
-                    -- TODO: move out
-                    local tpx = ((tag == 'L') and 'l') or 'r'
-                    spawn_in(shots, Shot, tpx, {x=rect.x,y=rect.y+rect.h/2}, vel.y)
+                elseif evt.name == V.ctl.shot then
+                    spawn_in(shots, Shot, V.shot, {x=rect.x+rect.w/2,y=rect.y+rect.h/2}, vel.y)
                 end
-                key = evt
+                key = evt.name
             end)
         end, function ()
             every(SDL.event.KeyUp, function ()
@@ -128,21 +124,21 @@ function Ship (tag, pos, ctl, lim, shots, path)
             every('sdl.draw', function ()
                 local frame = 0; do
                     if false then
-                    elseif key == ctl.mov.left then
-                        frame = ((tag=='L') and 0) or 1
-                    elseif key == ctl.mov.right then
-                        frame = ((tag=='R') and 0) or 1
-                    elseif key == ctl.mov.up then
-                        frame = 2
-                    elseif key == ctl.mov.down then
-                        frame = 3
+                    elseif key == V.ctl.move.l then
+                        frame = V.ctl.frame.l
+                    elseif key == V.ctl.move.r then
+                        frame = V.ctl.frame.r
+                    elseif key == V.ctl.move.u then
+                        frame = V.ctl.frame.u
+                    elseif key == V.ctl.move.d then
+                        frame = V.ctl.frame.d
                     end
                 end
                 local crop = { x=0, y=frame*dy, w=rect.w, h=dy }
                 REN:copy(tex, crop, rect)
             end)
         end, function ()
-            lim.x2 = lim.x2 - w
+            V.lim.x2 = V.lim.x2 - w
             every('step', function (_,ms)
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
@@ -150,7 +146,7 @@ function Ship (tag, pos, ctl, lim, shots, path)
 
                 local x = math.floor(rect.x + (vel.x*dt))
                 local y = math.floor(rect.y + (vel.y*dt))
-                rect.x = math.floor(between(lim.x1, x, lim.x2))
+                rect.x = math.floor(between(V.lim.x1, x, V.lim.x2))
                 rect.y = math.floor(between(0, y, H-dy))
             end)
         end)

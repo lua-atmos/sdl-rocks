@@ -1,9 +1,9 @@
 require "ts" -- task prototypes for Ship, Shot, Meteor
 
--- Task prototype to update the given `rect` position
--- according to its `vel` speed:
---  * Updates rect on every 'step' frame.
---  * Terminates when rect leaves the screen.
+-- Simple "physics" to update task `rect` position based on `vel` speed:
+--  * updates rect every 'step' frame
+--  * terminates when rect leaves the screen
+
 function Move_T (rect, vel)
     local function out_of_screen ()
         return (
@@ -22,22 +22,31 @@ function Move_T (rect, vel)
     end)
 end
 
--- l/r ship positions
-local pos = {
-    l = PP(10, 50),
-    r = PP(90, 50),
-}
+-- Left/Right ship constant parameters
 
--- l/r ship key controls
-local ctl = {
-    l = {mov={l='A',    r='D',     u='W',  d='S'},    shot='Left Shift'},
-    r = {mov={l='Left', r='Right', u='Up', d='Down'}, shot='Right Shift'},
-}
-
--- l/r ship X limit (half of the screen)
-local lim = {
-    l = {x1=0,   x2=W/2},
-    r = {x1=W/2, x2=W  },
+local V = {
+    l = {
+        tag = 'L',
+        pos = PP(10, 50),           -- x,y initial position
+        ctl = {                     -- key controls
+            move  = { l='A', r='D', u='W', d='S'},
+            frame = { l=0, r=1, u=2, d=3 },
+            shot  = 'Left Shift',
+        },
+        lim = { x1=0, x2=W/2 },     -- x limits (half of screen)
+        shot = { tag='l', x=1 },    -- shot tag, x direction
+    },
+    r = {
+        tag = 'R',
+        pos = PP(90, 50),
+        ctl = {
+            move = { l='Left', r='Right', u='Up', d='Down' },
+            frame = { l=1, r=0, u=2, d=3 },
+            shot = 'Right Shift',
+        },
+        lim = { x1=W/2, x2=W },
+        shot = { tag='r', x=-1 },
+    },
 }
 
 function Battle ()
@@ -52,8 +61,8 @@ function Battle ()
 
     -- holds l/r ships
     local ships <close> = tasks(2)
-    spawn_in(ships, Ship, 'L', pos.l, ctl.l, lim.l, shots_l, "imgs/ship-L.gif")
-    spawn_in(ships, Ship, 'R', pos.r, ctl.r, lim.r, shots_r, "imgs/ship-R.gif")
+    spawn_in(ships, Ship, V.l, shots_l, "imgs/ship-L.gif")
+    spawn_in(ships, Ship, V.r, shots_r, "imgs/ship-R.gif")
 
     -- GAMEPLAY:
     --  * runs until one of the two ships `s` is destroyed
