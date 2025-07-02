@@ -58,8 +58,8 @@ function Meteor ()
     local x = math.random(0,W)
     local y = (y_sig == 1) and 0 or H
     local rect = { x=x, y=y, w=w, h=h }
-    me().tag  = 'M'
-    me().rect = rect
+    task().tag  = 'M'
+    task().rect = rect
 
     par_or(function ()
         local dt = math.random(1, METEOR_AWAIT)
@@ -88,8 +88,8 @@ end
 function Shot (V, pos, vy)
     sdl.play "snds/shot.wav"
     local rect = { x=pos.x+V.x*SHOT_DIM.w/2, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
-    me().tag = V.tag
-    me().rect = rect
+    task().tag = V.tag
+    task().rect = rect
     par_or(function ()
         await('collided')
     end, function ()
@@ -109,8 +109,8 @@ function Ship (V, shots)
     local vel = {x=0,y=0}
     local dy = h / SHIP_FRAMES
     local rect = { x=V.pos.x-w/2, y=V.pos.y-dy/2, w=w, h=dy }
-    me().tag = V.tag
-    me().rect = rect
+    task().tag = V.tag
+    task().rect = rect
 
     local acc = {x=0,y=0}
     local key
