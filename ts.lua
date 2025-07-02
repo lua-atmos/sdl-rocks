@@ -20,6 +20,28 @@ function random_signal ()
     return ((math.random(0,1)==1) and 1) or -1
 end
 
+-- Simple "physics" to update Meteor/Shot `rect` position based on `vel` speed:
+--  * updates rect every 'step' frame
+--  * terminates when rect leaves the screen
+
+function Move_T (rect, vel)
+    local function out_of_screen ()
+        return (
+            rect.x < 0  or
+            rect.x > W  or
+            rect.y < 0  or
+            rect.y > H
+        )
+    end
+    watching(out_of_screen, function ()
+        every('step', function (_,ms)
+            local dt = ms / 1000
+            rect.x = math.floor(rect.x + (vel.x * dt))
+            rect.y = math.floor(rect.y + (vel.y * dt))
+        end)
+    end)
+end
+
 function Meteor ()
     local sfc = assert(IMG.load("imgs/meteor.gif"))
     local tex = assert(REN:createTextureFromSurface(sfc))
@@ -61,7 +83,6 @@ function Meteor ()
             dx = (x % ww) - (x % w)
         end)
     end)
-    --pub
 end
 
 function Shot (V, pos, vy)
@@ -79,11 +100,10 @@ function Shot (V, pos, vy)
             REN:fillRect(rect)
         end)
     end)
-    --pub
 end
 
-function Ship (V, shots, path)
-    local sfc = assert(IMG.load(path))
+function Ship (V, shots)
+    local sfc = assert(IMG.load(V.img))
     local tex = assert(REN:createTextureFromSurface(sfc))
     local w,h = sfc:getSize()
     local vel = {x=0,y=0}

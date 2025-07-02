@@ -1,27 +1,5 @@
 require "ts" -- task prototypes for Ship, Shot, Meteor
 
--- Simple "physics" to update task `rect` position based on `vel` speed:
---  * updates rect every 'step' frame
---  * terminates when rect leaves the screen
-
-function Move_T (rect, vel)
-    local function out_of_screen ()
-        return (
-            rect.x < 0  or
-            rect.x > W  or
-            rect.y < 0  or
-            rect.y > H
-        )
-    end
-    watching(out_of_screen, function ()
-        every('step', function (_,ms)
-            local dt = ms / 1000
-            rect.x = math.floor(rect.x + (vel.x * dt))
-            rect.y = math.floor(rect.y + (vel.y * dt))
-        end)
-    end)
-end
-
 -- Left/Right ship constant parameters
 
 local V = {
@@ -35,6 +13,7 @@ local V = {
         },
         lim = { x1=0, x2=W/2 },     -- x limits (half of screen)
         shot = { tag='l', x=1 },    -- shot tag, x direction
+        img = "imgs/ship-L.gif",    -- ship image
     },
     r = {
         tag = 'R',
@@ -46,6 +25,7 @@ local V = {
         },
         lim = { x1=W/2, x2=W },
         shot = { tag='r', x=-1 },
+        img = "imgs/ship-R.gif",    -- ship image
     },
 }
 
@@ -61,8 +41,8 @@ function Battle ()
 
     -- holds l/r ships
     local ships <close> = tasks(2)
-    spawn_in(ships, Ship, V.l, shots_l, "imgs/ship-L.gif")
-    spawn_in(ships, Ship, V.r, shots_r, "imgs/ship-R.gif")
+    spawn_in(ships, Ship, V.l, shots_l)
+    spawn_in(ships, Ship, V.r, shots_r)
 
     -- GAMEPLAY:
     --  * runs until one of the two ships `s` is destroyed
@@ -118,8 +98,8 @@ function Battle ()
         end)
     end)
 
-    sdl.play "snds/explosion.wav" -- overrides any active sound
-    return (s.tag=='L' and 'R') or 'L'
+    sdl.play "snds/explosion.wav"       -- overrides any active sound
+    return (s.tag=='L' and 'R') or 'L'  -- returns winner
 end
 
 return Battle
