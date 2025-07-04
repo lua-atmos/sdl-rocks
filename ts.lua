@@ -21,7 +21,7 @@ function random_signal ()
 end
 
 -- Simple "physics" to update Meteor/Shot `rect` position based on `vel` speed:
---  * updates rect every 'step' frame
+--  * updates rect every 'sdl.step' frame
 --  * terminates when rect leaves the screen
 
 function Move_T (rect, vel)
@@ -34,7 +34,7 @@ function Move_T (rect, vel)
         )
     end
     watching(out_of_screen, function ()
-        every('step', function (_,ms)
+        every('sdl.step', function (_,ms)
             local dt = ms / 1000
             rect.x = math.floor(rect.x + (vel.x * dt))
             rect.y = math.floor(rect.y + (vel.y * dt))
@@ -78,7 +78,7 @@ function Meteor ()
     end, function ()
         local v = ((vx^2) + (vy^2)) ^ (1/2)
         local x = 0
-        every('step', function (_,ms)
+        every('sdl.step', function (_,ms)
             x = x + ((v * ms) / 1000)
             dx = (x % ww) - (x % w)
         end)
@@ -158,7 +158,7 @@ function Ship (V, shots)
                 REN:copy(tex, crop, rect)
             end)
         end, function ()
-            every('step', function (_,ms)
+            every('sdl.step', function (_,ms)
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
                 vel.y = between(-SHIP_VEL_MAX.y, vel.y+(acc.y*dt), SHIP_VEL_MAX.y)
@@ -174,7 +174,7 @@ function Ship (V, shots)
     watching(clock{ms=150}, function ()
         local d = dy / 2;
         par(function ()
-            every('step', function (_,ms)
+            every('sdl.step', function (_,ms)
                 d = d + (((40*d)*ms)/1000)
             end)
         end, function ()
