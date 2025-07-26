@@ -3,7 +3,6 @@ IMG = require "SDL.image"
 TTF = require "SDL.ttf"
 MIX = require "SDL.mixer"
 
-require "atmos"
 sdl = require "atmos.env.sdl"
 
 -- SKIP TO "START HERE"
@@ -38,7 +37,8 @@ math.randomseed()
 
 local Battle = require "battle" -- actual battle gameplay
 
-call(REN, function ()
+sdl.ren = REN
+call(function ()
 
     -- BACKGROUND
     spawn(function ()
