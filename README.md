@@ -7,6 +7,7 @@ A spaceship shooter game for 2 simultaneous players.
 Requires [lua-atmos](https://github.com/lua-atmos/atmos):
 
 ```
+git checkout v0.3
 lua5.4 main.lua
 ```
 
