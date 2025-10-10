@@ -59,7 +59,7 @@ function Battle ()
             end
         end, function ()
             -- check collisions
-            every('sdl.step', function ()
+            every('clock', function ()
                 -- collect references to all ships, shots, meteors
                 local ts = {}
                 for _, t in getmetatable(ships).__pairs(ships) do
