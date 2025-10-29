@@ -1,24 +1,13 @@
+sdl = require "atmos.env.sdl"
+
 SDL = require "SDL"
 IMG = require "SDL.image"
 TTF = require "SDL.ttf"
-MIX = require "SDL.mixer"
-
-sdl = require "atmos.env.sdl"
 
 -- SKIP TO "START HERE"
 
 PP = sdl.pct_to_pos
 rect_vs_rect = sdl.rect_vs_rect
-
-assert(SDL.init())
-assert(TTF.init())
-MIX.openAudio(44100, SDL.audioFormat.S16, 2, 1024);
-
-local _ <close> = defer(function ()
-    MIX.quit()
-    TTF.quit()
-    SDL.quit()
-end)
 
 W, H = 640, 480
 WIN = assert(SDL.createWindow {
