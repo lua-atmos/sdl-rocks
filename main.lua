@@ -17,15 +17,15 @@ _,REN = sdl.window {
     flags  = { SDL.flags.OpenGL },
 }
 
-FNT = assert(TTF.open("tiny.ttf", H/15))
-
 math.randomseed()
 
 -- START HERE
 
 local Battle = require "battle" -- actual battle gameplay
 
-call(function ()
+loop(function ()
+
+    FNT = assert(TTF.open("tiny.ttf", H/15))
 
     -- BACKGROUND
     spawn(function ()
