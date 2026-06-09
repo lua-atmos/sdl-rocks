@@ -57,10 +57,10 @@ loop(function ()
 
         -- Start with 'ENTER':
         --  * spawns a blinking message, and awaits "enter" key
-        watching(SDL.event.KeyDown, 'Return', function ()
+        watching({tag='sdl', type=SDL.event.KeyDown, name='Return'}, function ()
             while true do
                 -- 500ms on
-                watching(clock{ms=500}, function ()
+                watching(500*_ms_, function ()
                     local pt = PP(50, 50)
                     every('sdl.draw', function ()
                         REN:setDrawColor(0xFFFFFF)
@@ -68,7 +68,7 @@ loop(function ()
                     end)
                 end)
                 -- 500ms off
-                await(clock{ms=500})
+                await(500*_ms_)
             end
         end)
 
@@ -84,7 +84,7 @@ loop(function ()
         --  * awaits 'P' to toggle battle on
         local _ <close> = spawn(function ()
             while true do
-                await(SDL.event.KeyDown, 'P')
+                await{tag='sdl', type=SDL.event.KeyDown, name='P'}
                 toggle(battle, false)
                 local _ <close> = spawn(function ()
                     local sfc = assert(IMG.load("imgs/pause.png"))
@@ -97,7 +97,7 @@ loop(function ()
                         REN:copy(tex, nil, r)
                     end)
                 end)
-                await(SDL.event.KeyDown, 'P')
+                await{tag='sdl', type=SDL.event.KeyDown, name='P'}
                 toggle(battle, true)
             end
         end)
@@ -108,6 +108,6 @@ loop(function ()
         --  * awaits 1s before next battle
         local winner = await(battle)
         points[winner] = points[winner] + 1
-        await(clock{s=1})
+        await(1*_s_)
     end
 end)

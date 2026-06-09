@@ -34,7 +34,8 @@ function Move_T (rect, vel)
         )
     end
     watching(out_of_screen, function ()
-        every('clock', function (_,ms)
+        every('clock', function (us)
+            local ms = us / 1000
             local dt = ms / 1000
             rect.x = rect.x + (vel.x * dt)
             rect.y = rect.y + (vel.y * dt)
@@ -63,7 +64,7 @@ function Meteor ()
 
     par_or(function ()
         local dt = math.random(1, METEOR_AWAIT)
-        await(clock{ms=dt})
+        await(dt*_ms_)
         par_or(function ()
             await(spawn (Move_T, rect, {x=vx,y=vy}))
         end, function ()
@@ -78,7 +79,8 @@ function Meteor ()
     end, function ()
         local v = ((vx^2) + (vy^2)) ^ (1/2)
         local x = 0
-        every('clock', function (_,ms)
+        every('clock', function (us)
+            local ms = us / 1000
             x = x + ((v * ms) / 1000)
             dx = (x % ww) - (x % w)
         end)
@@ -116,7 +118,7 @@ function Ship (V, shots)
     local key
     spawn(function ()
         par(function ()
-            every(SDL.event.KeyDown, function (evt)
+            every({tag='sdl', type=SDL.event.KeyDown}, function (evt)
                 if false then
                 elseif evt.name == V.ctl.move.l then
                     acc.x = -W/SHIP_ACC_DIV
@@ -132,7 +134,7 @@ function Ship (V, shots)
                 key = evt.name
             end)
         end, function ()
-            every(SDL.event.KeyUp, function ()
+            every({tag='sdl', type=SDL.event.KeyUp}, function ()
                 key = nil
                 acc = {x=0,y=0}
             end)
@@ -158,7 +160,8 @@ function Ship (V, shots)
                 REN:copy(tex, crop, sdl.ints(rect))
             end)
         end, function ()
-            every('clock', function (_,ms)
+            every('clock', function (us)
+                local ms = us / 1000
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
                 vel.y = between(-SHIP_VEL_MAX.y, vel.y+(acc.y*dt), SHIP_VEL_MAX.y)
@@ -171,10 +174,11 @@ function Ship (V, shots)
         end)
     end)
 
-    watching(clock{ms=100}, function ()
+    watching(100*_ms_, function ()
         local d = dy / 2;
         par(function ()
-            every('clock', function (_,ms)
+            every('clock', function (us)
+                local ms = us / 1000
                 d = d + (((10*d)*ms)/1000)
             end)
         end, function ()
@@ -184,4 +188,6 @@ function Ship (V, shots)
             end)
         end)
     end)
+
+    return task().tag
 end
