@@ -24,7 +24,7 @@ end
 --  * updates rect every 'step' frame
 --  * terminates when rect leaves the screen
 
-function Move_T (rect, vel)
+Move_T = task(function (rect, vel)
     local function out_of_screen ()
         return (
             rect.x < 0  or
@@ -34,16 +34,16 @@ function Move_T (rect, vel)
         )
     end
     watching(out_of_screen, function ()
-        every('clock', function (us)
+        loop_on('clock', function (us)
             local ms = us / 1000
             local dt = ms / 1000
             rect.x = rect.x + (vel.x * dt)
             rect.y = rect.y + (vel.y * dt)
         end)
     end)
-end
+end)
 
-function Meteor ()
+Meteor = task(function ()
     local sfc = assert(IMG.load("imgs/meteor.gif"))
     local tex = assert(REN:createTextureFromSurface(sfc))
     local ww,h = sfc:getSize()
@@ -59,8 +59,8 @@ function Meteor ()
     local x = math.random(0,W)
     local y = (y_sig == 1) and 0 or H
     local rect = { x=x, y=y, w=w, h=h }
-    task().tag  = 'M'
-    task().rect = rect
+    xtask().tag  = 'M'
+    xtask().rect = rect
 
     par_or(function ()
         local dt = math.random(1, METEOR_AWAIT)
@@ -72,53 +72,53 @@ function Meteor ()
             sdl.play "snds/meteor.wav"
         end)
     end, function ()
-        every('sdl.draw', function ()
+        loop_on('sdl.draw', function ()
             local crop = { x=dx, y=0, w=w, h=h }
             REN:copy(tex, crop, sdl.ints(rect))
         end)
     end, function ()
         local v = ((vx^2) + (vy^2)) ^ (1/2)
         local x = 0
-        every('clock', function (us)
+        loop_on('clock', function (us)
             local ms = us / 1000
             x = x + ((v * ms) / 1000)
             dx = (x % ww) - (x % w)
         end)
     end)
-end
+end)
 
-function Shot (V, pos, vy)
+Shot = task(function (V, pos, vy)
     sdl.play "snds/shot.wav"
     local rect = { x=pos.x+V.x*SHOT_DIM.w/2, y=pos.y-SHOT_DIM.h/2, w=SHOT_DIM.w, h=SHOT_DIM.h }
-    task().tag = V.tag
-    task().rect = rect
+    xtask().tag = V.tag
+    xtask().rect = rect
     par_or(function ()
         await('collided')
     end, function ()
         await(spawn (Move_T, rect, {x=(W/3)*V.x, y=vy}))
     end, function ()
-        every('sdl.draw', function ()
+        loop_on('sdl.draw', function ()
             REN:setDrawColor(SHOT_COLOR)
             REN:fillRect(sdl.ints(rect))
         end)
     end)
-end
+end)
 
-function Ship (V, shots)
+Ship = task(function (V, shots)
     local sfc = assert(IMG.load(V.img))
     local tex = assert(REN:createTextureFromSurface(sfc))
     local w,h = sfc:getSize()
     local vel = {x=0,y=0}
     local dy = h / SHIP_FRAMES
     local rect = { x=V.pos.x-w/2, y=V.pos.y-dy/2, w=w, h=dy }
-    task().tag = V.tag
-    task().rect = rect
+    xtask().tag = V.tag
+    xtask().rect = rect
 
     local acc = {x=0,y=0}
     local key
-    spawn(function ()
+    do_spawn(function ()
         par(function ()
-            every({tag='sdl', type=SDL.event.KeyDown}, function (evt)
+            loop_on({tag='sdl', type=SDL.event.KeyDown}, function (evt)
                 if false then
                 elseif evt.name == V.ctl.move.l then
                     acc.x = -W/SHIP_ACC_DIV
@@ -134,7 +134,7 @@ function Ship (V, shots)
                 key = evt.name
             end)
         end, function ()
-            every({tag='sdl', type=SDL.event.KeyUp}, function ()
+            loop_on({tag='sdl', type=SDL.event.KeyUp}, function ()
                 key = nil
                 acc = {x=0,y=0}
             end)
@@ -143,7 +143,7 @@ function Ship (V, shots)
 
     watching('collided', function ()
         par(function ()
-            every('sdl.draw', function ()
+            loop_on('sdl.draw', function ()
                 local frame = 0; do
                     if false then
                     elseif key == V.ctl.move.l then
@@ -160,7 +160,7 @@ function Ship (V, shots)
                 REN:copy(tex, crop, sdl.ints(rect))
             end)
         end, function ()
-            every('clock', function (us)
+            loop_on('clock', function (us)
                 local ms = us / 1000
                 local dt = ms / 1000
                 vel.x = between(-SHIP_VEL_MAX.x, vel.x+(acc.x*dt), SHIP_VEL_MAX.x)
@@ -177,17 +177,17 @@ function Ship (V, shots)
     watching(100*_ms_, function ()
         local d = dy / 2;
         par(function ()
-            every('clock', function (us)
+            loop_on('clock', function (us)
                 local ms = us / 1000
                 d = d + (((10*d)*ms)/1000)
             end)
         end, function ()
-            every('sdl.draw', function ()
+            loop_on('sdl.draw', function ()
                 REN:setDrawColor(0xFF0000)
                 REN:fillRect(sdl.ints{ x=rect.x, y=rect.y, w=d, h=d })
             end)
         end)
     end)
 
-    return task().tag
-end
+    return xtask().tag
+end)

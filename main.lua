@@ -28,20 +28,20 @@ loop(function ()
     FNT = assert(TTF.open("tiny.ttf", H/15))
 
     -- BACKGROUND
-    spawn(function ()
+    do_spawn(function ()
         local sfc = assert(IMG.load("imgs/bg.png"))
         local tex = assert(REN:createTextureFromSurface(sfc))
-        every('sdl.draw', function ()
+        loop_on('sdl.draw', function ()
             REN:copy(tex)
         end)
     end)
 
     -- POINTS
     local points = { L=0, R=0 }
-    spawn(function ()
+    do_spawn(function ()
         local l = PP(10, 90)
         local r = PP(90, 90)
-        every('sdl.draw', function ()
+        loop_on('sdl.draw', function ()
             REN:setDrawColor(0xFFFFFF)
             sdl.write(FNT, tostring(points.L), l)
             sdl.write(FNT, tostring(points.R), r)
@@ -62,7 +62,7 @@ loop(function ()
                 -- 500ms on
                 watching(500*_ms_, function ()
                     local pt = PP(50, 50)
-                    every('sdl.draw', function ()
+                    loop_on('sdl.draw', function ()
                         REN:setDrawColor(0xFFFFFF)
                         sdl.write(FNT, "= PRESS ENTER TO START =", pt)
                     end)
@@ -82,18 +82,18 @@ loop(function ()
         --  * awaits 'P' to toggle battle off
         --  * shows a "paused" image
         --  * awaits 'P' to toggle battle on
-        local _ <close> = spawn(function ()
+        local _ <close> = do_spawn(function ()
             while true do
                 await{tag='sdl', type=SDL.event.KeyDown, name='P'}
                 toggle(battle, false)
-                local _ <close> = spawn(function ()
+                local _ <close> = do_spawn(function ()
                     local sfc = assert(IMG.load("imgs/pause.png"))
                     local r = totable('w', 'h', sfc:getSize())
                     local tex = assert(REN:createTextureFromSurface(sfc))
                     local pt = PP(50, 50)
                     r.x = pt.x - r.w/2
                     r.y = pt.y - r.h/2
-                    every('sdl.draw', function ()
+                    loop_on('sdl.draw', function ()
                         REN:copy(tex, nil, r)
                     end)
                 end)

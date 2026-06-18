@@ -29,7 +29,7 @@ local V = {
     },
 }
 
-function Battle ()
+Battle = task(function ()
     -- Declares and spawns the game objects: ships, shots, meteors
 
     -- holds all meteors
@@ -59,7 +59,7 @@ function Battle ()
             end
         end, function ()
             -- check collisions
-            every('clock', function ()
+            loop_on('clock', function ()
                 -- collect references to all ships, shots, meteors
                 local ts = {}
                 for _, t in getmetatable(ships).__pairs(ships) do
@@ -100,6 +100,6 @@ function Battle ()
 
     sdl.play "snds/explosion.wav"   -- overrides any active sound
     return (s=='L' and 'R') or 'L'  -- returns winner
-end
+end)
 
 return Battle
