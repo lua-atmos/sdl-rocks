@@ -33,7 +33,7 @@ Move_T = task(function (rect, vel)
             rect.y > H
         )
     end
-    watching(out_of_screen, function ()
+    watching({tag='until', out_of_screen}, function ()
         loop_on('clock', function (us)
             local ms = us / 1000
             local dt = ms / 1000
